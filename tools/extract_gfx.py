@@ -117,7 +117,8 @@ def word(m, a):
 
 
 def world_sets(m):
-    """Map cells, enemy frames (right-facing half of the frame area) and guardian parts."""
+    """Map cells, enemy frames (the first half of the frame area: enemies that started on the
+    right, facing left - D3) and guardian parts."""
     cells = [rows(m, a, 2, 16, P) for a in range(word(m, 0x7665), word(m, 0x7667), 32)]
     parts = []
     for guard in (word(m, 0x7669), word(m, 0x7680)):    # guardian records of the bank's two world headers
@@ -128,7 +129,7 @@ def world_sets(m):
                     and (a1, w1, l1) not in parts):
                 parts += [(a1, w1, l1), (a2, w2, l2)]
     guard_start = min((p[0] for p in parts), default=word(m, 0x7661))
-    half = 0x7696 + (guard_start - 0x7696) // 2           # left-facing copies fill the second half
+    half = 0x7696 + (guard_start - 0x7696) // 2           # the second half holds the turned frames
     table, templates = word(m, 0x768E), []
     for k in range(16):
         wb, lines, a = m[table + 5 * k], m[table + 5 * k + 1], word(m, table + 5 * k + 2)
@@ -179,7 +180,7 @@ def main():
         write_png(f"{OUT}/bank{bank}-cells.png", sheet(cells, per_row=20))
         made.append((f"bank{bank}-cells", f"Map cells, {worlds} ({len(cells)})", TITLE))
         write_png(f"{OUT}/bank{bank}-enemies.png", sheet([f for e in enemies for f in e], per_row=12))
-        made.append((f"bank{bank}-enemies", f"Enemy frames, {worlds}, facing right ({sum(len(e) for e in enemies)} frames of {len(enemies)} enemies)", TITLE))
+        made.append((f"bank{bank}-enemies", f"Enemy frames, {worlds}, facing left ({sum(len(e) for e in enemies)} frames of {len(enemies)} enemies)", TITLE))
         if guardians:
             write_png(f"{OUT}/bank{bank}-guardian.png", sheet(guardians, per_row=4))
             made.append((f"bank{bank}-guardian", f"Guardian parts, {worlds}", TITLE))

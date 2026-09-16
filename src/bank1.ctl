@@ -2,7 +2,11 @@
 @ $C000 org
 b $C000 Bank 1: the world data that did not fit in the world banks
 D $C000 Four 85-byte pieces, one for each world bank (3, 4, 6 and 7), at the offsets in #R$B8BB@main; #R$B8C3@main copies the current bank's piece to $B660, just past the world area.
-B $C000,340,17
+S $C000,85,$55
+B $C055,85,1,3
+S $C0AA,85,$55
+T $C0FF,51,16:n1,20:n1,n2:11
+S $C132,34,$22
 b $C154 Ending picture
 D $C154 A whole screen, display file then attributes, that #R$B908@main copies to $4000 when the game is completed: the credits picture, shown while tune 0 plays.
 B $C154,6912,32

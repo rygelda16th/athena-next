@@ -1,7 +1,7 @@
 # The disassembly - how it is annotated, and what is still open
 
 Chunks D1-D7 (David's decision: the disassembly is complete before any enhancement).
-D1 and D2 established 2026-09-16.
+D1-D3 established 2026-09-16.
 
 ## Where it lives
 
@@ -12,6 +12,8 @@ D1 and D2 established 2026-09-16.
   the game's bytes (`make check-ctl` refuses a ctl that holds any).
 - **`src/athena.ref`** sets up the HTML: game name, credits, the five data banks
   as "Other code", hex page names.
+- `tools/annotate.py ... --bank N` applies annotations to `src/bankN.ctl`; in bank text,
+  an address that is not a statement in the bank is linked to the game's code (`@main`).
 - `make skool` regenerates `work/*.skool` from the ctl files and your snapshot;
   **`make html`** builds `build/html/athena/index.html` from them. The HTML holds
   the game's bytes, so it stays on your machine.
@@ -95,36 +97,72 @@ seven worlds; the screen differs only where sprites are drawn.
   `$0000-$3FFF`; `$C237` cannot address below `$4000`. Corrected; the writer is open
   (D5 below).
 
+## D3 - level data
+
+Three analysts (world headers and bank layout, the map, enemy and guardian lists) and
+two reviewers (181 items: 126 confirmed, 50 partly right, 5 refuted); merge in
+`build/d3/merge.py` with `build/d3/corrections.py`, 18 corrections to D1/D2 text.
+
+**The world banks are fully laid out** (`src/bank3.ctl`, `bank4.ctl`, `bank6.ctl`,
+`bank7.ctl`, and bank 1's overflow pieces): two 23-byte headers (every field commented),
+the template words, the enemy frames (left-facing first half, right-facing second half),
+guardian graphics, the maps, the cell table, the guardian path and record, the world
+names, the enemy start lists, the templates and world 7's congratulations message - each
+bank packed with no gaps, in the same order.
+
+**`make worlds`** draws every world's whole map from your snapshot into `build/worlds/`;
+**`make check-worlds`** proves the map format: each world snapshot's play-area buffer is
+rebuilt from the pristine bank data and matches every byte once the map cells and cell
+pictures that play changed are copied in. Against a published pixel map of all seven
+worlds (Spectrum Computing's `Athena_4.png`, used only for comparison) 93.0-99.8% of
+pixels match per part, and 99.2-99.9% outside the cells that map blanks out; the rest is
+that map hiding unseen areas and showing sprites.
+
+**Found the hard way (D3):**
+- **D2 had the enemy frame halves backwards** (first half faces left), and only 29 of the
+  56 second-half frames are exact mirrors; corrected in text and in `tools/extract_gfx.py`.
+- **Bank text refers to game code** (`#R$C169`) without `@main`; the tool now links those
+  instead of flattening them.
+- **A text sub-block has a list of lengths** (`T $FF73,141,17:n2,19:n1,...`); the merge's
+  first pattern kept only the first.
+
+## Naming decisions (D3)
+
+| Where | Label | Why |
+|---|---|---|
+| header bytes 16-17 | RightFramesOffset | the offset leads to the right-facing half |
+| bank lists | `W1EnemyList`... `W7EnemyList`, `W12EnemyTemplates`... | the lists analyst's names, whose remit it was |
+| `$C169` | `ClearListMarks` | one of two analysts' names |
+
 ## Open questions carried forward
 
-Answered by D2 (from D1's list): the explosion frames at `$6BA0`; the message printer,
-its control codes and the panel routines; the energy bar and its colour operand
-(`EnergyColour`, `$BF16`); the lost interrupt inside `$EBFA` (53,575 T-states with
-interrupts off, plus an estimated 3,300-4,000 T-states of contention on a 128K: one
-interrupt a pass is lost, as in the recording).
+Answered by D3 (from the list below it replaced): the world headers; the copies at
+`$BE27`-`$BE40` (they give codes `$79`/`$7A` the background picture); the substitute
+codes at `$CECA`/`$DE09` (background and item-box blocks); the stale walk by `$C169`
+(it damages world 3's cells 90 and 92 and nine bytes of world 7's enemy list); the map
+transform at `$BCE6` (it undoes most of play's changes, wasted work); every cell code;
+codes `$10`-`$2D` never reach the renderer; the enemy frame halves; which picture each
+item code gives (from the pictures - what each item does is D4).
 
-- **D3 (level data):** the 23-byte world headers in full; the two 32-byte copies at
-  `$BE27`-`$BE40` (they replace the cell pictures for block codes `$79` and `$7A`);
-  the substitute block codes at `$CECA` and `$DE09`; the stale RES 7 walk by `$C169`
-  at a world change; the map transform at `$BCE6` before a new game; map cell codes
-  for walls, ladders and items; whether map codes `$10`-`$2D` can reach the renderer;
-  what writes block graphics during play (world 3's live table differs from its bank
-  in entries 90 and 92); enemy frame boundaries in stretches never drawn, and whether
-  the second half of each bank's enemy graphics mirrors the first; the MapChanges
-  record bytes 6-8; which picture each item code gives.
-- **D4 (player):** ClimbState values 2 and 4; what up, down and fire do in play;
-  which armour piece each of `$BA24`-`$BA26` is; the weapon behind each weapon level
-  and the strike set ``$D991`` draws; the pieces at `$6F20`-`$6F9F`; `$D8D6`, `$D64F`,
-  `$D660`; `$C091`; the per-world resets at `$BD8D`-`$BDAA`.
-- **D5 (enemies):** the order `$C51F` returns enemy slots in; what writes `$FF` and
-  `$FE` into the enemy position map; the guardian's cell in that map ignoring the row
-  within a third (`$D53F`) - a bug in play or not; the type 4 spawn position's
-  apparent off-by-one; **which instruction writes into `$0000`-`$3FFF`** (a write
-  trap over passes where a display address steps above the screen, `$C312`, is the
-  suggested test).
+- **D4 (player):** ClimbState values 2 and 4; what up, down and fire do in play; which
+  armour piece each of `$BA24`-`$BA26` is; what each item does (and the box rules at
+  `$D689`-`$D71E`); the weapon behind each weapon level and the strike set `$D991`
+  draws; the pieces at `$6F20`-`$6F9F`; `$D8D6`, `$C091`; the per-world resets at
+  `$BD8D`-`$BDAA`; the open left end of world 1's upper part (where would the player
+  fall?).
+- **D5 (enemies):** enemy types 1-9 and slot bytes 1 and 12 (the movers at `$CB62`-`$CC1A`);
+  the order `$C51F` returns slots in; what writes `$FF` and `$FE` into the enemy position
+  map; the guardian's cell in that map ignoring the row within a third (`$D53F`); whether
+  world 7's type 4 spawn code `$FF` can ever match a cell (a template at `$0000` would
+  start); whether world 7's own three-byte list walk can happen in play; **which
+  instruction writes into `$0000`-`$3FFF`**.
 - **D6 (sound and front end):** why `$ED4E` runs with interrupts off; the 800 bytes
   copied to `$FCE0`-`$FFFF` at start-up; whether tune 11 can be cut short by a key;
-  `IN A,($9F)` at `$F240`; why `$C3C0` writes `$FF` to `$BDB3`; define keys at
-  `$F355`; the 192 unused bytes at `$6CA0`.
-- **E8 (hardware):** the flicker rates and the lost interrupt were measured in a
-  replay model with estimated contention; the KS3 is the check.
+  `IN A,($9F)` at `$F240`; why `$C3C0` writes `$FF` to `$BDB3`; define keys at `$F355`;
+  the 192 unused bytes at `$6CA0`.
+- **Not decidable from the code:** why bank 7's unused second header holds bank 3's
+  values; whether the differing second-half enemy frames are retouched art or errors;
+  why the box pictures `$C7`/`$C8` are equal in banks 3 and 6 but not 4 and 7; what
+  `$C0F1`'s handling of `$00` and `$D4` was for.
+- **E8 (hardware):** the flicker rates and the lost interrupt were measured in a replay
+  model with estimated contention; the KS3 is the check.

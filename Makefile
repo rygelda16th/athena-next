@@ -27,7 +27,7 @@ ZESARUX128 := zesarux --vo null --ao null --machine 128k --enable-remoteprotocol
 # `make play` points at the Homebrew cask in ~/Applications, which is not patched.
 NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
 
-.PHONY: help certs image doctor shell fetch check-data provenance html gfx check-gfx toolchain-diff \
+.PHONY: help certs image doctor shell fetch check-data provenance html gfx check-gfx worlds check-worlds toolchain-diff \
         rzx-end check-orig orig play-orig bank-exec scripts ctl-bootstrap skool ctl \
         check-ctl check-reasm coverage g2 oracle-stream nex oracle-nex check-play \
         check-oracle check-cspect g3 play clean distclean
@@ -45,6 +45,8 @@ help:
 	@echo "make play-orig      play the original in the native (patched) ZEsarUX"
 	@echo "make gfx            PNG sheets of every graphic from your files (build/gfx; never publish)"
 	@echo "make check-gfx      D2: the play area is rebuilt from the map in all seven worlds"
+	@echo "make worlds         pictures of all seven worlds' maps (build/worlds; never publish)"
+	@echo "make check-worlds   D3: every world's play area is its map plus play's changes"
 	@echo "make html           local HTML disassembly from your snapshot (never publish it)"
 	@echo "make bank-exec      G2: does code ever run at \$$C000 from a bank other than 0?"
 	@echo "make scripts        G2: scripted runs of the original (menu, keys, game over)"
@@ -146,6 +148,15 @@ gfx:
 # The play area is rebuilt from the map and cell tables in all seven world snapshots.
 check-gfx:
 	python3 tools/checkgfx.py
+
+# ---- D3: level data -------------------------------------------------------------------
+# Whole-map pictures of all seven worlds from YOUR snapshot (never commit or publish them).
+worlds:
+	python3 tools/render_world.py
+
+# Every world's play area is its pristine map plus the changes play made to it.
+check-worlds:
+	python3 tools/checkworlds.py
 
 # Local HTML disassembly from YOUR snapshot (it contains the game's bytes: never publish it).
 html: skool

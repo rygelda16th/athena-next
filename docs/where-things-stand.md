@@ -20,8 +20,9 @@ recording as the oracle that proves the game logic never changed.
 | G2 | code map; byte-identical reassembly; ctl round trip | **passed** - David said go 2026-09-16 |
 | G3 | the original as `athena.nex`; the oracle | **passed** - David played it and said go 2026-09-16 |
 | D1 | disassembly: boot, paging, memory map, main loop, interrupts, input, randomness | **passed** - David said go 2026-09-16 |
-| **D2** | disassembly: the renderer; every graphic exported (`make gfx`) | **annotated, checks green - waiting at checkpoint D2** |
-| D3-D7 | the rest of the complete annotated disassembly | not started |
+| D2 | disassembly: the renderer; every graphic exported (`make gfx`) | **passed** - David said go 2026-09-16 |
+| **D3** | disassembly: level data; every world's map drawn (`make worlds`) | **annotated, checks green - waiting at checkpoint D3** |
+| D4-D7 | the rest of the complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
 
@@ -397,8 +398,9 @@ world snapshots.
   world bank (131 in world 7).
 - **Every graphic is one of two formats:** plain 1 bit a pixel, or a mask byte before
   each graphic byte; left-facing sprites are mirrored copies (the player's made at start-up
-  through the bit-reversal table at `$5B00`; each world's enemies have theirs at a
-  fixed offset, the operand at `$CC7E`, half-way through the bank's frame area). This is the grid the new art must fit (art bible).
+  through the bit-reversal table at `$5B00`; each world's enemies have their
+  right-facing frames at a fixed offset, the operand at `$CC7E`, half-way through the
+  bank's frame area - only about half of them exact mirrors, D3). This is the grid the new art must fit (art bible).
 - **The title graphics exist only in the tape-loaded machine:** the start-up code
   overwrites the ATHENA logo and part of the figure after drawing them, so
   `make gfx` reads them from `make provenance`'s snapshot.
@@ -413,20 +415,71 @@ world snapshots.
 - **Screens taken at the frame interrupt show far more flicker than a TV** - every
   sprite missing once a pass; the measurement had to model the beam.
 
-## Checkpoint D2 - for David
+## Checkpoint D2 - closed
 
-1. `make gfx`, then open `build/gfx/index.html`: every graphic in the game, including
-   the map cells, enemies and guardians of each world. This is the reference for the
-   new art - is it the right form for the art bible at Checkpoint A?
-2. `make html` and browse the renderer: **Copy the play area from the buffer to the
-   screen** (`EBFA`), **Redraw the play area buffer from the map window** (`DE96`),
-   **Draw a masked sprite** (`EB11`), **Print a message** (`C292`), **Font** (`5C40`),
-   and the main loop's drawing part (`D08C`).
-3. Read the flicker finding above and `docs/disassembly.md`.
+David said go for D3 on 2026-09-16.
 
-**Next, if you say go - D3:** level data - the world headers, the map format, the
-enemy templates and start lists, and `tools/render_world.py` rendering each whole
-world map from the data, compared by eye with Spectrum Computing's maps.
+## D3 - what was built and what it proved
+
+**`make worlds`** (a picture of every world's whole map, from your own files, in
+`build/worlds/`) and **`make check-worlds`** (the gate). Method, open questions and what
+went wrong: **`docs/disassembly.md`**.
+
+**What is annotated.** The four world banks are laid out block by block - headers with
+every field commented, enemy frames, guardian graphics, maps, cell tables, guardian paths
+and records, world names, enemy start lists, templates, world 7's message - and bank 1's
+overflow pieces; plus the routines that read the map and the lists (`$C2D9`, `$DB90`,
+`$DB56`, `$DB9F`, `$DBAB`, `$DD58`, `$D65E`, `$D603`, `$C190`, `$C0F1`, `$C169`, `$D5D1`,
+`$D5E3`, `$D909` and helpers). Across all six ctl files: 237 of 429 blocks titled, 320
+labels, 948 instruction comments. `make check-ctl`, `make check-reasm`, `make check-gfx`
+and `make check-worlds` pass.
+
+**The map format is proven two ways.** `make check-worlds` rebuilds each world snapshot's
+play area from the pristine world data and matches every byte once play's own changes are
+put in; and every world's whole map matches a published pixel map of all seven worlds at
+93.0-99.8% of pixels per part (99.2-99.9% outside the areas that map blanks out).
+
+### Findings that change later work
+
+- **Two faults in the original, candidates for E6's bug-fix options:**
+  - **World 7's enemy list is damaged before it is played.** At every world change the
+    game clears the previous world's list flags before installing the new list, so it
+    walks world 6's positions over world 7's freshly loaded list: six enemies start 64
+    map columns early and three on the wrong side. The same walk damages two of world
+    3's cell pictures.
+  - **World 7's guardian column is `$FF`**, apparently meant as "never", but the map
+    column wraps, so the check still matches, at view columns 255 and 511.
+- **Map geometry for E2/E4:** a world's map is columns of 8 cells (334-403 columns in
+  worlds 1-6, 598 in world 7); the first 208 columns are the upper part and the rest the
+  lower part, one screen height below, with the lower column directly under the upper;
+  world 7 is one part. Nothing but walls in the map bounds the player.
+- **Every cell code is accounted for** - background, items and their boxes, scenery,
+  climbable, breakable blocks with one or two blows, stepping cells - with the table in
+  `build/d3/notes.json`; codes `$10`-`$2D` never reach the renderer.
+- **Both worlds of a bank share one cell table, guardian and template table**; each world
+  has its own map, enemy list, play-area colour, name and header values (spawn code,
+  guardian and end columns).
+
+### Found the hard way
+
+- **My D2 wording had the enemy frame halves backwards** (the first half faces left), and
+  `make gfx` labelled them wrongly; fixed.
+- **The merge dropped all but the first line length of a text sub-block**, and **bank text
+  linking to game code lost its links**; both fixed before applying.
+
+## Checkpoint D3 - for David
+
+1. `make worlds`, then open `build/worlds/world1-parts.png` ... `world7.png`: every world's
+   map as the game holds it. Do they match the game you played?
+2. `make html` and browse a world bank from the index ("Other code"): **World 1 header**,
+   **World 1 map**, **Enemy start list for world 1**, and in the main disassembly
+   **Strike a map cell with the weapon** (`D65E`) and **Clear the started marks in the
+   enemy start list** (`C169`).
+3. Read the two original bugs above and the open questions in `docs/disassembly.md`.
+
+**Next, if you say go - D4:** the player - movement, jumps and megajumps, climbing,
+weapons and items, armour, energy, lives, continues and the clock, with the POKE sites
+pinned down for E6's difficulty options.
 
 ## Method notes that carried over
 

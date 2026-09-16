@@ -150,10 +150,10 @@ B $7620,64,4
 b $7660 World area
 D $7660 The loader at #R$B8C3 copies the whole of the current world's bank here (16,384 bytes, #R$7660 to $B65F). In the snapshot, taken at the title screen before any world was loaded, it still holds what the tape loader left behind.
 @ $7660 label=WorldArea
-B $7660,16384,16 A whole world bank (3, 4, 6 or 7) copied by #R$B8C3. It starts with two 23-byte world headers, at $7660 for the first world and $7677 for the second (bank 7's second header is mostly zero). The data they point to all lies inside the area, except world 4's list (from its header) and the world-7 text at $B5D3 (addressed directly by $D85C), both of which run on into #R$B660.
+B $7660,16384,16 A whole world bank (3, 4, 6 or 7) copied by #R$B8C3. It starts with two 23-byte world headers, at $7660 for the first world and $7677 for the second (bank 7's second header is never used to set up a world: only its bytes 7-10, the path and graphics record of world 7's second guardian, are read in play, at $C57D; its zero map length at $767A is also read by the map transform #R$BCE6 when a game ends in world 7). The data they point to all lies inside the area, except world 4's list (from its header) and the world-7 text at $B5D3 (addressed directly by $D85C), both of which run on into #R$B660.
 b $B660 The part of the world data that did not fit in its bank
 D $B660 85 bytes that #R$B8C3 copies from bank 1 for the current world bank (see #R$B8BB), straight after the 16,384-byte world area. The world data runs on into them.
-D $B660 In worlds 3 and 4 (bank 4) they are the end of world 4's list of enemy starts, whose 28 three-byte entries start at $B65E. So $B660 is byte 2 of the first entry, $B661+3n (n = 0-26) are byte 0, $B662+3n byte 1 and $B663+3n byte 2 of the rest; the 28th entry ends at $B6B1, and $B6B2-$B6B4 lie beyond the list (world 3 uses its own list at $B610 and never reads this area). By offset: byte 0 is the view position at which the entry's enemy is started, matched against $B95C by #R$D5D1 ($D5DC CP (HL)); byte 1 bit 7 is set at $C654 when the entry matches and a free slot is found - before the upper/lower test at $C65A-$C664, so an entry for the other part of the map is marked too without an enemy being started - and its address is saved in slot bytes 10-11 ($C656, $C694-$C69A); the bit is reset for every entry at world set-up by #R$C169 ($C171, called from $BE5C and $DEB3) and for one entry by #R$D909 ($D91C) when that enemy's slot is freed; $C653 also loads the whole byte into D before the enemy is set up; byte 2 bit 6 must equal $B957 (upper or lower screen, $C65A-$C664), bit 7 picks the starting column value ($02 or $1A, $C66B-$C66F) and bits 0-4 are the enemy template number, times 5 into the template table whose address is at $768E ($C675-$C682).
+D $B660 In worlds 3 and 4 (bank 4) they are the end of world 4's list of enemy starts, whose 28 three-byte entries start at $B65E. So $B660 is byte 2 of the first entry, $B661+3n (n = 0-26) are byte 0, $B662+3n byte 1 and $B663+3n byte 2 of the rest; the 28th entry ends at $B6B1, and $B6B2-$B6B4 lie beyond the list (world 3 uses its own list at $B610 and never reads this area). By offset: byte 0 is the map column (MapColumn, $B95C) at which the entry's enemy is started by #R$D5D1 ($D5DC CP (HL)); byte 1 bit 7 is set at $C654 when the entry matches and a free slot is found - before the upper/lower test at $C65A-$C664, so an entry for the other part of the map is marked too without an enemy being started - and its address is saved in slot bytes 10-11 ($C656, $C694-$C69A); the bit is reset for every entry by #R$C169 ($C171, called from $BE5C at every life start and from $DEB3, which runs at world set-up and at every move between the upper and lower parts through #R$DD66) and for one entry by #R$D909 ($D91C) when that enemy's slot is freed; $C653 also loads the whole byte into D before the enemy is set up; byte 2 bit 6 must equal $B957 (upper or lower screen, $C65A-$C664), bit 7 picks the starting column (2, or $1A adjusted by 4 minus the template's width to $1E minus the width, $C66B-$C68C) and bits 0-4 are the enemy template number, times 5 into the template table whose address is at $768E ($C675-$C682).
 D $B660 For world 7 (bank 7) they carry the rest of the congratulations message that starts at $B5D3, which the message printer at $C292 prints from $D85C. For worlds 1, 2, 5 and 6 (banks 3 and 6) they are all zeros. When world 5 loads, $C169 runs twice ($BE42 via $DE96, and $BE5C) with world 4's list address ($B65E) and count (28) still in place, before $BE9F and $BEA5 install world 5's, so RES 7 is applied to $B65F, $B662, ..., $B6B0; that is harmless because the bytes are zero. Nothing reads $B6B2-$B6B4 in any world.
 @ $B660 label=WorldTail
 B $B660,85,16*5,5 The 85 bytes of world data that continue past $B65F: the end of world 4's list of three-byte entries, or the end of world 7's congratulations message. Zero for the other worlds.
@@ -278,11 +278,11 @@ B $B95C,1,1 Low byte of $B958 divided by 8, stored each pass at $CFE0: the map c
 @ $B95D label=PlayerRow
 B $B95D,1,1 Character row of the player's display-file address at $B94E, stored once per pass. The row on which type 7 and type 6 enemies are started.
 @ $B95E label=MapChanges
-B $B95E,90,16*5,10 Ten 9-byte records of map cells that have been changed for a while and will be put back (what changes them in play, such as a shot or the player, is not established here). Byte 0 is non-zero while the record is in use: it is set to 50 when the record is made and counts down one per pass at $CE8B; when it reaches 0 the cell is restored. Bytes 1-2 are the address of the map cell; byte 3 is the cell code stored at the time (the restore at $CE95 writes back byte 3 minus $19, matching the $19 added to the cell at $DBB9); bytes 4-5 are $B95A when the record was made (compared with the current value at $CEA7 to see whether the cell is on screen); bytes 6, 7 and 8 are copies of the operand $D746, register D and the operand $D744 and are used to redraw the cell ($CE9E-$CEA4). Records are made at $D619-$D645, which takes the first free record by stepping 9 bytes from $B955 with no count. #R$C190 puts every pending cell back (byte 3 minus C) and $DEBE then zero-fills $B95E-$BA14.
+B $B95E,90,16*5,10 Ten 9-byte records, one for each item box a weapon blow has opened in the last 50 counts (the record stays in use after its item is collected) (#R$D603, called from #R$D65E). Byte 0 is non-zero while the record is in use: it is set to 50 when the record is made and counts down at $CE8B on each pass where the scroll step count is 4 or 8 (#R$DD93), so not on the passes between while the view is scrolling; when it reaches 0 the cell is given the box code less $19, a background code, and the item is gone. Bytes 1-2 are the address of the map cell; byte 3 is the code of the box that was opened ($60-$78, or $5F when an emptied $78 box is struck again, see #R$D65E; the restore at $CE95 writes back byte 3 minus $19, which is in $47-$5F and drawn as background, the same range an item collected by #R$DBAB is left in); bytes 4-5 are $B95A when the record was made (compared with the current value at $CEA7 to see whether the cell is on screen); bytes 6, 7 and 8 are copies of the operand $D746, register D and the operand $D744 and are used to redraw the cell ($CE9E-$CEA4). Records are made at $D619-$D645, which takes the first free record by stepping 9 bytes from $B955 with no count. #R$C190 puts every pending cell back (byte 3 minus C) and $DEBE then zero-fills $B95E-$BA14.
 @ $B9B8 label=UnusedB9B8
 B $B9B8,10,8,2 Ten bytes between the last map-change record and the enemy slots that nothing reads or writes except the clears at $BD04 and $BD85 and the zero-fill at $DEBE. The unbounded free-record search at $D61C could only reach them if all ten $B95E records were in use.
 @ $B9C2 label=EnemySlots
-B $B9C2,65,13 Five 13-byte enemy slots. Byte 0 non-zero = in use; 2 = column; 3 = row; 4-8 = copy of the enemy's five-byte template (8 = type); 9 is a state and direction byte (bit 7 set if it started on the left; bits 5-7 are changed as it moves); 10-11 written after spawning at $C694.
+B $B9C2,65,13 Five 13-byte enemy slots. Byte 0 non-zero = in use; 2 = column; 3 = row; 4-8 = copy of the enemy's five-byte template (8 = type); 9 is a state and direction byte (bit 7 set while it moves right: #R$DD41 sets it for an enemy started on the left and the movers flip it when it turns round ($CC07, $CC33); while it is set the enemy is drawn from the second half of the frame area, +the operand at $CC7E; bits 0-2 the frame number, 1-2, or 1-4 for type 7; bits 5-7 are changed as it moves); 10-11 are the address of the started flag (byte 1, or byte 2 in world 7) of the list entry that started it, written at $C694-$C69A and used by #R$D909 to clear that flag when the slot is freed.
 @ $BA03 label=HitEffectTimer
 B $BA03,1,1 Passes left (2, 1) of a two-frame effect drawn after a map cell has been changed at $D742: set to 2 at $D74C, drawn from graphics $6BE0 or $6C60 (bit 1 picks) at $D3C5-$D3F1 and decremented at $D3F7; with weapon kinds 5-7 it is cleared at once ($D3CB).
 @ $BA04 label=ExplosionTimer
@@ -302,7 +302,7 @@ W $BA13,2,2 Two bytes after the enemy list that nothing reads or writes except t
 @ $BA15 label=Score
 W $BA15,2,2 Score counter; the display adds a fixed trailing zero (points = counter x 10).
 @ $BA17 label=MapWindow
-W $BA17,2,2 Address of the map column the play area is built around (eight cells a column): the buffer at $F000 holds the 15 columns from eight bytes before it (#R$DE96), 13 of them on screen, and moves a column at a time with the scroll (#R$DDC4); 112 cells from it are the ones checked for enemy starts; #R$C2D9 reads map cells relative to it. World set-up gives it its first value at $BE1B (header word 1 plus $20). Scrolling moves it by 8 (one column), in the direction the player faces, each time eight scroll steps are complete (#R$DDC4, via $D4A4); turning round while $D4A2 is 8 also moves it 8 in the new direction ($CA5E-$CA67 back, $CB02-$CB09 on); changing between the upper and lower screens moves it by $0680 through #R$DD66. A cell holding 0 is where a type 4 enemy may be started at random.
+W $BA17,2,2 Address of the map column the play area is built around (eight cells a column): the buffer at $F000 holds the 15 columns from eight bytes before it (#R$DE96), 13 of them on screen, and moves a column at a time with the scroll (#R$DDC4); 112 cells from it are the ones checked for enemy starts; #R$C2D9 reads map cells relative to it. World set-up gives it its first value at $BE1B (header word 1 plus $20). Scrolling moves it by 8 (one column), in the direction the player faces, each time eight scroll steps are complete (#R$DDC4, via $D4A4); turning round while $D4A2 is 8 also moves it 8 in the new direction ($CA5E-$CA67 back, $CB02-$CB09 on); changing between the upper and lower screens moves it by $0680 through #R$DD66. A cell holding the world's type 4 code (header byte 11, the operand at $C6AC) is where a type 4 enemy may be started at random.
 @ $BA19 label=HeldItems
 B $BA19,10,8,2 The ten slots of the carried-items panel: each holds an item code ($60-$78) or 0 for an empty slot. When an item is collected, #R$DBE4 looks its code up in the item colour table at $BA37 (#R$C4B0) and, if it is there and not already held, puts it in the first empty slot (#R$C4A2 with A=0) and redraws the panel (#R$C33B, which prints each held item in the colour paired with its code). #R$C1AA and #R$C1B2 remove items $6A and $6E again; item $70's handler removes item $71. $CD10 and $D718 test whether item $61 is held. Losing a life empties the panel (and clears $BA23-$BA2B) unless item $61 is held ($CD0E-$CD1A).
 @ $BA23 label=JumpCount
@@ -437,7 +437,7 @@ B $BCBF,39,8*4,7
 c $BCE6 Start a new game after the hi-score table
 D $BCE6 Reached only by the JP at $C012, after a game has ended and the hi-score table (#R$BF6A) has been shown. There is no way back to the control menu: the next game starts at $BD01 with the control method chosen at the title still in force.
 D $BCE6 First it processes the maps of the world that was being played. #R$C190, called with C=0, walks the ten 9-byte records at $B95E and, for each one whose first byte is not zero, writes the record's fourth byte to the address held in its second and third bytes. Then #R$C0F1 is applied to every byte of both maps in the bank's world data: the first map starts at the address in the header word at $7661 and is ($7663) bytes long, and the second follows it directly, ($767A) bytes long. #R$C0F1 changes certain byte values into others (for example $C6 is added to $00-$02 and $07-$09, and $CD to $03-$06).
-D $BCE6 None of this has any lasting effect, because $BD85 then reloads world 1 over the whole world area (#R$B8C3). Why the game does it is not known.
+D $BCE6 Together the two steps undo most of what play does to a map (#R$C0F1 describes each change it reverses, and what it misses): the boxes still pending get their codes back, and broken blocks, emptied boxes, struck $C6 blocks and stepped-on $79 and $7A cells get their original codes. None of this has any lasting effect, because $BD85 then reloads world 1 over the whole world area (#R$B8C3), and every later world is copied fresh from its bank too; it looks like a survivor of a version that kept its maps in memory from game to game.
 D $BCE6 The routine then runs on into $BD01 (NewGame), the entry used by the menu.
 D $BCE6 NewGame ($BD01) sets up a game: it clears the screen, clears the game variables from $B949 to $BA35, allows three continues (the operand at $CCB9 is set to 4, one more than the number of CONTINUE? offers left) and five lives (#R$C1E2, which also prints the lives digit), installs the weapon for level 0 through the entry at $DCB2 (HL=$65E0, A=5, B=0: exactly what the lookup at $C14C returns for weapon level 0, and the same entry the weapon upgrade at $DCAC uses), and draws the panel: the panel pieces kept at $F000-$F0BF, the bar in columns 0-1 (#R$BF42), the column of 18 segments down columns 30-31 (#R$BEEA with $BAF8), the weapon colours (#R$C091), SCORE, TIME and LIVES from the message at $BB21 on rows 17-23, HI-SCORE (#R$C284), and the best score in the hi-score table ($BBE5) followed by a 0, since scores are shown ten times their stored value. It then runs on into $BD85.
 D $BCE6 NewWorld ($BD85) is also entered by the JP at $D056 when a world is completed. It clears $B949-$BA14 (stopping short of the score at $BA15), resets a few player variables, sets the clock at $B94B to 5 minutes, writes the bank index for the next world into $BDB3 (half the number of worlds completed, $BA33) and jumps to #R$B8C3 to load it.
@@ -472,8 +472,8 @@ C $BDBD,3 Load the world
 c $BDC0 Set up the world just loaded and start a life
 D $BDC0 #R$B8C3 jumps here after copying a world into the world area, at the start of every game and between worlds.
 D $BDC0 First the world intro: the play area is blanked (#R$C511), PRESS ANY KEY and TO PLAY are printed in the large characters of #R$C4ED and coloured bright yellow (#R$C07C), and an intro tune plays. The tune number is the operand at $BDE3, which is increased and wrapped to 0 after 3 before each play, so in the first game after loading the worlds get tunes 0, 1, 2, 3, 0, 1, 2 (it holds $FF as loaded); nothing resets it for a new game, so later games carry on from where the last one stopped. A key pressed during the tune ends it.
-D $BDC0 Then the world's parameters are chosen. Each bank holds two worlds; bit 0 of the count of worlds completed so far ($BA33) picks the first header at $7660 (worlds 1, 3, 5, 7) or the second at $7677 (worlds 2, 4, 6), and with it a pair of values for $CECA and $DE09, the header address for $BE88 and a map pointer for $BA17. One 32-byte block, $0420 bytes past the address in $7665 for the first world in the bank or $0440 for the second, is copied twice, to $0320 and to $0340 bytes past that address; #R$DE96 runs (it makes 15 passes through $DDEE, eight map bytes each, starting eight bytes before the map pointer and writing to the buffer from $F001; clears bit 7 of the flag bytes with #R$C169, zeroes $D25B, applies the ten records at $B95E with C=$19 through #R$C190, reprints HI-SCORE and clears $B95E-$BA14), and the world count at $BA33 is increased. At a world change the #R$C169 calls here and in BeginLife come before $BE9F and $BEA5 install the new world's list address and count, so they walk the previous world's list positions over the newly loaded data; only after a lost life is the list current.
-D $BDC0 BeginLife ($BE47) is where every life starts: at a new world by running on from above, and after a lost life by the JP at $CD33. It resets the stack pointer to $B8B7, which also discards the return address left on the stack by the CALL $D77A that led to a world change. It blanks the play area, clears the five enemy slots and the four bytes after them ($B9C2-$BA06), zeroes $BA35, $D215 and $BA03, clears bit 7 of the flag bytes in the list of three-byte entries (#R$C169), waits for an interrupt and redraws the ten entries of $BA19 on rows 22-23 ($C33B), and redraws the bar in columns 0-1 at its current length ($BF4B). It prints WORLD OF, or THE LAST in world 7, copies the header fields into the variables and instruction operands that use them ($DB91, $C6AC, $C58F, the list address and count at $D5D2 and $D5DB, the operand at $C63F, $CC7E, $D046, $D03F), prints the world's name from the address in the header, and colours the play area with an attribute from the header. Then it plays the world's start tune, number 3 plus the world count (tunes 4-10 for worlds 1-7), and jumps to the main loop at #R$C553.
+D $BDC0 Then the world's parameters are chosen. Each bank holds two worlds; bit 0 of the count of worlds completed so far ($BA33) picks the first header at $7660 (worlds 1, 3, 5, 7) or the second at $7677 (worlds 2, 4, 6), and with it a pair of values for $CECA and $DE09, the header address for $BE88 and a map pointer for $BA17. One 32-byte block, $0420 bytes past the address in $7665 for the first world in the bank or $0440 for the second (the pictures of block codes $81 and $82), is copied twice, to $0320 and to $0340 bytes past that address (the entries for block codes $79 and $7A, which are blank in every bank). Block $81 is the same picture as the first world's background block $93 in every bank, and $82 is the second world's background block, so map cells holding $79 or $7A look like plain background; when the main loop finds one in the player's lower cell ($C6FC-$C70E) at the start of a scroll column ($D4A2 = 8, $C713-$C718) it rewrites the cell as $0C or $0D, codes also drawn as background, and sets $BA06 to $7B ($C71A-$C71D); #R$DE96 runs (it makes 15 passes through $DDEE, eight map bytes each, starting eight bytes before the map pointer and writing to the buffer from $F001; clears bit 7 of the flag bytes with #R$C169, zeroes $D25B, applies the ten records at $B95E with C=$19 through #R$C190, reprints HI-SCORE and clears $B95E-$BA14), and the world count at $BA33 is increased. At a world change the #R$C169 calls here and in BeginLife come before $BE9F and $BEA5 install the new world's list address and count, so they walk the previous world's list positions over the newly loaded data; only after a lost life is the list current.
+D $BDC0 BeginLife ($BE47) is where every life starts: at a new world by running on from above, and after a lost life by the JP at $CD33. It resets the stack pointer to $B8B7, which also discards the return address left on the stack by the CALL $D77A that led to a world change. It blanks the play area, clears the five enemy slots and the four bytes after them ($B9C2-$BA06), zeroes $BA35, $D215 and $BA03, clears bit 7 of the flag bytes in the list of three-byte entries (#R$C169), waits for an interrupt and redraws the ten entries of $BA19 on rows 22-23 ($C33B), and redraws the bar in columns 0-1 at its current length ($BF4B). It prints WORLD OF, or THE LAST in world 7, and plants the list search the main loop calls at $C63E (#R$D5D1, or #R$D5E3 for world 7's four-byte list) as the operand at $C63F. It then copies the chosen header's fields into the instruction operands and variables that use them: byte 0 (the lowest solid block code) to $DB91, byte 11 (the map code type 4 enemies start on) to $C6AC, byte 12 (the guardian's map column) to $C58F, bytes 13-15 (the list address and count) to $D5D2 and $D5DB, bytes 16-17 (the offset of the second-half enemy frames) to $CC7E, and byte 18 (the end column, bit 0 choosing the upper or lower part) to $D046 and, as a JP NZ or JP Z opcode, to $D03F. It prints the world's name (bytes 21-22) at row 8, column byte 20, and colours the play area with byte 19. Then it plays the world's start tune, number 3 plus the world count (tunes 4-10 for worlds 1-7), and jumps to the main loop at #R$C553.
 D $BDC0 In world 7 BeginLife also sets the continues operand at $CCB9 to 1, so running out of lives there ends the game without the CONTINUE? offer.
 @ $BDC0 label=SetUpWorld
 C $BDC0,3 Blank the play area
@@ -484,6 +484,12 @@ C $BDE2,2 Tune played before each world starts. It is the operand of LD A,$FF at
 C $BDE4,3 Play it; a key ends it
 C $BDE7,3 Choose the first world's values...
 C $BDF9,2 ...or the second's, if an odd number of worlds has been completed
+C $BE0B,3 Plant the background block code, $93 or $82 (#R$CEC9)
+C $BE0E,1 and the block drawn over item codes, $C7 or $C8 (#R$DDFD)
+C $BE12,4 Keep the chosen header's address for BeginLife ($BE87)
+C $BE16,3 The first map window is 32 bytes (four columns) into the map whose address is header bytes 1-2
+C $BE1F,4 The cell table's address (bytes 5-6 of the first header, for either world) goes to the operand at $DE2F
+C $BE27,1 Copy the 32-byte picture IY bytes into the cell table (block $81 in the first world, $82 in the second, the world's background picture) over the blank entries for block codes $79 (table+$0320) and $7A (table+$0340), so those cells are drawn like the background block
 C $BE42,3 Prepare the new map, apply the timed records and clear $B95E-$BA14
 C $BE46,1 One more world reached
 N $BE47 This entry point is used by the routine at #R$C553. This entry point is used by the JP at $CD33 after a life is lost. Start a life.
@@ -497,7 +503,18 @@ C $BE62,3 Redraw the bar in columns 0-1
 C $BE65,3 WORLD OF, or in world 7 THE LAST, with no continues
 C $BE80,3 Print it
 C $BE87,3 Copy the world header's fields into the variables that use them
+C $BE8A,1 Byte 0, the lowest solid block code, to the operand at $DB91
+C $BE8E,3 Byte 11, the map code type 4 enemies start on, to the operand at $C6AC
+C $BE96,1 Byte 12, the guardian's map column, to the operand at $C58F
+C $BE9B,1 Bytes 13-14, the start list's address, to WorldListAddr
+C $BEA3,1 Byte 15, the number of list entries, to WorldListCount
+C $BEA8,1 Bytes 16-17, the distance to the right-facing enemy frames, to the operand at $CC7E
+C $BEB0,1 Byte 18, the end-of-map column, with bit 0 set, to the operand at $D046
+C $BEB8,2 Bit 0 of it picks the test at $D03F: JP NZ ($C2) for a column in the upper part, JP Z ($CA) for the lower
 C $BEC3,1 Print the world's name and colour the play area
+C $BEC6,1 Print the name (address in bytes 21-22) in large letters at row 8, column byte 20
+C $BED2,1 Colour the play area with byte 19
+C $BED6,1 Zero $D215 and $BA03
 C $BEDF,3 Play the world's start tune (4-10)
 C $BEE7,3 Enter the main loop
 c $BEEA Draw units of a panel bar
@@ -593,17 +610,44 @@ N $C0BC This entry point is used by the routine at #R$DCCA.
 C $C0BC,3 HIT cells to colour: the three armour counts plus the third again
 C $C0C3,3 From row 20, column 30, upwards
 C $C0DF,2 The rest of the eight rows in bright white
-c $C0F1 Routine at C0F1
-D $C0F1 Used by the routine at #R$BCE6.
+c $C0F1 Undo play's change to one map cell
+D $C0F1 Turns a map cell code that play leaves behind back into the code the map started with. #R$BCE6 runs it over every byte of both maps in the bank after a game, and between them the two routines undo most of what play does to a map: a broken block's remains become the whole block again ($00-$02 and $07-$09 have $C6 added, $03-$06 have $CD added, and the half-broken $C9-$CB, left by a first blow to $D0-$D2, have 7 added; the test also takes $C8, which play never makes), a $C6 block that was struck into the climbable $7F is put back, a $79 or $7A cell that was stepped on ($0C-$0F, the stepped and struck states) is put back, and an item box that was opened and emptied ($47-$5E, after #R$C190 with C=0 has written back the boxes still pending) has $19 added to become the box again. Anything else is left alone.
+D $C0F1 The work is wasted in this version. #R$BCE6 goes on into NewGame and NewWorld, which reload world 1's bank over the whole world area (#R$B8C3), and every world is freshly copied from its bank when it starts. The routine looks like a survivor of a version that kept one copy of each map in memory and had to repair it for the next game. It is also not an exact inverse: $CC, the half-broken state of a $D3 block, is not handled; nor is $5F, an emptied $78 box (the range tested is $47-$5E); world 7's blocks $D5-$E2 lose 7 at a blow and come back as lower codes; $00, the filler in the unused columns at the start of each lower part, would become $C6; and it turns $D4, which world 7 uses once as a real block, into $A0.
+R $C0F1 HL Address of the map cell
+@ $C0F1 label=RepairMapCell
+C $C0F1,1 $00-$09, the remains of a block broken at one blow?
+C $C0F6,2 $00-$02 become $C6-$C8 and $07-$09 become $CD-$CF, the one-blow blocks
+C $C100,2 $03-$06 become the two-blow blocks $D0-$D3
+C $C105,2 $0C/$0D, a $79/$7A cell stepped on: put $79/$7A back
+C $C111,2 $0E/$0F, a stepped cell that was struck: put $79/$7A back
+C $C11D,2 $D4 becomes $A0
+C $C124,2 $7F, a struck $C6 block: put $C6 back
+C $C12B,2 $C8-$CB, half-broken two-blow blocks: add 7
+C $C137,2 $47-$5E, an emptied item box: add $19 to give the box code back
 c $C141 Routine at C141
 D $C141 Used by the routines at #R$D65E and #R$DC01.
 N $C14C This entry point is used by the routine at #R$DCAC.
-c $C169 Routine at C169
-D $C169 Used by the routines at #R$BDC0 and #R$DE96.
+c $C169 Clear the started marks in the enemy start list
+D $C169 Clears bit 7 of the second byte of every entry in the list whose address and count are in the operands at $D5D2 and $D5DB, so that every enemy in the list can start again. Called from BeginLife ($BE5C) at every life start, and from $DEB3 in #R$DE96, which runs at world set-up ($BE42) and at every move between the upper and lower parts of the map (#R$DD66).
+D $C169 Two faults. At a world change both calls come before $BE9F and $BEA5 install the new world's list, so the walk uses the previous world's list positions over the data just loaded. After world 2 that clears bit 7 of five bytes of cell graphics 90 and 92 in bank 4 ($B261, $B270, $B297, $B29A, $B29D), which world 3 then draws; after world 6 it clears bit 7 of nine bytes of world 7's list, moving six enemies 64 map columns (128 $B95A units) earlier and three to the left edge. The other changes (worlds 2, 4, 5, 6 and a new game) hit only bytes with bit 7 already clear.
+D $C169 And it always steps three bytes, but world 7's entries are four, so in world 7 it would clear bit 7 of position and side bytes and miss three of every four started flags. In the recording world 7 never lost a life or changed part, so this never ran there.
+@ $C169 label=ClearListMarks
+C $C169,3 HL=address of the world's list of enemy starts (the operand at $D5D2)
+C $C16C,3 B=number of entries (the operand at $D5DB)
+C $C170,1 Clear the started flag, bit 7 of the entry's second byte
+C $C173,1 On to the next 3-byte entry
 c $C178 Routine at C178
 D $C178 Used by the routine at #R$BEFE.
-c $C190 Routine at C190
-D $C190 Used by the routines at #R$BCE6 and #R$DE96.
+c $C190 Write back the map cells of every pending map change
+D $C190 Walks the ten 9-byte records of MapChanges ($B95E) and, for each one in use (byte 0 not zero), writes byte 3 minus C to the map address in bytes 1-2. The records are made by #R$D65E when a weapon breaks open an item box: byte 3 is the box's code, so the value written is either the box itself (C=0) or the box's code less $19 (C=$19), which lies in $47-$5F and is drawn as plain background. Nothing is redrawn and the records are left as they are; both callers go on to discard them or the whole map.
+D $C190 #R$DE96 calls it with C=$19 at world set-up and, through $DE99, whenever the player moves between the upper and lower parts of the map, just before clearing $B95E-$BA14: an item uncovered but not yet timed out (the main loop does the same at $CE95 when a record times out) vanishes when the view is rebuilt, whether or not it was collected. #R$BCE6 calls it with C=0 after a game, putting the boxes back ahead of the map repair by #R$C0F1.
+R $C190 C Amount to subtract from each record's stored code
+@ $C190 label=PutBackMapChanges
+C $C190,3 Ten records, the first at $B95E
+C $C195,3 Next record
+C $C19A,1 Skip a record not in use
+C $C19E,1 DE=the map cell's address
+C $C1A3,1 Write back the stored box code less C
 c $C1AA Routine at C1AA
 D $C1AA Used by the routines at #R$BCE6 and #R$C553.
 c $C1B2 Routine at C1B2
@@ -715,8 +759,19 @@ C $C2B7,2 The column the message being printed by #R$C292 started at (operand of
 C $C2C0,2 $FC n: skip n columns
 C $C2C9,3 Store the new column and move past the code
 C $C2D0,1 Anything else is drawn
-c $C2D9 Routine at C2D9
-D $C2D9 Used by the routines at #R$C553, #R$D65E, #R$D8D6, #R$DB56 and #R$DD58.
+c $C2D9 Read a map cell near the player
+D $C2D9 Returns the map cell at a position given relative to the map window ($BA17). A holds a character row of the play area; halving it gives the cell row, since a map cell is two character rows high. Most callers pass the player's even row (from #R$C3EB or $B95D), but some pass that row plus 4, the cell two below the player's top cell ($C7CD, $CA1B, $CAC3), or plus 1 ($C812, same cell). E holds eight times a column offset plus a row adjustment: $30 and $31 for the player's upper and lower cells (map column 6 of the window, the seventh of the 13 shown), $2F for the cell above the player's head (one byte before column 6 row 0, so the row adds up to the cell one above the player), $32 for the cell under the player's feet, and $28/$29 and $38/$39 for the cells beside the player (#R$DD58). The cell's address is left in HL, so a caller can change the cell (#R$DBAB, #R$D65E).
+D $C2D9 There is no range check: with the player in the lowest rows, E=$32 reads a cell at the top of the next column, and the lower part of the map is simply the window moved $0680 bytes on ($D43A).
+R $C2D9 A Character row of the play area (usually the player's even row; some callers add 1 or 4)
+R $C2D9 E Eight times the column offset from the map window, plus the row adjustment
+R $C2D9 O:A The cell's code
+R $C2D9 O:HL Address of the cell
+R $C2D9 O:BC The offset added to the window
+@ $C2D9 label=GetMapCell
+C $C2D9,2 Character row / 2 = cell row (a cell is two rows high)
+C $C2DB,1 plus eight times the column, plus any row adjustment
+C $C2DC,3 HL=map window + offset
+C $C2E3,1 A=the cell's code
 c $C2E5 Check for a key press
 D $C2E5 Reads every half-row of the keyboard at once (a high byte of 0 selects all eight) and returns NZ if any key is held. The joystick is not read, so every wait built on this routine needs a key, even with KEMPSTON chosen. #R$C2F6 and #R$C2ED loop around it, and the CONTINUE? countdown at $CCE1 calls it directly. The recording reads the port here 745,423 times.
 R $C2E5 O:A 0 if no key is held
@@ -954,21 +1009,42 @@ C $C5FE,1 Set the carry flag if the enemy starts in the left half of the screen 
 C $C601,1 Keep that flag for #R$DD41
 C $C602,1 A=high byte of the template address (non-zero, marking the slot in use)
 C $C603,3 Fill in the slot
-N $C606 While $BA06 is non-zero (set to $7B at $C71D when the player steps on a map cell holding $79 or $7A), redraw that cell with #R$DB3B about every eight passes, using $7C, $7D and $7E in turn, and then clear $BA06. What this effect is in the game is not established.
-N $C63E Start the enemy that the world's object list (#R$D5D1) holds for the column now at $B95C, if an enemy slot is free (#R$C480) and the entry is not yet marked as started (bit 7 of its second byte). The entry is marked before bit 6 is compared with $B957, so an entry for the other part of the map is marked and never starts.
-N $C69B Start a type 4 enemy at a map cell holding 0. If fewer than two are active and one of the 112 map cells addressed by $BA17 holds 0, there is a 1 in 8 chance of starting one there, provided a slot is free.
+N $C606 While $BA06 is non-zero (set to $7B at $C71D when the player steps on a map cell holding $79 or $7A), redraw that cell with #R$DB3B about every eight passes, using $7C, $7D and $7E in turn, and then clear $BA06. It marks a $79 or $7A cell the player has stood on at a scroll column start ($C708-$C71A, now $0C or $0D); a weapon blow on that cell releases a heart (#R$D8D6).
+N $C63E Start the enemy that the world's object list (#R$D5D1) holds for the column now at $B95C, if an enemy slot is free (#R$C480) and the entry is not yet marked as started (bit 7 of its second byte). The entry is marked before bit 6 is compared with $B957, so an entry for the other part of the map is marked without starting; no slot records it, so it stays marked until a #R$C169 walk (a lost life, a move between the upper and lower parts of the map through #R$DD66, or a world set-up) clears every mark. In world 7 BeginLife plants #R$D5E3 in the CALL here, which looks up four-byte entries by $B95A instead.
+C $C63E,3 Find the list entry for this position: #R$D5D1 (by map column) or, in world 7, #R$D5E3 (by $B95A); HL=its byte 0, or byte 1 in world 7
+C $C641,2 Jump if there is none
+C $C643,1 Is an enemy slot free?
+C $C648,1 DE=the list entry
+C $C649,2 Jump if not
+C $C64B,1 HL=the entry's row and started flag, DE=the slot
+C $C64D,2 Jump if the entry has already started its enemy
+C $C653,1 D=the row (bit 7 still clear)
+C $C654,2 Mark the entry as started
+C $C656,3 Keep the flag's address for the slot (the operand at $C696)
+C $C659,1 Is the entry for the part of the map the player is in (bit 6 of the next byte against $B957)?
+C $C662,2 IX=the slot
+C $C664,3 Jump if not (the entry stays marked)
+C $C669,2 E=column 2 (the left edge) if bit 7 is clear, or $1A for the right
+C $C671,1 Keep a carry for #R$DD41 if the column is below 16 (it will set bit 7 of byte 9: moving right)
+C $C675,1 HL=the address of template number (bits 0-4) in the table at word $768E
+C $C683,1 For the right edge, E=$1E minus the template's width, so the enemy's right edge is at column 29
+C $C68D,1 BC=the template; A=its high byte, non-zero, to mark the slot in use
+C $C690,1 HL=the slot
+C $C691,3 Fill it in
+C $C694,1 Slot bytes 10-11=the address of the list entry's started flag, which #R$D909 clears when the slot is freed
+N $C69B Start a type 4 enemy at a map cell holding the world's spawn code. If fewer than two are active and one of the 112 map cells addressed by $BA17 holds the code the world set-up planted at $C6AC (world header byte 11: $9F in worlds 1-2, $88 in worlds 3-4, $8E in worlds 5-6, $FF in world 7, which has no type 4 template), there is a 1 in 8 chance of starting one there, provided a slot is free.
 C $C69B,2 Count the type 4 enemies
 C $C6A0,2 Are there two or more?
 C $C6A2,3 Jump if so
 C $C6A5,3 HL=address of the visible map, eight cells per column
-C $C6A8,3 Look for a cell holding 0 among its 112 bytes
+C $C6A8,3 Look for a cell holding the world's spawn code (the operand at $C6AC, from header byte 11) among its 112 bytes
 C $C6AF,2 Jump if there is none
 C $C6B1,2 Take a pseudo-random number (0-127) from R
 C $C6B3,2 Is it below 16 (a 1 in 8 chance)?
 C $C6B5,2 Jump if not
 C $C6B7,1 Is an enemy slot free (HL pointing at it)?
 C $C6BB,2 Jump if not
-C $C6BD,2 A=offset of the zero cell plus 1
+C $C6BD,2 A=offset of the cell found plus 1
 C $C6C0,2 Set the carry flag if offset+1 is below 56, roughly the first half (#R$DD41 then sets bit 7 of byte 9)
 C $C6C3,1 Keep that flag for #R$DD41
 C $C6C4,1 D=row: twice the low three bits of offset+1
@@ -1002,6 +1078,19 @@ C $CB26,3 Jump if not
 C $CB29,1 Count it down
 N $CB2A At weapon level 6 ($BA2D), and while the attribute at $59BE is $46, flash the 2x2 attribute block at rows 11-12, columns 30-31 by changing its INK every eight passes (the counter is the operand of LD A,$08 at $CB3A).
 N $CB51 Move the enemies in the five 13-byte slots at #R$B9C2. Each active slot (byte 0 non-zero) is stepped according to its type (byte 8) and the map cells around it, its new graphic address is stored in bytes 0-1, and #R$DD29 checks its position (bytes 2-3); an enemy that has left the screen is removed by #R$D909, which also frees its object list entry.
+C $CC4B,1 Step the frame number in bits 0-2 of byte 9 (the movers above have reset it to 0 after frame 2, or after frame 4 for type 7)
+C $CC50,2 A=frame number, 1-4
+C $CC52,2 DE=lines (byte 5)
+C $CC57,1 HL=lines x width (byte 4)...
+C $CC5F,1 ...x 2 (a mask byte before each graphic byte): DE=the size of one frame
+C $CC62,3 HL=the first frame (bytes 6-7, from the template)
+C $CC68,1 Add one frame size for each frame after the first
+C $CC6F,4 Moving right (bit 7 of byte 9) and not type 7? Then use the matching frame in the second half of the world's frame area
+C $CC7D,3 Half the frame area's length (the operand, from header bytes 16-17, planted at $BEAC)
+C $CC81,3 Keep the frame's address in bytes 0-1 (high byte first; it is non-zero, so the slot stays in use)
+C $CC87,3 Is the enemy still in the play area (#R$DD29)?
+C $CC90,3 Free the slot if not, releasing its list entry (#R$D909)
+C $CC93,3 Next slot
 N $CC9C Lose a life when the energy ($BF1B) is used up, except on a pass whose scroll step has just brought $D4A2 to zero (the loop tail resets it at $D4A1). The lives digit (the operand at $C1EE) is decremented and printed by $C1E7. While lives remain, LIFE LOST is shown, tune 13 is played and play restarts at $BE47 (below). When the digit reaches '0' a continue is needed: if any remain (the operand at $CCB9 is 4 in a new game, so three are offered, and 1 in world 7, so none), CONTINUE? is shown with a countdown from 9, one digit every 50 frames (#R$C400), and a key held when a digit is shown (#R$C2E5) resets the lives to 5 (#R$C1E2) and continues; otherwise OUT OF LIFE ends the game at #R$C3C0.
 C $CC9C,3 Is there any energy left?
 C $CCA0,3 Jump if so
@@ -1039,7 +1128,7 @@ C $CD28,2 No energy lost
 C $CD2D,3 Draw the bar
 C $CD30,3 Restart the world from its set-up code (HL=$BA33, the world number; the set-up code at $BE47 does not use it)
 N $CD36 Build the player's sprite. A display address at $B94E whose high byte has bit 6 clear is reset to $4010. The frame is chosen from $B949 and $B94A (graphics from $5DA0, the address kept at $CDA4), copied with #R$EDB4, overlaid with the pieces that $BA24, $BA25, $BA26, $BA07 and $BA28 select (#R$EDD5), and mirrored with #R$ECCB while the player faces left.
-N $CE77 At a whole or half scroll column (#R$DD93), count down the ten 9-byte map-cell timers from $B95E. When one runs out, its cell is put back to its value less $19 (the $19 that #R$DBAB adds when a cell is collected) and, if the cell is on screen, redrawn with #R$DB3B.
+N $CE77 At a whole or half scroll column (#R$DD93), count down the ten 9-byte map-cell timers from $B95E. When one runs out, its cell is given the stored box code less $19, a background code, so an uncovered item that was not collected disappears (one that was collected is already background); if the cell is on screen it is redrawn with #R$DB3B and the background block.
 C $CEC9,2 $93 when the first world in the bank is loaded, $82 for the second. It is the operand of LD C,$00 at $CEC9 and is also read at $DE19, where it replaces a block number before the block address is computed at $DE29-$DE36. It is the code of the world's plain background block: #R$DDFD draws map cells holding $00-$0F or $46-$5F with it, and here it is passed to #R$DB3B in C to draw a background cell into the buffer.
 N $CED3 Work out where the drawing code in #R$D08C puts things this pass: 16 pixel lines below the player's display address (24 while $BA07 is set) and two columns left, kept at $CF8D, and eight lines above that, one column left (one right when facing left), kept at $D1AF.
 C $CED3,3 Start from the player's display address
@@ -1217,23 +1306,99 @@ R $D5C2 C Attribute byte
 @ $D5C2 label=ColourLifeLabel
 C $D5CA,1 Colour column 0 and column 1 of this row
 C $D5CD,1 Move to column 0 of the next row
-c $D5D1 Routine at D5D1
-D $D5D1 Used by the routine at #R$C553.
+c $D5D1 Find the enemy start list entry for the map column
+D $D5D1 Used by the main loop at $C63E in worlds 1-6. Searches the world's list of three-byte enemy start entries (address and count planted in the operands at $D5D2 and $D5DB by the world set-up, from header bytes 13-15) for the first entry whose byte 0 equals the map column at $B95C.
+D $D5D1 Only the first match is ever found, whether or not it has already started its enemy or is for the other part of the map, so a later entry with the same column can never start (worlds 1, 2, 5 and 6 each have such duplicates).
+D $D5D1 The entry format (column; row and started flag; part, side and template number) is described with the world data, where each bank's lists are.
+R $D5D1 O:HL Address of byte 0 of the entry found
+R $D5D1 O:F Zero flag set if one was found (also, with HL just past the list, if none was found and the map column is 255, since the failure path is INC A)
+@ $D5D1 label=FindListEntry
 C $D5D1,3 Address of the current world's list of 3-byte entries. It is the operand of LD HL,$0000 at $D5D1 and comes from bytes 13-14 of the world header.
 C $D5DA,2 Number of entries in the current world's list of 3-byte entries. It is the operand of LD B,$00 at $D5DA and comes from byte 15 of the world header.
-c $D5E3 Routine at D5E3
-c $D603 Routine at D603
+c $D5E3 Find the world 7 enemy start list entry for the scroll position
+D $D5E3 World 7's version of #R$D5D1: BeginLife plants this address in the CALL at $C63E ($BE7A-$BE7D) because world 7's map is longer than 256 columns, so the map column at $B95C repeats. Its list entries are four bytes: a two-byte position compared with $B95A (the scroll position divided by 4, half a column), then the row and started flag and the part, side and template byte, as in the three-byte entries.
+D $D5E3 It returns HL pointing at the entry's second byte, one byte on from where #R$D5D1 leaves it, so the code at $C64B finds the flag and template bytes at the same offsets from HL.
+D $D5E3 #R$C169 still walks this list three bytes at a time, which damages it (see #R$C169).
+R $D5E3 O:HL Address of byte 1 of the entry found
+R $D5E3 O:F Zero flag set if one was found
+@ $D5E3 label=FindListEntryW7
+c $D603 Open an item box and uncover its item
+D $D603 The end of #R$D65E for an item box. The box's code is stored in the operand at $D62F and $BA08 is set to 1, so that #R$DBAB does not collect the item in the same pass. Until item $60 has been collected ($C91F still 0) the item is replaced by $60. A map-change record is then made in the first free slot of MapChanges ($B95E), found by stepping nine bytes at a time from $B955 with no limit: byte 0 = 50 (the count), bytes 1-2 = the cell's address, byte 3 = the box's code, bytes 4-5 = ScrollQuarter ($B95A, to tell later whether the cell is still on screen), bytes 6-8 = the drawing row ($D746), the extra rows (D) and the buffer column ($D744), everything #R$DB3B needs to redraw the cell. Finally the cell is given the item's code less $32, whose picture #R$DDFD draws, and the routine joins #R$D65E at $D742 to draw the item's picture into the buffer.
+D $D603 #R$D65E returns into $D603 (it pushes that address before choosing an item for boxes $5F-$68), with B still the box code; boxes $69-$78 jump to $D604 with the code in A.
+R $D603 A Box code (entry $D604)
+R $D603 B Box code (entry $D603)
+R $D603 C Code of the item to uncover ($60-$78)
+R $D603 D Rows to add when drawing
+R $D603 HL (operand at $D605) Address of the cell
+@ $D603 label=OpenItemBox
+C $D603,1 A=the box's code
 N $D604 This entry point is used by the routine at #R$D65E.
-c $D64F Routine at D64F
-D $D64F Used by the routine at #R$D38B.
-c $D65E Routine at D65E
-D $D65E Used by the routine at #R$D64F.
+@ $D604 label=OpenItemBoxA
+C $D604,3 HL=the cell's address (operand written at $D673)
+C $D607,3 Keep the box code for the record
+C $D60A,2 No collecting in this pass (MapChangeCooldown)
+C $D60F,3 Until item $60 has been collected ($C91F still NOP) every box gives item $60
+C $D617,1 B=rows to add; DE=the cell's address
+C $D619,3 Find the first free map-change record (no limit on the search)
+C $D627,2 Byte 0: count 50
+C $D629,1 Bytes 1-2: the cell's address
+C $D62D,1 Byte 3: the box code (operand written at $D607)
+C $D630,1 Bytes 4-5: ScrollQuarter now
+C $D63A,1 Bytes 6-8: the character row, the rows to add and the buffer column, for redrawing
+C $D646,1 HL=the cell, A=the item code, D=rows to add
+C $D649,2 The cell will hold the item code less $32, drawn as the item's picture
+c $D64F Strike a map cell several times
+D $D64F Strikes one map cell B times through #R$D65E, keeping BC, DE and HL across each blow. #R$D38B calls it at $D3AE and $D3BB with B from the operand at $D38C, which the weapon-level handler sets, so a strong weapon can take a block that needs two blows ($D0-$D3) through both in one pass: in the recording a $D0 block became $03 within a single frame 125 times.
+R $D64F B Number of blows
+R $D64F A Even character row
+R $D64F E Offset from the map window
+@ $D64F label=StrikeCellRepeatedly
+c $D65E Strike a map cell with the weapon
+D $D65E What a blow does to the map. The cell is found with #R$C2D9 from A (an even character row) and E (the offset from the map window); nothing happens while a guardian is active ($B955). By its code:
+D $D65E - below $5F (background, uncovered items, stepped cells): no effect, carry set. - $5F-$68, item boxes whose contents depend on the player: the item is chosen at $D689-$D71E from the box code and the weapon, armour, energy and carried items (for example $64-$66 give armour items $74-$76 unless that armour counter is already 2, and $5F/$60 give item $61 unless it is held), with item $72 as the fallback. $5F is never a closed box: it is what an emptied $78 box leaves ($78-$19), and because the test is CP $5F such a cell is treated as a box again, giving item $61 (or $72 if $61 is held); when that record times out the cell gets $46, which #R$DB9F still accepts, so collecting it gives item $78 once more. - $69-$78, item boxes that hold the item of the same code. - $79-$C5: solid scenery that cannot be broken; carry set. - $C6: becomes the climbable $7F, drawn at once. - $C7-$CF: broken, leaving code-$C6 ($01-$09), drawn as the world's background. - $D0 and above: loses 7 (so $D0-$D3 take two blows, through $C9-$CC); the new code is drawn.
+D $D65E An opened box goes through #R$D603: until item $60 has been collected (its handler puts an INC at $C91F) every box yields item $60; the cell then holds the item's code less $32 ($2E-$46), which #R$DDFD draws as the item's picture, and a map-change record is made so that the picture turns into background after 50 counts (the main loop at $CE7D) or when the view is rebuilt (#R$C190). Every change is drawn into the buffer straight away with #R$DB3B at row $D746 plus D and buffer byte $D744 (set by #R$D763), starts the hit effect ($BA03=2, drawn at $D3CE/$D3DE) and plays sound effect 2; the routine then returns with Z set.
+D $D65E Entry $D660 first works out the buffer column with #R$D763; entry $D663, used by #R$DCD7 for blows from below, expects $D744 and $D746 already set.
+R $D65E A Even character row
+R $D65E D Rows to add when drawing (0 or 2)
+R $D65E E Offset from the map window: eight times the column, plus the row
+R $D65E H Buffer column adjustment for #R$D763 (entry $D660)
+R $D65E O:F Z set if the cell changed; carry set (Z clear) if the blow had no effect on a passable or unbreakable cell; Z and carry both clear if a guardian is active ($B955)
+@ $D65E label=StrikeMapCell
+C $D65E,2 No column adjustment
 N $D660 This entry point is used by the routines at #R$D08C and #R$D333.
+@ $D660 label=StrikeMapCellAt
+C $D660,3 Work out the buffer column of the cell ($D744)
 N $D663 This entry point is used by the routine at #R$DCD7.
+@ $D663 label=StrikeMapCellHere
+C $D663,3 HL=the struck cell, A=its code
+C $D666,3 Blows do nothing to the map while a guardian is active
+C $D66C,2 $C6 and up: a breakable block
+C $D671,1 B=C=the code; keep the cell's address in the operand at $D605
+C $D676,2 Below $5F: nothing to break (carry set)
+C $D679,2 $79-$C5: unbreakable scenery or wall (carry set)
+C $D67E,2 $69-$78: a box holding the item of its own code
+C $D683,4 $5F-$68: choose the item, then return into #R$D603 to open the box
+C $D689,2 Item $72 unless a rule below gives another
+C $D71F,2 (Always below $79 here) Open the box
+C $D724,2 $D0 and up: take 7 off and draw the new block
+C $D730,2 $C6: becomes the climbable $7F
+C $D73B,2 $C7-$CF: broken, leaving code-$C6 and the background drawn
 N $D742 This entry point is used by the routine at #R$D603.
+C $D742,1 Write the new code into the map
+C $D743,2 Operand at $D744: the buffer column
+C $D745,2 Operand at $D746: the character row
+C $D747,3 Draw block C in the cell
+C $D74A,2 Start the hit effect at the cell
+C $D75B,3 Sound effect 2
 B $D75E,1,1 Sound effect number, read by #R$C408 (which returns past it)
-c $D763 Routine at D763
-D $D763 Used by the routine at #R$D65E.
+C $D75F,1 Z: the cell changed
+C $D761,1 Carry: unbreakable
+c $D763 Work out the buffer column of a struck cell
+D $D763 Sets $D744, the buffer byte at which #R$D65E redraws a struck cell, from the cell's offset in E: a quarter of it (two bytes a map column) plus 2, kept to 0-31 (AND $1F), less 4 bytes (E less $10 first) when the player faces left, plus H, which callers set from the scroll step count to allow for a cell half scrolled. A is kept.
+R $D763 A Kept
+R $D763 E Offset from the map window
+R $D763 H Adjustment in bytes for the scroll position
+@ $D763 label=StrikeColumn
 c $D77A Routine at D77A
 D $D77A Used by the routine at #R$C553.
 N $D8A5 Hitting an enemy whose template has bit 5 of its second byte set (for example the type 6 enemy; some templates in the ($768E) table have it too) may upgrade a weak weapon at random.
@@ -1247,11 +1412,17 @@ C $D8B8,2 If so, try for an upgrade
 C $D8BA,2 Level 4?
 C $D8BC,2 If so, try for an upgrade
 B $D8D4,1,1 Sound effect number, read by #R$C408 (which returns past it)
-c $D8D6 Routine at D8D6
-D $D8D6 Used by the routines at #R$D08C, #R$D333 and #R$D38B.
+c $D8D6 Release a heart from a stepped-on cell
+D $D8D6 Part of a weapon blow. Looks at the map cell in the player's row at column offset A from the map window and, if it holds $0C or $0D - a $79 or $7A cell the player has stood on ($C708-$C71A in the main loop) - adds 2 to it ($0E or $0F, after which the cell does nothing more) and releases a heart: $D24D is set to $FE for a $79 cell or $FF for a $7A cell, the rising-heart counter at $D215 to $20, and the heart's display address ($D22A) to character column 14, one row above the player's row when the cell was stepped on (the operand at $C632 holds that row plus 2, and 3 is taken off); sound effect 10 plays. The main loop's drawing code (#R$D08C at $D214-$D25A) then draws the heart rising and writes $D24D into the enemy position map, where the collision check in #R$D38B turns $FE into up to three units of energy back and $FF into one more unit of bar length.
+D $D8D6 Any other cell code returns at once. Each $79/$7A cell therefore gives one heart per visit to the world: the codes stay $0E/$0F until the bank is reloaded.
+R $D8D6 A Offset from the map window, eight times the column (the player's cell row is added)
+@ $D8D6 label=StrikeSteppedCell
 B $D907,1,1 Sound effect number, read by #R$C408 (which returns past it)
-c $D909 Routine at D909
-D $D909 Used by the routines at #R$C553 and #R$D77A.
+c $D909 Free an enemy slot
+D $D909 Frees the enemy slot at IX: zeroes byte 0 (in use), byte 8 (type) and byte 12. If the slot was started from the world's enemy start list (byte 11 non-zero), clears bit 7 of the list entry's started flag, whose address is in bytes 10-11, and zeroes byte 11, so that entry can start its enemy again the next time its column (or, in world 7, position) is reached.
+D $D909 Called by the enemy mover at $CC90 when an enemy has left the play area (#R$DD29 returned no carry), and at $D888 in #R$D77A.
+R $D909 IX Address of the slot
+@ $D909 label=FreeEnemySlot
 c $D923 Routine at D923
 D $D923 Used by the routine at #R$D08C.
 c $D986 Routine at D986
@@ -1308,7 +1479,7 @@ C $DB2C,3 Tens of seconds
 C $DB32,3 Seconds
 C $DB38,3 Carry on with the pass
 c $DB3B Draw a block into one cell of the play area buffer
-D $DB3B Redraws a single 16-by-16 cell of the buffer at $F000 when the map changes under the view, without a full redraw: the main loop's cell animation at $C635 (cells holding $79 or $7A), #R$DBAB when an item is collected (with the background block), and the routines at $CECB and $D747.
+D $DB3B Redraws a single 16-by-16 cell of the buffer at $F000 when the map changes under the view, without a full redraw: the main loop's cell animation at $C635 (cells holding $79 or $7A), #R$DBAB when an item is collected (with the background block), the main loop at $CECB when a map-change record times out (with the background block), and #R$D65E at $D747 when a weapon blow changes a cell (with the cell's new block or the item's picture).
 D $DB3B The line is worked out in steps of eight lines: A (with bit 0 ignored) plus D, times 8, so A+D=2 is the second cell row. E is the byte offset of the cell's left byte within a buffer line; callers compute it from the scroll position, so the cell lines up with the shifted picture. The block is then drawn by #R$DDFD's entry at $DE29, which enables interrupts when it has finished.
 R $DB3B A Line of the cell's top in steps of eight lines (bit 0 ignored)
 R $DB3B D Further steps of eight lines
@@ -1321,15 +1492,59 @@ C $DB49,1 ...of 32 bytes: 256 bytes a step
 C $DB4E,2 HL=buffer address of the cell's top-left byte
 C $DB51,1 DE=that address
 C $DB52,1 Draw block C there
-c $DB56 Routine at DB56
-D $DB56 Used by the routine at #R$C553.
-c $DB90 Routine at DB90
-D $DB90 Used by the routines at #R$C553, #R$D38B and #R$DD58.
-c $DB9F Routine at DB9F
-D $DB9F Used by the routine at #R$C553.
-c $DBAB Routine at DBAB
-D $DBAB Used by the routine at #R$C553.
+c $DB56 Test whether the player is on a climbable cell
+D $DB56 Reads the two map cells the player occupies (column 6 of the map window, the cell at the player's row and the one below it, #R$C2D9 with E=$30 and $31) and returns with the carry flag set if either holds one of the three climbable codes: $7F, $80 or $B2. These are the vines and ladders: up or down held on one of them moves the player a step up or down instead of jumping or crouching ($C86D-$C876, $C8D5-$C8E7), and $B2 is also allowed as the cell above when leaving the lower part of the map by the top ($D47D). Code $7F does not occur in any pristine map: it is what a breakable block $C6 becomes when struck (#R$D65E, $D730-$D737), so breaking such a block uncovers a climbable cell.
+R $DB56 O:F Carry set if either of the player's cells is climbable
+@ $DB56 label=IsPlayerOnClimbable
+C $DB56,3 The player's upper cell: column 6 of the window at the player's row
+C $DB62,2 A vine or ladder ($80, $B2, or $7F left by a struck $C6 block)?
+C $DB71,3 The player's lower cell, one row further down the column
+C $DB7D,2 Climbable?
+C $DB8C,1 Neither: carry clear
+C $DB8E,1 Climbable: carry set
+c $DB90 Test whether a map cell code can be moved through
+D $DB90 The movement code's wall test. Returns with the carry flag set if the player can move into a cell holding code A, and clear if the cell stops the player: codes below $60 (the background codes $00-$0F and $46-$5F and the uncovered item pictures $2E-$45) and codes from $78 up to one below the world's limit pass; the item boxes $60-$77 and every code from the limit up are solid.
+D $DB90 The limit is the operand of CP $AE at $DB90, which world set-up copies from byte 0 of the world header at $BE8B: $AE in worlds 1 and 2, $A6 in worlds 3, 4 and 6, $A4 in world 5 and $9F in world 7. So each world's cell table is ordered with its scenery (drawn but not solid) below the limit and its walls and floors from the limit up.
+D $DB90 Item code $78 is the one item code that is not solid, because the test for the boxes is CP $78 rather than CP $79. Code $B2, although above every world's limit, is climbable, and callers test for it before calling here ($C868, $D47D).
+R $DB90 A Map cell code
+R $DB90 O:F Carry set if the cell can be moved through, clear if it is solid
+@ $DB90 label=IsCellPassable
+C $DB90,2 At or above the world's solid limit (operand written from header byte 0 at $BE8B)? Solid: return with carry clear
+C $DB93,2 Below $60 (background, uncovered items): passable, carry set
+C $DB96,2 $78 up to the limit: scenery, passable (jump to set carry)
+C $DB9B,1 $60-$77, closed item boxes: solid, carry clear
+C $DB9D,1 Passable
+c $DB9F Test whether a map cell holds an uncovered item
+D $DB9F Returns with the carry flag clear if code A is in the range $2D-$46, the codes a map cell holds once a weapon has broken open an item box and the item's picture shows (#R$D65E writes the box's item code minus $32, $2E-$46, into the cell). Any other code returns with carry set. The main loop calls it for the player's upper and lower cells ($C6F4, $C756) and collects the item with #R$DBAB when the carry is clear.
+D $DB9F The range is one wider than the pictures at each end: $2D never occurs, and $46, the cell left by item $78, is drawn as background by #R$DDFD but can still be collected here.
+R $DB9F A Map cell code
+R $DB9F O:F Carry clear (and Z set) for $2D-$46, carry set otherwise
+@ $DB9F label=IsCellItemPicture
+C $DB9F,2 Below $2D: not an item, carry set
+C $DBA2,2 $47 and above: not an item
+C $DBA7,1 $2D-$46: an uncovered item, carry clear
+C $DBA9,1 Not an item
+c $DBAB Collect the item in a map cell
+D $DBAB Called by the main loop when one of the player's two cells holds an uncovered item picture (#R$DB9F). Nothing happens unless the scroll step count at $D4A2 is 4, which is when the player stands squarely on the cell, and the map-change cooldown $BA08 is zero, so an item cannot be taken in the pass that uncovered it.
+D $DBAB The cell's code has $19 added, turning a picture code $2E-$45 into $47-$5E, which #R$DDFD draws as the world's background, so the item vanishes from the map; the cell is also redrawn at once in the buffer with the background block (#R$DB3B at buffer byte 14, the cell under the player at that scroll position) and sound effect 5 plays. The picture's block code (the cell's old code plus $32, $60-$78) is the item code: it is stored in the operand of LD A,$00 at $DBE4 and used to pick the item's handler from the table at $BA5B ((code-$60)*2 bytes in). The handler is jumped to with $DBE4 as its return address, and $DBE4 then adds the item to the carried items if it is one that is shown there.
+D $DBAB The change is permanent for the rest of the world: no map-change record is made, so only reloading the world from its bank (#R$B8C3) brings the item back. (The records at $B95E belong to the box that was broken, see #R$D65E.)
+R $DBAB A Code of the cell (an item picture, $2E-$46)
+R $DBAB D Even character row of the player
+R $DBAB E Rows to add: 0 for the upper cell, 2 for the lower
+R $DBAB HL Address of the cell
+@ $DBAB label=CollectCellItem
+C $DBAB,1 B=the cell's code
+C $DBAC,3 Only when the player stands squarely on the cell (scroll step count 4)
+C $DBB2,3 and not in the pass that opened the box (MapChangeCooldown)
+C $DBB7,1 Keep the code
+C $DBB8,1 Add $19: the picture code becomes a background code, and the item is gone from the map
+C $DBBC,3 Redraw the cell in the buffer with the background block, at the player's row plus E rows, buffer byte 14
+C $DBC7,3 Sound effect 5
 B $DBCA,1,1 Sound effect number, read by #R$C408 (which returns past it)
+C $DBCB,1 A=the cell's code again
+C $DBCC,2 plus $32 is the item code ($60-$78), kept in the operand of LD A,$00 at $DBE4
+C $DBD1,2 Pick the item's handler from the table at $BA5B
+C $DBDF,3 and jump to it, returning to $DBE4 to add the item to the carried items
 c $DBE4 Routine at DBE4
 N $DBE6 This entry point is used by the routine at #R$DBFD.
 c $DBF7 Routine at DBF7
@@ -1378,16 +1593,21 @@ D $DCAC Used by the routines at #R$DC29, #R$DC35, #R$DC61 and #R$DCA6.
 N $DCB2 This entry point is used by the routines at #R$BCE6 and #R$DC01.
 c $DCCA Routine at DCCA
 D $DCCA Used by the routines at #R$DC97, #R$DC9C and #R$DCA1.
-c $DCD7 Routine at DCD7
-D $DCD7 Used by the routine at #R$C553.
+c $DCD7 Strike the cell above the player's head
+D $DCD7 Called from the main loop at $C90B while the player rises, when the scroll step count is 4. If D is not zero and armour counter $BA26 is not zero, it strikes the cell above the player's head (offset $2F) $BA26 times through #R$D65E's entry $D663, after setting the redraw column $D744 to $0E and the row $D746 to the player's row less 2 ($DCEA-$DD03): the head armour breaks blocks from below.
+R $DCD7 D Non-zero to strike
+@ $DCD7 label=StrikeCellAbove
 c $DD06 Routine at DD06
 D $DD06 Used by the routine at #R$C553.
 c $DD12 Routine at DD12
 D $DD12 Used by the routine at #R$C553.
 c $DD1E Routine at DD1E
 D $DD1E Used by the routines at #R$C553, #R$D08C, #R$D923 and #R$D991.
-c $DD24 Routine at DD24
-D $DD24 Used by the routines at #R$C553, #R$D08C, #R$D333, #R$D763, #R$D77A, #R$D923, #R$D986, #R$D991, #R$DA9E and #R$DD66.
+c $DD24 Get the player's facing
+D $DD24 Loads A with FacingLeft ($B952) and sets the flags from it: zero means the player faces right.
+R $DD24 O:A The facing: zero for right
+R $DD24 O:F Zero flag set if facing right
+@ $DD24 label=GetFacing
 c $DD29 Routine at DD29
 D $DD29 Used by the routine at #R$C553.
 c $DD41 Fill in an enemy slot
@@ -1407,8 +1627,15 @@ C $DD4E,2 Copy the template into bytes 4-8
 C $DD51,2 Byte 9: start with bit 7 reset
 C $DD53,1 Did the enemy start on the left?
 C $DD55,2 If so, set bit 7
-c $DD58 Routine at DD58
-D $DD58 Used by the routine at #R$C553.
+c $DD58 Test a map cell beside the player for walking
+D $DD58 The wall test for walking. Reads the map cell at offset C from the map window in the player's row (#R$C2D9 with the player's even character row) and tests it with #R$DB90, returning with the carry flag set if the player may move into it. The main loop calls it only when the scroll step count is 4, with the player squarely on a cell: for a step left it tests offsets $28 and $29 (the player's two cells in column 5, $CA40-$CA4D) and for a step right $38 and $39 (column 7, $CAE4-$CAF1); if either is solid the player does not walk.
+D $DD58 This is all that bounds the player sideways: nothing checks the map window against the ends of the map or of a part, so the maps themselves stop the player, with solid cells or with a gap in the floor that drops the player into the lower part (as at the right end of world 3's upper part). The left end of world 1's upper part is open: in map column 0 only the floor cell is solid, and the eight bytes before the map, read as a column, hold no solid cell at the player's height or underfoot, so a player walking off the left end would not be stopped but would fall. The recording never walks there: world 1's window stays between map columns 4 and 189.
+R $DD58 C Offset from the map window: eight times the column, plus the row in the column
+R $DD58 O:F Carry set if the cell can be moved through
+@ $DD58 label=IsSideCellPassable
+C $DD58,3 D=the player's even character row
+C $DD5E,1 Read the cell at offset C in that row
+C $DD63,3 and test it: carry set if the player can move into it
 c $DD66 Move the map window and rebuild the buffer at the scroll position
 D $DD66 Used by the loop tail (#R$D38B) when the player moves between the upper and lower parts of the map, where the window moves $0680 bytes. It stores the new window in $BA17, redraws the whole buffer (#R$DE96's entry $DE99, which also resets the map's run-time state) and then scrolls the fresh picture left with #R$E989 as many two-pixel steps as the scroll position needs, so the view does not jump.
 D $DD66 With n steps left in $D4A2: facing right, the picture is drawn from the window and shifted 8-n steps; facing left, it is shifted n steps, except that at n=8 it is drawn from one column further on and not shifted. The picture from the window is the one whose first hidden column is eight bytes before it (#R$DE96). This is the relation between window, facing and step count that #R$DDC4 maintains.
@@ -1424,8 +1651,10 @@ C $DD7D,3 ...draw from one column on, unshifted
 C $DD83,1 Redraw the buffer from the window in HL (#R$DE96)
 C $DD88,1 No steps to make up?
 C $DD8B,1 Scroll the fresh picture two pixels left, B times
-c $DD93 Routine at DD93
-D $DD93 Used by the routine at #R$C553.
+c $DD93 Test for a scroll step count of 4 or 8
+D $DD93 Returns with the zero flag set when the scroll step count at $D4A2 is 4 or 8, the two steps at which the player stands squarely on a map cell; the main loop and #R$C606 use it to time cell tests and effects to whole cells.
+R $DD93 O:F Zero flag set if the count is 4 or 8
+@ $DD93 label=IsWholeColumnStep
 c $DD9C Routine at DD9C
 D $DD9C Used by the routines at #R$BCE6 and #R$C553.
 c $DDA2 Routine at DDA2

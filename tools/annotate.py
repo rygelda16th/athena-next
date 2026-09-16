@@ -2,6 +2,7 @@
 """Apply a chunk's annotations (build/dN/annotations.json) to the disassembly.
 
     python3 tools/annotate.py ctl   build/d1/annotations.json   # step 1, on src/athena.ctl
+                                                (add --bank N for src/bankN.ctl and work/bankN.skool)
     make skool                                                     # regenerate work/athena.skool
     python3 tools/annotate.py skool build/d1/annotations.json   # step 2, on work/athena.skool
     make ctl && make check-ctl && make check-reasm                 # canonical ctl, gates
@@ -163,7 +164,7 @@ def header(block):
     return out
 
 
-def step_skool(ann, path="work/athena.skool"):
+def step_skool(ann, path="work/athena.skool", other="main"):
     lines = open(path).read().splitlines()
     by_block = {addr(b["address"]): b for b in ann.get("blocks", []) if b.get("title")}
     comments, mids, labels = {}, {}, {}
@@ -245,22 +246,34 @@ def step_skool(ann, path="work/athena.skool"):
         if int(m.group(1), 16) in known:
             return m.group(0)
         unwrapped.append(m.group(1))
-        return "$" + m.group(1)
+        # in a bank file, an address that is not a statement here is the game's code: link to it there
+        return f"#R${m.group(1)}@main" if other != "main" else "$" + m.group(1)
     out = [re.sub(r"#R\$([0-9A-Fa-f]{4})(?![@0-9A-Fa-f])", fix, ln) if ln.startswith(";") or ";" in ln else ln
            for ln in out]
     open(path, "w").write("\n".join(out) + "\n")
     print(f"{path}: " + ", ".join(f"{k} {v}" for k, v in applied.items()))
     if unwrapped:
-        print(f"  #R not at a statement, left as plain addresses: {', '.join(sorted(set(unwrapped)))}")
+        how = "linked to @main" if other != "main" else "left as plain addresses"
+        print(f"  #R not at a statement, {how}: {', '.join(sorted(set(unwrapped)))}")
 
 
 def main():
-    step, path = sys.argv[1], sys.argv[2]
+    # annotate.py ctl|skool ANNOTATIONS.json [--bank N]   (--bank: src/bankN.ctl / work/bankN.skool)
+    args = sys.argv[1:]
+    bank = None
+    if "--bank" in args:
+        k = args.index("--bank")
+        bank = int(args[k + 1])
+        del args[k:k + 2]
+    step, path = args[0], args[1]
     ann = json.load(open(path))
     if step == "ctl":
-        step_ctl(ann)
+        step_ctl(ann, f"src/bank{bank}.ctl" if bank is not None else "src/athena.ctl")
     elif step == "skool":
-        step_skool(ann)
+        if bank is not None:
+            step_skool(ann, f"work/bank{bank}.skool", other="main-code")
+        else:
+            step_skool(ann)
     else:
         sys.exit("step must be ctl or skool")
 
