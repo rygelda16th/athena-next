@@ -1,7 +1,7 @@
 # The disassembly - how it is annotated, and what is still open
 
 Chunks D1-D7 (David's decision: the disassembly is complete before any enhancement).
-D1-D3 established 2026-09-16.
+D1-D3 established 2026-09-16, D4 2026-09-17.
 
 ## Where it lives
 
@@ -134,35 +134,67 @@ that map hiding unseen areas and showing sprites.
 | bank lists | `W1EnemyList`... `W7EnemyList`, `W12EnemyTemplates`... | the lists analyst's names, whose remit it was |
 | `$C169` | `ClearListMarks` | one of two analysts' names |
 
+## D4 - the player
+
+Three analysts (movement, items, combat with energy and lives) and two reviewers (196
+items: 143 confirmed, 44 partly right, 4 refuted, 5 unverified); merge in
+`build/d4/merge.py` with `build/d4/corrections.py`, 19 corrections to D1-D3 text. The
+analysts measured with scripted runs of the original (`tools/scriptplay.py`) and
+replays of the recording, and the reviewers re-ran at least three measurements each.
+
+**Annotated:** the movement helpers (`$DD06`, `$DD12`, `$DD1E`, `$DD29`, `$DD9C`,
+`$C400`, `$DAA7`) and the movement sections of the main loop; all 25 item handlers and
+the routines around them (`$C141`, `$C178`, `$C1AA`, `$C1B2`, `$DDA2`, `$DDAE`); the
+blow (`$D77A`), the flail (`$D923`, `$D986`), the feathered blade's blast (`$D991`,
+`$DA9E`); and the self-modified operands they use. **`docs/difficulty.md`** has the POKE
+sites as they really behave and the controls E6 can offer.
+
+**Found the hard way (D4):**
+- **The two reviewers disagreed** about whether the weapon strikes the map cells beside
+  the player without fire; the disassembly settled it (`$D38B` is reached only by the
+  jump at `$D2D9`, after the attack tests): only on the pass a blow starts.
+- **Four published POKEs misbehave** in this version (`docs/difficulty.md`): the
+  continues POKE of 0 ends the game at once, the "infinite continues" POKE only freezes
+  the countdown, the time POKE speeds up the poison drain tenfold, and the energy POKE
+  lets the bar overwrite the font and player graphics.
+
+## Naming decisions (D4)
+
+| Where | Label or name | Why |
+|---|---|---|
+| weapon kinds 1-7 | broad sword, dagger, club, war hammer, kick, feathered blade, flail | from the graphics and the items that give them (the combat analyst; the items analyst's "sword", "light blade", "spiked hammer" dropped) |
+| `$C91F` | `JumpCountSwitch` | an opcode switched from NOP to INC (HL) by item `$60` |
+| `$D38C`, `$D504`, `$C95B` | `WeaponCellBlows`, `ContactCount`, `AttackFlag` | one analyst's entry each, with the reviews' corrections |
+| `$BA24`-`$BA26` | ArmourA (a piece at the body's right edge, item `$74`), ArmourB (body, `$75`), ArmourC (helmet, `$76`) | from the pictures and the handlers |
+
 ## Open questions carried forward
 
-Answered by D3 (from the list below it replaced): the world headers; the copies at
-`$BE27`-`$BE40` (they give codes `$79`/`$7A` the background picture); the substitute
-codes at `$CECA`/`$DE09` (background and item-box blocks); the stale walk by `$C169`
-(it damages world 3's cells 90 and 92 and nine bytes of world 7's enemy list); the map
-transform at `$BCE6` (it undoes most of play's changes, wasted work); every cell code;
-codes `$10`-`$2D` never reach the renderer; the enemy frame halves; which picture each
-item code gives (from the pictures - what each item does is D4).
+Answered by D4: ClimbState 2 (turned sideways on a ladder) and 4 (at the foot of a
+ladder); what up, down and fire do; which armour piece each counter is; what every item
+does and every box rule (73 boxes in the recording matched); the weapon behind each
+level; the stray writes into `$0000`-`$3FFF` are **not** the player's
+display address going above the screen (it does, 628 times in the recording, but is only
+read before `$CD36` puts it back); world 1's open left end cannot be reached (walking
+left stops at scroll position 0).
 
-- **D4 (player):** ClimbState values 2 and 4; what up, down and fire do in play; which
-  armour piece each of `$BA24`-`$BA26` is; what each item does (and the box rules at
-  `$D689`-`$D71E`); the weapon behind each weapon level and the strike set `$D991`
-  draws; the pieces at `$6F20`-`$6F9F`; `$D8D6`, `$C091`; the per-world resets at
-  `$BD8D`-`$BDAA`; the open left end of world 1's upper part (where would the player
-  fall?).
-- **D5 (enemies):** enemy types 1-9 and slot bytes 1 and 12 (the movers at `$CB62`-`$CC1A`);
-  the order `$C51F` returns slots in; what writes `$FF` and `$FE` into the enemy position
-  map; the guardian's cell in that map ignoring the row within a third (`$D53F`); whether
-  world 7's type 4 spawn code `$FF` can ever match a cell (a template at `$0000` would
-  start); whether world 7's own three-byte list walk can happen in play; **which
-  instruction writes into `$0000`-`$3FFF`**.
+- **D5 (enemies):** enemy types 1-9, slot bytes 1, 5 and 12 (bit 5 of byte 5 doubles the
+  explosion and the points); the order `$C51F` returns slots in; what writes `$FF` and
+  `$FE` into the enemy position map (hearts, `$D24C`) and whether a struck heart can be
+  taken for an enemy; the guardian's cell ignoring the row within a third (`$D53F`);
+  whether world 7's spawn code `$FF` can match a cell; world 7's three-byte list walk;
+  **which instruction writes into `$0000`-`$3FFF`**.
 - **D6 (sound and front end):** why `$ED4E` runs with interrupts off; the 800 bytes
   copied to `$FCE0`-`$FFFF` at start-up; whether tune 11 can be cut short by a key;
   `IN A,($9F)` at `$F240`; why `$C3C0` writes `$FF` to `$BDB3`; define keys at `$F355`;
   the 192 unused bytes at `$6CA0`.
+- **Checkpoint A / E6:** whether a fall through an open bottom cell of a lower part can
+  happen (the move at `$D42B` does not test which part the player is in); whether the
+  wrong-cell wall test after a rise off the top ever mattered in play; the high jump's
+  5-pass hang and the fall lookahead - design or accident.
 - **Not decidable from the code:** why bank 7's unused second header holds bank 3's
   values; whether the differing second-half enemy frames are retouched art or errors;
   why the box pictures `$C7`/`$C8` are equal in banks 3 and 6 but not 4 and 7; what
-  `$C0F1`'s handling of `$00` and `$D4` was for.
+  `$C0F1`'s handling of `$00` and `$D4` was for; what ArmourA's piece and item `$77`'s
+  picture are meant to show.
 - **E8 (hardware):** the flicker rates and the lost interrupt were measured in a replay
   model with estimated contention; the KS3 is the check.

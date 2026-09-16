@@ -1,7 +1,7 @@
 # Where things stand
 
 **This file is canonical.** Where it disagrees with anything else, believe this
-one. Last updated 2026-09-16.
+one. Last updated 2026-09-17.
 
 ---
 
@@ -21,8 +21,9 @@ recording as the oracle that proves the game logic never changed.
 | G3 | the original as `athena.nex`; the oracle | **passed** - David played it and said go 2026-09-16 |
 | D1 | disassembly: boot, paging, memory map, main loop, interrupts, input, randomness | **passed** - David said go 2026-09-16 |
 | D2 | disassembly: the renderer; every graphic exported (`make gfx`) | **passed** - David said go 2026-09-16 |
-| **D3** | disassembly: level data; every world's map drawn (`make worlds`) | **annotated, checks green - waiting at checkpoint D3** |
-| D4-D7 | the rest of the complete annotated disassembly | not started |
+| D3 | disassembly: level data; every world's map drawn (`make worlds`) | **passed** - David said go 2026-09-16 |
+| **D4** | disassembly: the player; difficulty controls for E6 (`docs/difficulty.md`) | **annotated, checks green - waiting at checkpoint D4** |
+| D5-D7 | the rest of the complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
 
@@ -467,19 +468,76 @@ put in; and every world's whole map matches a published pixel map of all seven w
 - **The merge dropped all but the first line length of a text sub-block**, and **bank text
   linking to game code lost its links**; both fixed before applying.
 
-## Checkpoint D3 - for David
+## Checkpoint D3 - closed
 
-1. `make worlds`, then open `build/worlds/world1-parts.png` ... `world7.png`: every world's
-   map as the game holds it. Do they match the game you played?
-2. `make html` and browse a world bank from the index ("Other code"): **World 1 header**,
-   **World 1 map**, **Enemy start list for world 1**, and in the main disassembly
-   **Strike a map cell with the weapon** (`D65E`) and **Clear the started marks in the
-   enemy start list** (`C169`).
-3. Read the two original bugs above and the open questions in `docs/disassembly.md`.
+David said go for D4 on 2026-09-17.
 
-**Next, if you say go - D4:** the player - movement, jumps and megajumps, climbing,
-weapons and items, armour, energy, lives, continues and the clock, with the POKE sites
-pinned down for E6's difficulty options.
+## D4 - what was built and what it proved
+
+Method, naming decisions and open questions: **`docs/disassembly.md`**. What makes the
+game hard, the POKE sites as they really behave, and the controls E6 can offer:
+**`docs/difficulty.md`**.
+
+**What is annotated.** How the player moves (the movement helpers and the movement
+sections of the main loop), all 25 item handlers and the routines around them, the blow,
+the flail and the feathered blade, and the self-modified operands they use. Across all
+six ctl files: 282 of 429 blocks titled, 371 labels, 1,242 instruction comments. Every
+gate passes (`check-ctl`, `check-reasm`, `check-gfx`, `check-worlds`).
+
+**Measured, in scripted runs of the original and replays of the recording** (each
+re-checked by a reviewer):
+
+| | |
+|---|---|
+| Walking | one 2-pixel scroll step a pass (about 0.44 pixels a frame); keys are read only every fourth step, with the player on a cell or on a cell boundary |
+| Normal jump | rises 32 lines in 4 passes, no hang |
+| High jump (every second jump after item `$60`) | rises 56 lines in 7 passes, hangs 5, 20 passes in the air |
+| Falling / gliding / flying up | 8 / 2 / 4 lines a pass |
+| Climbing | 4 lines a pass |
+| A life with no armour, standing still in world 1 | about 8-14 seconds of enemy contact |
+| Blows with fire held | every second pass (kinds 1-5); a flail throw every 35 frames |
+| Guardians | destroyed at 80 damage; each pass a blow reaches one adds the weapon level, so the kick never harms it |
+
+### Findings that change later work
+
+- **Four published POKEs misbehave in this version** - the continues POKE of 0 ends the
+  game at once (OR A is the working value), "infinite continues" only freezes the
+  countdown, the time POKE makes a poison drain ten times faster, and the energy POKE
+  lets the bar overwrite the font and the player graphics. E6 must use the controls in
+  `docs/difficulty.md`, not the POKE list.
+- **The item table is complete**: 25 items, what each does, which are carried, and every
+  item-box rule (all 73 boxes opened in the recording matched). The weapons by level:
+  kick, club, war hammer, flail, dagger, broad sword, feathered blade; a weapon item sets
+  its own level, so picking up a weaker weapon lowers it.
+- **Why the start feels unfair**: a standing blow reaches only the upper of the player's
+  two map rows, while world 1's first enemies walk in the lower row, and the starting
+  kick cannot strike from a crouch.
+- **World 7's first guardian came back** in the recording: destroyed three times before
+  the final guardian led to the ending.
+- **The player's screen address does leave the screen** (628 times in the recording,
+  mostly flying at the top) but is only read until `$CD36` puts it back - so it is not
+  the stray writer into `$0000-$3FFF` (still a D5 question).
+
+### Found the hard way
+
+- **The two reviewers contradicted each other** on whether the held weapon strikes the
+  cells beside the player without fire; the disassembly settled it (only on the pass a
+  blow starts).
+- **Two analysts named the same weapons differently** (sword / broad sword, spiked /
+  war hammer); the names taken are the ones that match the item pictures D3 read.
+
+## Checkpoint D4 - for David
+
+1. Read **`docs/difficulty.md`** - you said the game is hard as nails; this is why, and
+   the controls E6 could offer. Which options do you want?
+2. `make html` and browse: **Strike the enemies a blow reaches** (`D77A`), the item
+   handlers from `DBF7` to `DCAC`, **Draw the flail's throw** (`D923`), and the movement
+   helpers from `DD06`.
+3. Read the open questions in `docs/disassembly.md`.
+
+**Next, if you say go - D5:** the enemies - types, movement, spawning, the slots, the
+guardians' behaviour and collision (including confirming that nothing reads the screen),
+and the stray writer into `$0000-$3FFF`.
 
 ## Method notes that carried over
 

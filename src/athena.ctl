@@ -244,13 +244,13 @@ D $B949 Some variables the game needs live elsewhere, mostly as operands of its 
 @ $B949 label=GameVariables
 B $B949,1,1 Animation frame of the player sprite, 0-3. #R$DAA7 steps it through 0, 1, 2, 3 and back to 0 on every second call (bit 0 of $B950), unless a jump is in progress ($B953 non-zero), and forces it to the value in the operand $CE4B when that is non-zero (3 while gliding, $C7FC). It is set to 1 when a jump starts ($C933), to 0 on landing ($C7EC) and when crouching ($C8A9), and to 3 or 0 for the firing pose ($C965, $C970, $C9B3). The sprite drawing code reads it.
 @ $B94A label=ClimbState
-B $B94A,1,1 Climbing state of the player: 0 when not climbing. It becomes 1 when up or down is held over a climbable map cell ($7F, $80 or $B2; tested at $C846-$C85A, $C8D5-$C8E1 and in $DB56) and the player moves four pixel lines ($C895 down, $C942 up); it becomes 4 at $C87E when down is held while climbing and the cell below is neither $B2 nor solid; walking left or right while it is non-zero turns 4 into 0 and anything else into 2 ($C9EB-$CA00, $CA94-$CAA9). It is cleared at $C8F0 after the last upward step. While bit 0 or bit 2 is set (1 or 4) the player cannot fire ($C98F AND $05, $D77A); while it is 0 (and $CE4B is 0) the player's pixel line is snapped to a character cell each pass ($CFEA-$CFF6); it also picks the player's pixel line when changing screen at $D443.
+B $B94A,1,1 Climbing state of the player: 0 when not climbing. It becomes 1 when, at scroll step 4, down is held with a climbable map cell under the player's feet or up with one in the player's upper cell ($7F, $80 or $B2; tested at $C846-$C85A, $C8D5-$C8E1 and in $DB56), and on every climbing step after that, the player moving four pixel lines a pass ($C895 down, $C942 up). It becomes 4 at $C87E, at the foot of a ladder, when down is held while climbing and the cell under the feet is not $B2 and is either solid or open with neither of the player's own cells climbable: the player stops and the climbing frames animate in place. Walking left or right while it is non-zero turns 4 into 0, and the player walks off, and anything else into 2 ($C9EB-$CA00, $CA94-$CAA9): the player only turns to face that way, still on the ladder, drawn with the walking frames and able to fire, until up or down climbs on (1) or up at the top steps off (0). It is cleared at $C8F0 after the last upward step. While bit 0 or bit 2 is set (1 or 4) the player cannot fire ($C98F AND $05, $D77A); while it is 0 (and $CE4B is 0) the player's pixel line is snapped to a character cell each pass ($CFEA-$CFF6); it also picks the player's pixel line when changing screen at $D443.
 @ $B94B label=ClockMinutes
 B $B94B,1,1 Minutes digit of the countdown clock (a number, not ASCII). Set to 5 at every world start ($BDAF, after the clear at $BD85); a lost life or a continue does not reset the clock ($CD33 JP $BE47 is past $BDAF). When it goes below 0 at $DB0F the game prints OUT OF TIME ($BC4E) and ends via #R$C3C0. The time bonus ($DAEE) can carry into it, so it can exceed 5.
 @ $B94C label=ClockTens
 B $B94C,1,1 Tens-of-seconds digit of the countdown clock, 0-5. It wraps from 0 to 5 with a borrow from $B94B at $DB08-$DB0F, and from 5 to 0 with a carry at $DAE4-$DAEE when the time bonus adds seconds.
 @ $B94D label=ClockSeconds
-B $B94D,1,1 Seconds digit of the countdown clock, 0-9. Decremented once every 13 main-loop passes by $DAF2 (via $BA30), wrapping 0 to 9 with a borrow from $B94C; each wrap also costs one unit of energy (#R$BEFE) while $BA2B is non-zero. Incremented by $DAD7 instead while the time bonus (operand $D073) is running. This is the POKE list's time address: one digit of the clock.
+B $B94D,1,1 Seconds digit of the countdown clock, 0-9. Decremented once every 13 main-loop passes by $DAF2 (via $BA30), wrapping 0 to 9 with a borrow from $B94C; each wrap also calls #R$BEFE while $BA2B is non-zero, and that takes a unit of energy on every second call, so the drain costs a unit every 20 clock seconds. Incremented by $DAD7 instead while the time bonus (operand $D073) is running. This is the POKE list's time address: one digit of the clock.
 @ $B94E label=PlayerScreenAddr
 W $B94E,2,2 Display-file address just right of the player sprite: the sprite's 16 pixels on each of its 32 lines are drawn into the two bytes before it on each line ($D13A-$D170 loads SP with the address and pushes, and PUSH writes below SP), so the sprite's left edge is 16 pixels to the left. It is set to $4010 (top line of the screen, column 16) at every world start ($BDA4). The column never changes (low byte always ends in 10000 binary: 16, 48, ... 240); jumping, falling and climbing move it up ($DD06, via $C312 DEC H) or down ($DD12, via $C303 INC H) one pixel line at a time. Changing between the world's upper and lower screens puts it on the top line ($D44C-$D454, high byte $40 or $44) or low on the screen ($D497-$D49F, high byte $48). $C3EB and $C3DA turn it into a character row and column; $C6E5 stores the row in $B95D once per pass.
 @ $B950 label=PlayerAnimTimer
@@ -260,13 +260,13 @@ B $B951,1,1 Set to 1 at $C586 when world 7's second guardian is started ($B95A =
 @ $B952 label=FacingLeft
 B $B952,1,1 Direction the player faces: 1 = left, 0 = right. Walking left sets it ($CA0B, $CA3A, $CA6C), walking right clears it ($CAB3, $CADE, $CB0D); a first press in the other direction only turns the player round. $DD24 returns it with the zero flag set for right. It also picks the side from which shots and the player sprite are drawn ($D2CD, $D795, $D7F7, $DDD0).
 @ $B953 label=JumpCounter
-B $B953,1,1 Main-loop passes left in the current jump; 0 when not jumping. A jump starts at $C92E with 4, or with 12 when the jump-boost item is active and the jump count $BA23 is odd (and the player is not flying, $BA27 = 0). Each pass $C765-$C76D decrements it and moves the player up eight pixel lines ($C7B3); in a 12-pass jump the player only rises while 6 or more passes remain and hangs for the rest ($C77A-$C784). A blocked cell overhead ends the jump ($C7AC). While it is non-zero the player animation does not advance (#R$DAA7). This is the address the POKE list calls megajumps: it is the jump counter, and 12 is a high jump.
+B $B953,1,1 Main-loop passes left in the current jump; 0 when not jumping. A jump starts at $C92E with 4, or with 12 when the jump-boost item is active and the jump count $BA23 is odd (and the player is not flying, $BA27 = 0). Each pass $C765-$C76D decrements it and moves the player up eight pixel lines ($C7B3); in a 12-pass jump the player only rises while 6 or more passes remain and hangs for the rest ($C77A-$C784). A blocked cell overhead ends the jump ($C7AC). While it is non-zero the player animation does not advance (#R$DAA7). The megajump POKE is not this address but $C76C,0, which turns the DEC A that counts this byte down into NOP: the counter then never runs out, so every jump rises 8 lines a pass until a cell above stops it.
 @ $B954 label=Falling
 B $B954,1,1 1 while the player is falling. #R$DD9C sets it (at world start, when a jump ends and when the cell under the player is not solid, $CA28/$CACD); each pass it is set, $C7BB-$C7E5 tests the cells below and either moves the player down eight pixel lines ($C82C), or glides when flying ($BA27: two lines down, or four up while up is held), or clears it on landing ($C7E9).
 @ $B955 label=GuardianActive
 B $B955,1,1 Non-zero ($AF) while the end-of-world guardian is active; the main loop then calls #R$D513 instead of drawing the enemies. The random spawns in #R$C553 still run.
 @ $B956 label=GuardianDamage
-B $B956,1,1 Damage taken by the end-of-world guardian. Each hit adds the weapon level; from 64 damage sprites are drawn over it; at 80 or more it is destroyed, points are awarded and this is reset to 0.
+B $B956,1,1 Damage taken by the end-of-world guardian. Each pass a blow reaches the guardian's cell of the enemy position map ($FD) adds the weapon level ($D810-$D817), so the kick (level 0) never harms it; from 64 damage sprites are drawn over it; at 80 or more it is destroyed, 500 * (world + 2) points are awarded ($D81C-$D82B) and this is reset to 0. A broad sword can hit it twice in a pass (#R$D77A tests the shot's cell and the cell in front, and runs at both $C957 and $C960). In world 7 a hit after the destroying one lands after the reset, so in the recording the next guardian started with 5 damage.
 @ $B957 label=LowerScreen
 B $B957,1,1 $40 while the player is on the lower of the two screen-heights of map, 0 on the upper. When the player's row $B95D reaches 12 at $D42B it is set to $40, the map window $BA17 moves $0680 bytes on (via #R$DD66) and the player is put at the top of the screen; when the player is at row 0 on the lower screen and jumping or pressing up into an open cell, it is cleared, the window moves back and the player is put near the bottom ($D458-$D49F). With the opcode at $D03F it gates the end-of-map test at $D03B-$D047, which completes the world (256-frame wait at $D04A, then the next world at $BD85) when $B95C equals the world's end column at $D046.
 @ $B958 label=ScrollPos
@@ -308,11 +308,11 @@ B $BA19,10,8,2 The ten slots of the carried-items panel: each holds an item code
 @ $BA23 label=JumpCount
 B $BA23,1,1 Number of jumps made since the jump-boost item (code $60) was collected. Its handler #R$DBF7 writes INC (HL) over the NOP at $C91F, so from then on every jump increments this byte, and bit 0 makes every second jump a 12-pass high jump ($B953). The NOP is put back at a new game ($BD62) and when a life is lost while item $61 is not held ($CD1E), which also clears this byte.
 @ $BA24 label=ArmourA
-B $BA24,1,1 First of three armour counters, 0-2. The handler for item $74 (and item $64, which raises all three) increments it up to 2 and sets $BA34 to 4 ($DCCA-$DCD3), then redraws the armour bar ($C0BC). When a piece wears out, #R$C178 decrements the first non-zero counter of $BA24, $BA25, $BA26 in that order. The three are summed by #R$DDA2 and read when drawing the player ($CDE1) and choosing items ($D6E5). Which piece of armour each counter is has not been established.
+B $BA24,1,1 First of three armour counters, 0-2. The handler for item $74 (and item $64, which raises all three) increments it up to 2 and sets $BA34 to 4 ($DCCA-$DCD3), then redraws the armour bar ($C0BC). When a piece wears out, #R$C178 decrements the first non-zero counter of $BA24, $BA25, $BA26 in that order. The three are summed by #R$DDA2 and read when drawing the player ($CDE1) and choosing items ($D6E5). It is the piece drawn at the right-hand edge of the body's middle lines (graphics #R$6120, not while climbing), gained from item $74; $BA25 is the body armour (#R$6020) from item $75 and $BA26 the helmet (#R$5FA0) from item $76.
 @ $BA25 label=ArmourB
-B $BA25,1,1 Second armour counter, 0-2: as $BA24, raised by item $75 ($DC9C) or $64, worn out after $BA24 is empty. Read when drawing the player ($CDFA) and choosing items ($D6D7).
+B $BA25,1,1 Second armour counter, the body armour, 0-2: as $BA24, raised by item $75 ($DC9C) or $64, worn out after $BA24 is empty. Read when drawing the player ($CDFA) and choosing items ($D6D7).
 @ $BA26 label=ArmourC
-B $BA26,1,1 Third armour counter, 0-2: as $BA24, raised by item $76 ($DCA1) or $64, worn out last. The armour bar ($C0BC) counts it twice (#R$DDA2 total plus $BA26 again), so the bar has up to 8 cells. Read when drawing the player ($CDAF) and choosing items ($D6C9, $D70E).
+B $BA26,1,1 Third armour counter, the helmet, 0-2: as $BA24, raised by item $76 ($DCA1) or $64, worn out last. The armour bar ($C0BC) counts it twice (#R$DDA2 total plus $BA26 again), so the bar has up to 8 cells. Read when drawing the player ($CDAF) and choosing items ($D6C9, $D70E).
 @ $BA27 label=Flying
 B $BA27,1,1 1 while the player can fly. Set by the handlers for item $6A (#R$DC48) and item $6E (#R$DC5A). While it is set a jump always lasts 4 passes and never hangs ($C773, $C920), and falling becomes gliding: two pixel lines down per pass, or four up while up is held ($C7F4-$C82A). #R$C1AA clears it and removes item $6A from $BA19; that happens at every world start ($BD91, in the $BD85 set-up; a lost life does not clear it unless the $CD15 clear runs, i.e. item $61 is not held) and at $C74E (see $BA28).
 @ $BA28 label=FlyingItem6E
@@ -320,11 +320,11 @@ B $BA28,1,1 1 when flight came from item $6E (#R$DC5A sets it together with $BA2
 @ $BA29 label=FlightFlagUnset
 B $BA29,1,1 A flag that is cleared by #R$C1B2 (which also removes item $6E from $BA19) and tested at $D19C, where a non-zero value would stop the flight graphic at $D1AB being drawn; no code sets it, so it is always 0.
 @ $BA2A label=ImmunityTimer
-B $BA2A,1,1 Immunity timer, in main-loop passes. Set to 200 by the item code at $DC54; while it is non-zero the pass skips the energy loss at $BEFE and flashes the LIFE label in random colours.
+B $BA2A,1,1 Immunity timer, in main-loop passes. Set to 200 by the handler for item $6D (#R$DC54, also used by item $63's #R$DC17); while it is non-zero enemy contact costs no energy ($D4EE-$D4F2 skip the call of #R$BEFE) and the LIFE label is drawn in random colours ($D112-$D125, which count it down). The poison's drain over time ($DAFB-$DB03) is not stopped by it.
 @ $BA2B label=EnergyDrain
 B $BA2B,1,1 Non-zero while energy drains over time: each time the clock's seconds digit wraps (every ten clock seconds) $DAFB calls #R$BEFE. Item $70's handler ($DC68) sets it to 1 and changes the colour the energy display is drawn in (operand $BF16) from $42 to $43 via $BF52, unless item $71 is held, in which case $71 is used up instead; item $71's handler #R$DC7D clears it and restores colour $42 ($BF4B).
 @ $BA2C label=WeaponKind
-B $BA2C,1,1 Kind of weapon in use, 1-7: the entry for the weapon level $BA2D in the table at $BA4D (level 0 = kind 5, 1 = 3, 2 = 4, 3 = 7, 4 = 2, 5 = 1, 6 = 6). It is stored by $DCB5 whenever the level changes; the kind times 3 indexes the weapon data at $BCCE. Firing, the shot and the pickup rules test it: kinds 6 and 7 start the shot timer $BA05 ($C997); item $62 does not raise the level of kinds 1 and 6 ($DC01); kind 6 drops back to level 5 at $D033.
+B $BA2C,1,1 Kind of weapon in use, 1-7: the entry for the weapon level $BA2D in the table at $BA4D (level 0 = kind 5, 1 = 3, 2 = 4, 3 = 7, 4 = 2, 5 = 1, 6 = 6). It is stored by $DCB5 whenever the level changes; the kind times 3 indexes the weapon data at $BCCE. Firing, the shot and the pickup rules test it: kinds 6 and 7 start the shot timer $BA05 ($C997); item $62 does not raise the level of kinds 1 and 6 ($DC01); kind 6 drops back to level 5 at $D033 when the energy is below 4 and no shot is in flight ($D02C). From their graphics and the items that give them ($BA54): kind 1 is the broad sword (item $68), which also throws a shot level with the player's legs (from the weapon's address, 16 pixel lines below the player's, $CED3) that flies to column 2 or 29; 2 the dagger ($78); 3 the club ($77); 4 the war hammer ($67); 5 a kick, the unarmed attack (no item); 6 the feathered blade ($66), whose blast (#R$D991) reaches five cells and costs energy; 7 the flail ($65), thrown out on a chain (#R$D923).
 @ $BA2D label=WeaponLevel
 B $BA2D,1,1 Weapon level, 0-6. Indexes the tables at $BA4D and $BCCE for the weapon's kind ($BA2C) and data; adds to the guardian's damage per hit; raised by an item (#R$DC01) or at random (#R$DDBC), lowered by another item (#R$DC61).
 @ $BA2E label=WeaponGfxAddr
@@ -525,7 +525,7 @@ R $BEEA E Column
 R $BEEA O:D Row after the last unit
 @ $BEEA label=DrawBarUnits
 c $BEFE Lose a unit of energy
-D $BEFE On every second call, wears the armour (#R$C178, while the count at $BA34 is non-zero), moves one unit from the energy ($BF1B) to the lost count ($BF28) and redraws the energy bar. Called on enemy contact (#R$D38B), by the time drain every ten clock seconds while $BA2B is set ($DB03) and at $DA42.
+D $BEFE On every second call, wears the armour (#R$C178, while the count at $BA34 is non-zero), moves one unit from the energy ($BF1B) to the lost count ($BF28) and redraws the energy bar. Called on enemy contact (#R$D38B, on every contact pass while the armour total is below 2, and on every (B+1)th with B = T/2 + T/4 above that), by the time drain every ten clock seconds while $BA2B is set ($DB03) and at $DA42 at the end of every blast of the feathered blade (weapon kind 6, #R$D991). When the energy reaches 0 the main loop takes a life at $CC9C.
 D $BEFE DrawEnergyBar at $BF15 is the redraw on its own. The bar is in columns 0-1 of the panel from row 4 down: first one unit (#R$BAF8) for each unit of energy in the energy colour (the operand at $BF16, $42 bright red, or $43 bright magenta while energy drains over time), then one for each lost unit in bright white ($47), then the end cap #R$BB08 in bright yellow ($46). The bar is only ever redrawn over itself or made longer, so nothing needs erasing below it.
 R $BEFE O:A Corrupted
 R $BEFE O:BC Corrupted
@@ -624,9 +624,26 @@ C $C11D,2 $D4 becomes $A0
 C $C124,2 $7F, a struck $C6 block: put $C6 back
 C $C12B,2 $C8-$CB, half-broken two-blow blocks: add 7
 C $C137,2 $47-$5E, an emptied item box: add $19 to give the box code back
-c $C141 Routine at C141
-D $C141 Used by the routines at #R$D65E and #R$DC01.
+c $C141 Look up the weapon of the next level
+D $C141 Returns the weapon one level above the current weapon level ($BA2D), with the carry set; at level 6, the highest, it returns with the carry clear and nothing looked up. Used when a weapon is raised a level (#R$DC01's entry $DC0A) and when an item box of code $63 or $67 decides which weapon item to offer (#R$D65E, $D6AE).
+D $C141 The entry WeaponForLevel at $C14C looks up the weapon for the level in A: its kind from WeaponKinds (#R$BA4D, one byte a level) and, from the kind's three-byte entry in the weapon table at $BCCE, the number of blows it strikes on the map cells beside the player each pass (the first byte) and the address of its graphics (the word after). #R$DCAC uses it to install a weapon.
+R $C141 A Weapon level (entry at $C14C)
+R $C141 O:F Carry clear if already at level 6 (entry at $C141); set otherwise
+R $C141 O:A Weapon kind, 1-7
+R $C141 O:C Weapon kind
+R $C141 O:B Blows a pass on the cells beside the player
+R $C141 O:HL Address of the weapon's graphics
+@ $C141 label=NextWeapon
+C $C141,3 At level 6 there is no next weapon: return with the carry clear
+C $C14B,1 A=the next level
 N $C14C This entry point is used by the routine at #R$DCAC.
+@ $C14C label=WeaponForLevel
+C $C14D,2 A=C=the level's weapon kind (WeaponKinds)
+C $C156,1 HL=the kind's entry in the weapon table at $BCCE, three bytes a kind
+C $C15F,1 B=blows a pass on the cells beside the player
+C $C160,1 HL=the weapon's graphics
+C $C165,1 A=the kind
+C $C167,1 Carry set: a weapon was found
 c $C169 Clear the started marks in the enemy start list
 D $C169 Clears bit 7 of the second byte of every entry in the list whose address and count are in the operands at $D5D2 and $D5DB, so that every enemy in the list can start again. Called from BeginLife ($BE5C) at every life start, and from $DEB3 in #R$DE96, which runs at world set-up ($BE42) and at every move between the upper and lower parts of the map (#R$DD66).
 D $C169 Two faults. At a world change both calls come before $BE9F and $BEA5 install the new world's list, so the walk uses the previous world's list positions over the data just loaded. After world 2 that clears bit 7 of five bytes of cell graphics 90 and 92 in bank 4 ($B261, $B270, $B297, $B29A, $B29D), which world 3 then draws; after world 6 it clears bit 7 of nine bytes of world 7's list, moving six enemies 64 map columns (128 $B95A units) earlier and three to the left edge. The other changes (worlds 2, 4, 5, 6 and a new game) hit only bytes with bit 7 already clear.
@@ -636,8 +653,14 @@ C $C169,3 HL=address of the world's list of enemy starts (the operand at $D5D2)
 C $C16C,3 B=number of entries (the operand at $D5DB)
 C $C170,1 Clear the started flag, bit 7 of the entry's second byte
 C $C173,1 On to the next 3-byte entry
-c $C178 Routine at C178
-D $C178 Used by the routine at #R$BEFE.
+c $C178 Wear the armour
+D $C178 Called by #R$BEFE, on each call that takes a unit of energy, while the wear count ArmourWear ($BA34) is not zero. It counts the wear down, and when the count reaches 0 takes a level off the first armour counter that is not zero, in the order ArmourA ($BA24, the hand piece), ArmourB ($BA25, the body) and ArmourC ($BA26, the helmet). The count is not reloaded, so each armour pickup (#R$DCCA, which sets it to 4) costs at most one level, four units of energy later. The HIT bar is not coloured here; the main loop does it every pass (#R$C091 from $D10F).
+R $C178 HL ArmourWear ($BA34)
+@ $C178 label=WearArmour
+C $C178,1 Count the wear down; nothing more until it reaches 0
+C $C17A,3 Take a level off ArmourA if it has one
+C $C183,1 or else off ArmourB
+C $C18A,1 or else off ArmourC
 c $C190 Write back the map cells of every pending map change
 D $C190 Walks the ten 9-byte records of MapChanges ($B95E) and, for each one in use (byte 0 not zero), writes byte 3 minus C to the map address in bytes 1-2. The records are made by #R$D65E when a weapon breaks open an item box: byte 3 is the box's code, so the value written is either the box itself (C=0) or the box's code less $19 (C=$19), which lies in $47-$5F and is drawn as plain background. Nothing is redrawn and the records are left as they are; both callers go on to discard them or the whole map.
 D $C190 #R$DE96 calls it with C=$19 at world set-up and, through $DE99, whenever the player moves between the upper and lower parts of the map, just before clearing $B95E-$BA14: an item uncovered but not yet timed out (the main loop does the same at $CE95 when a record times out) vanishes when the view is rebuilt, whether or not it was collected. #R$BCE6 calls it with C=0 after a game, putting the boxes back ahead of the map repair by #R$C0F1.
@@ -648,11 +671,16 @@ C $C195,3 Next record
 C $C19A,1 Skip a record not in use
 C $C19E,1 DE=the map cell's address
 C $C1A3,1 Write back the stored box code less C
-c $C1AA Routine at C1AA
-D $C1AA Used by the routines at #R$BCE6 and #R$C553.
-c $C1B2 Routine at C1B2
-D $C1B2 Used by the routines at #R$BCE6 and #R$C553.
+c $C1AA Take away flight and item $6A
+D $C1AA Clears Flying ($BA27) and, if item $6A (the crescent wing) is carried, empties its slot, by jumping into #R$C1B2 at $C1B8. The slot is emptied without redrawing the carried items: the world set-up that calls it ($BD91) redraws them later in BeginLife ($BE5F), but at the world 7 $98 cells ($C74E) the icons stay on the panel until the next redraw (the next carried item collected or the next life).
+@ $C1AA label=RemoveWing
+c $C1B2 Take away item $6E
+D $C1B2 Clears the flag at $BA29 (FlightFlagUnset, which nothing ever sets) and removes item $6E (the winged boot) from the carried items, without redrawing them. It does not clear Flying or $BA28: both callers do that as well ($BD8E-$BD91 at world set-up, $C74B-$C74E at the world 7 $98 cells), calling #R$C1AA just before.
+D $C1B2 The entry RemoveCarriedItem at $C1B8 empties the slot of the item whose code is in A, if it is carried; #R$C1AA uses it for item $6A.
+R $C1B2 A Item code (entry at $C1B8)
+@ $C1B2 label=RemoveWingedBoot
 N $C1B8 This entry point is used by the routine at #R$C1AA.
+@ $C1B8 label=RemoveCarriedItem
 c $C1BF Save the panel's label pieces from the screen
 D $C1BF Copies the four label pieces of the panel from the screen to $F000-$F0BF: LIFE (columns 0-1, rows 0-3), STR (columns 30-31, rows 0-2), POW (columns 30-31, rows 11-12) and HIT (columns 30-31, rows 21-23). NewGame draws the panel from that copy ($BD22-$BD5E), but play uses $F000 as the play area buffer and overwrites it, so the pieces have to be saved again before every new game: the hi-score table does it on entry (#R$BF6A) and the ending does it before paging in its pictures (#R$B908). The first game uses the copy the tape loaded there.
 R $C1BF O:DE $F0C0
@@ -672,7 +700,7 @@ C $C1ED,2 Lives left, as an ASCII digit ('5' = 53 at the start). It is the opera
 C $C1EF,2 Only a single digit can be shown
 c $C1F4 Add to the score and print it
 D $C1F4 Adds C (the entry at $C1F4) or BC (the entry AddScoreBC at $C1F6) to the score word at $BA15 and prints the new score as five digits at row 18, column 3 of the panel (#R$C203).
-D $C1F4 The panel shows six digits: the sixth is the last 0 of the panel text at $BB21, printed once by the new-game code ($BD6E) and never reprinted, so the score shown is ten times the value at $BA15. Killing an enemy adds points through $C1F4 ($D8CE), and so does the random bonus of item $40 (#R$DC89, which jumps here); $D82B and $DC43 add larger amounts through $C1F6.
+D $C1F4 The panel shows six digits: the sixth is the last 0 of the panel text at $BB21, printed once by the new-game code ($BD6E) and never reprinted, so the score shown is ten times the value at $BA15. Killing an enemy adds points through $C1F4 ($D8CE), and so does the random bonus of item $72, the bag (#R$DC89, which jumps here); $D82B and $DC43 add larger amounts through $C1F6.
 R $C1F4 C Points to add (entry $C1F4)
 R $C1F4 BC Points to add (entry $C1F6)
 R $C1F4 O:HL Last digit's remainder (0)
@@ -878,8 +906,12 @@ R $C3EB O:E Column
 R $C3EB O:A Column
 R $C3EB O:H Third times 8
 @ $C3EB label=AddrToEvenRowCol
-c $C400 Routine at C400
-D $C400 Used by the routines at #R$C553 and #R$D77A.
+c $C400 Wait for HL frame interrupts
+D $C400 Enables interrupts and halts once per frame interrupt until HL frames have passed (HL=0 would wait 65,536). The in-game interrupt routine is only EI/RETI (#R$E986), so each HALT is exactly one frame. Used by the CONTINUE? countdown ($CCE6: 50 frames, one second a digit) and by the world 7 guardian's death at $D84E (30 frames).
+R $C400 HL Number of frames to wait
+R $C400 O:HL 0
+R $C400 O:A 0
+@ $C400 label=WaitFrames
 c $C408 Routine at C408
 D $C408 Used by the routines at #R$BF6A, #R$D08C, #R$D38B, #R$D65E, #R$D77A, #R$D8D6 and #R$DBAB.
 c $C480 Find an enemy slot by its first byte
@@ -1052,22 +1084,115 @@ C $C6C9,1 E=column: a quarter of offset+1, plus 1
 C $C6D0,4 BC=address of this world's type 4 enemy template
 C $C6D4,3 Fill in the slot
 N $C6D7 Look at where the player stands. Store the player's character row (from the display address at $B94E) at $B95D, and test the map cells at the player's position with #R$DB9F, collecting what is there with #R$DBAB. A cell holding $79 or $7A starts the cell effect above; a cell holding $98 clears $BA28, if it is set, and calls #R$C1AA and #R$C1B2.
-N $C75E Vertical movement. While $B954 is set the player falls eight pixel lines a pass (#R$DD12), or, while $BA27 is set, glides two lines down, or rises four lines (#R$DD06) while up is held and the cell above is clear; while $B953 counts down the player rises eight lines a pass (#R$DD06). The map cells below or above, tested with #R$DB90, end the movement.
+C $C6D7,1 Clear the glide frame (the operand at $CE4B, set to 3 again at $C7FC while gliding)
+C $C6DB,3 Clear Crouching; holding down sets it again at $C8AD
+C $C6DE,3 Store the player's character row (#R$C3DA, not rounded) at $B95D; the rest of the pass tests cells from this row even after the player has moved
+C $C6E8,3 A=the player's even character row (#R$C3EB)
+C $C6EF,2 Read the player's upper cell (column 6 of the window, offset $30)
+C $C6F4,3 Does it hold an uncovered item (#R$DB9F)?
+C $C6F7,2 If so, collect it (#R$DBAB, E=0 for the upper cell)
+C $C6FC,3 Read the player's lower cell (offset $31)
+C $C708,2 Is it $79 or $7A?
+C $C710,2 E=$0C for $79 or $0D for $7A
+C $C713,3 Do nothing more unless the scroll step count is 8
+C $C71A,1 Write $0C or $0D into the cell and start the cell effect ($BA06=$7B)
+C $C720,1 Plant the cell's character row (the player's even row plus 2) at $C632 for the redraw at $C606
+C $C726,2 Plant the cell's buffer column at $C62E: $0D when facing left, $0F when facing right
+C $C733,3 Plant the scroll position $B95A at $C628
+C $C739,2 Redraw the cell in 8 passes (the operand at $C60E)
+C $C740,2 Is the lower cell $98 (world 7 only)?
+C $C744,3 If flight came from item $6E ($BA28 set), clear it and take both flight items away (#R$C1AA, #R$C1B2)
+C $C756,3 Does the lower cell hold an uncovered item? If so, collect it (#R$DBAB, E=2)
+N $C75E Vertical movement. While $B953 counts down the player rises eight pixel lines a pass (#R$DD06), except in the last five passes of a 12-pass high jump, when it hangs; a solid cell above (#R$DB90) ends the jump early, and when the count runs out the player starts falling in the same pass. While $B954 is set the player falls eight lines a pass (#R$DD12), or, while $BA27 is set, glides two lines down, or rises four lines (#R$DD06) while up is held and the cell above is open or $B2; a solid cell under the feet (#R$DB90) lands the player with frame 0. Either way the pass skips the down and up controls and goes on to fire and walking at $C950, so the player can still walk and fire in the air.
+C $C75E,3 Is the player falling (or gliding)?
+C $C765,3 Is a jump counting down? Jump to the controls if not
+C $C76C,1 Count the jump down (the megajump POKE $C76C,0 turns this DEC A into NOP, so the counter never runs out and the rise goes on until a cell above stops it)
+C $C770,3 Jump if it has run out, to start falling
+C $C773,3 Flying? Then rise on every pass of the jump
+C $C77A,3 An even jump count ($BA23 bit 0 clear, a normal jump): rise
+C $C782,2 A high jump: rise while 6 or more passes remain, then hang (skip the rise) for the last five
+C $C78A,3 Start falling (#R$DD9C) and handle the fall in this same pass
+C $C790,3 Rise: first let armour piece C (the helmet) strike the cell overhead, at scroll step 4 only (#R$DCD7, E=the player's even row)
+C $C79A,3 Read the cell above the player's upper cell (offset $2F plus half the row; at rows 0 and 1 this wraps to the bottom cell of column 5)
+C $C7A6,3 Can the player move into it (#R$DB90)?
+C $C7AC,1 No: end the jump and start falling
+C $C7B3,2 Yes: move the player up eight pixel lines (#R$DD06) and go on to the fire controls
+C $C7BB,3 Falling. At scroll step 4 or 8 test only the cell under the player's feet in column 6
+C $C7C1,2 Otherwise also test the cell under the feet one column on in the facing direction: column 7 ($38) facing right, column 5 ($28) facing left
+C $C7CA,3 A=the row of the feet (the stored row plus 4, halved by #R$C2D9)
+C $C7D2,3 Solid: land
+C $C7D8,3 Test the cell under the feet in column 6 ($30)
+C $C7E2,3 Open: keep falling
+C $C7E8,1 Land: clear Falling and set the standing frame 0
+C $C7F2,2 B=8 lines for a fall
+C $C7F4,3 Not flying: fall eight lines
+C $C7FA,2 Flying: glide, holding the sprite at frame 3 (the operand at $CE4B)
 C $C7FF,3 Is up held?
-N $C832 Down held: on a $7F, $80 or $B2 cell the player climbs down (#R$DD12, with the state at $B94A set); elsewhere $BA07 is set to 1 and $BA35 to $10, a state the sprite and drawing code test.
+C $C803,2 Up not held: sink two lines
+C $C805,3 Up held: let armour piece C strike the cell overhead (#R$DCD7)
+C $C80F,3 Read the cell above, from the stored row plus 1 (at row 0 this wraps to the bottom cell of column 5)
+C $C818,2 A $B2 ladder cell never blocks the rise
+C $C81C,3 Solid: hover (no movement this pass)
+C $C822,2 Rise four lines (#R$DD06)
+C $C82A,2 B=2 lines for a glide
+C $C82C,3 Move the player down B lines (#R$DD12)
+N $C832 Down held. When not climbing, down counts only at scroll step 4 or 8: with a climbable $7F, $80 or $B2 cell under the player's feet the player climbs down four lines a pass (#R$DD12, ClimbState 1), at step 4 only (at step 8 the pass goes on to the up test); anywhere else the player crouches: Crouching $BA07 is set to 1 and PlayerBufferPos $BA35 to $10, so the figure is drawn 8 lines lower without its legs and cannot walk (whether it can fire depends on the weapon, $C9AB). While climbing, down climbs on while the cell under the feet is $B2 or open with one of the player's cells still climbable, and otherwise stops at the foot of the ladder with ClimbState 4.
 C $C832,3 Is down held?
-N $C8B3 Up held: on a $7F, $80 or $B2 cell the player climbs up (#R$DB56, #R$DD06); otherwise, if the cell above is clear, a rise starts with $B953 set to 4, or to 12 when bit 0 of $BA23 is set and $BA27 is zero.
+C $C839,3 Already climbing? Then climb down or stop at the foot
+C $C840,3 Not climbing: do nothing with down unless the scroll step count is 4 or 8 (go on to the up test)
+C $C846,3 Is the cell under the player's feet (offset $32) a climbable $80, $B2 or $7F?
+C $C85D,3 No: crouch
+C $C860,3 Climbing: a $B2 cell under the feet lets the player climb on down
+C $C86D,3 So does an open cell under the feet while one of the player's own cells is still climbable (#R$DB56)
+C $C879,3 Otherwise the player is at the foot of the ladder: animate in place and set ClimbState 4
+C $C884,3 Climb down, unless a shot from weapon kind 6 or 7 is in flight ($BA05)
+C $C88B,3 Only at scroll step 4, when the player is squarely over the ladder (at step 8 go on to the up test)
+C $C893,2 ClimbState 1: move down four lines (#R$DD12) and animate
+C $C8A3,2 Crouch: draw the player's graphics 8 lines lower in its buffer ($BA35=$5C10), frame 0, Crouching set
+N $C8B3 Up held. At scroll step 4 with a climbable $7F, $80 or $B2 cell in the player's upper cell, or while already climbing, the player climbs up four lines a pass (#R$DB56, #R$DD06, ClimbState 1); when neither of its cells is climbable any more it steps up four lines off the top and ClimbState is cleared. Otherwise the player jumps, unless it stands on a $B2 cell or the cell above its upper cell is solid: JumpCounter $B953 is set to 4, or to 12 when the INC (HL) at $C91F leaves JumpCount $BA23 odd and $BA27 is zero, and the first 8-line rise is made in the same pass. A jump can start part-way through a walking step, and the walk carries on under it.
 C $C8B3,3 Is up held?
+C $C8BA,3 Already climbing? Then climb on up or step off the top
+C $C8C1,3 Not climbing: at scroll step 4, is the player's upper cell a climbable $7F, $80 or $B2?
+C $C8E4,3 Is either of the player's cells climbable (#R$DB56)? Then climb up
+C $C8EA,2 No: the top of the ladder. Step up four lines, clear ClimbState and stand
+C $C8F6,3 Jump. Not while standing on a $B2 ladder top (the cell under the feet)
+C $C907,3 Let armour piece C strike the cell overhead (#R$DCD7)
+C $C90E,3 Is the cell above the player's upper cell open (#R$DB90)? No jump if not
+C $C91C,3 Count the jump in $BA23: the NOP at $C91F becomes INC (HL) once item $60 is collected (#R$DBF7)
+C $C920,3 A 4-pass jump when flying, or when the count is even
+C $C92C,2 Otherwise a 12-pass high jump
+C $C92E,3 Start the jump with frame 1, and rise in this same pass
+C $C939,3 Climb up, unless a shot from weapon kind 6 or 7 is in flight
+C $C940,2 ClimbState 1: move up four lines (#R$DD06) and animate
 N $C950 Fire. #R$D77A runs the player's attack while a shot is out (the byte at $D25B) or the attack counter (the operand of LD A,$00 at $C95A) is running, and when fire is held. While attacking the player does not walk: these paths go straight to #R$DAC9. $D2A9 and $BA05 are set here for the weapon code reached from #R$D08C.
+C $C95A,2 Operand of LD A,$00 at $C95A: 3 on the pass fire starts a blow ($C9B8), 0 otherwise. While it is non-zero the next pass strikes again (#R$D77A at $C960), holds the attack frame, and clears it ($C974, also setting AttackState to 2) once ShotTimer $BA05 is 0; so holding fire gives a blow every second pass with weapon kinds 1-5, and one throw or blast every nine or ten passes with kinds 6 and 7. $D2B2 reads it before starting kind 1's thrown shot.
 C $C97F,3 Is fire held?
 N $C9C3 Left held, or a scroll step already begun ($D4A2 not 4 or 8) while facing left ($B952 non-zero, tested by #R$DD24). A player facing right first turns round; a player facing left scrolls the map one step with #R$EA4D, decrementing the scroll position at $B958 and the step count at $D4A2. The map cells beside the player (offsets $28 and $29, tested by #R$DD58) can block the walk, and nothing scrolls at $B958=0, the left end of the map.
+C $C9C3,3 At scroll step 4 or 8 read the keys; between them keep walking the way the player faces, whatever is held
 C $C9D2,3 Is left held?
+C $C9D9,3 No walking while crouching
+C $C9E0,3 Walk left: animate (#R$DAA7)
+C $C9E3,3 At the left end of the map (scroll position 0) go on to the right test instead; while a guardian is active the OR L here is XOR A, so this always jumps
+C $C9EB,3 Climbing? ClimbState 4 (at the foot of a ladder) is cleared and the player walks
+C $C9FE,2 On the ladder (state 1 or 2): set state 2 and turn to face left, without moving
+C $CA11,3 Unless jumping, start falling (#R$DD9C) if the cell under the player's feet in column 6 is open
+C $CA2B,3 At scroll step 4 only: a player facing right turns round, which takes the pass
+C $CA40,2 Facing left: the player's two cells in column 5 ($28 upper, $29 lower) must both be open (#R$DD58)
+C $CA50,3 Facing left: scroll. Facing right, which here means step 8: move the map window back a column (facing left, the window at step 8 is one column behind, see #R$DD66) and turn left, which takes the pass
 C $CA72,3 One scroll step fewer before the map window moves a column
 C $CA76,3 Move the scroll position back one step
 C $CA7D,3 Scroll the map
 C $CA80,3 Skip the delay at #R$DAC9, which stands in for a scroll
 N $CA83 Right held, or a scroll step already begun while facing right. As for left, but the scroll routine is #R$E989, $B958 is incremented and the cells tested are at offsets $38 and $39.
 C $CA83,3 Is right held?
+C $CA8A,3 No walking while crouching
+C $CA91,3 Walk right: animate (#R$DAA7)
+C $CA94,3 Climbing? ClimbState 4 is cleared and the player walks
+C $CAA7,2 On the ladder: set state 2 and turn to face right, without moving
+C $CAB9,3 Unless jumping, start falling if the cell under the feet in column 6 is open
+C $CAD0,3 At scroll step 4 only: a player facing left turns round, which takes the pass
+C $CAE4,2 Facing right: the player's two cells in column 7 ($38 upper, $39 lower) must both be open
+C $CAF4,3 Facing right: scroll. Facing left, which here means step 8: move the map window on a column and turn right, which takes the pass
 C $CB13,3 One scroll step fewer before the map window moves a column
 C $CB17,3 Move the scroll position on one step
 C $CB1E,3 Scroll the map, then fall through
@@ -1128,6 +1253,22 @@ C $CD28,2 No energy lost
 C $CD2D,3 Draw the bar
 C $CD30,3 Restart the world from its set-up code (HL=$BA33, the world number; the set-up code at $BE47 does not use it)
 N $CD36 Build the player's sprite. A display address at $B94E whose high byte has bit 6 clear is reset to $4010. The frame is chosen from $B949 and $B94A (graphics from $5DA0, the address kept at $CDA4), copied with #R$EDB4, overlaid with the pieces that $BA24, $BA25, $BA26, $BA07 and $BA28 select (#R$EDD5), and mirrored with #R$ECCB while the player faces left.
+C $CD36,3 If the player's display address has left the screen upwards (high byte below $40, after a rise from row 0 or 1), put it back on the top line, column 16 ($4010)
+C $CD43,3 B=PlayerFrame, halved while ClimbState is 1 or 4 (two climbing pictures)
+C $CD55,2 Plant B times 32 at $CE0D (the operand of LD BC,$0000 at $CE0C): the offset of the frame's body-armour piece
+C $CD60,1 HL=the frame's address: B times 128 from the walking frames #R$5DA0...
+C $CD66,3 ...or from the climbing frames #R$6D60 ($0FC0 further on) while ClimbState is 1 or 4
+C $CD76,3 Plant it at $CDA4
+C $CD79,3 HL=the player's pixel line (third times 64, plus row in the third times 8, plus the line in the row)
+C $CD8E,2 HL=byte 14 of that line in the play-area buffer, the background under the player
+C $CD9A,3 Copy the background into the player buffer (#R$EDB4), mirrored first if the player faces left, since the whole buffer is mirrored again at the end
+C $CDA3,3 Draw the frame's top 16 lines (#R$EDD5) at $5C00, or 8 lines lower while crouching ($BA35)
+C $CE2B,3 No body armour: draw the frame's lines 16-23
+C $CE37,3 Crouching: draw no legs (the crouched figure is the frame's top 24 lines, 8 lines lower)
+C $CE3E,3 Flight from item $6E ($BA28): draw the winged legs (the operand at $CE46, from #R$70A0, advanced by $D022 each pass)
+C $CE4A,2 Gliding (the glide frame at $CE4B, 3) and not on a ladder: draw the leg piece #R$6F20
+C $CE63,3 Otherwise draw the frame's lines 24-31
+C $CE6F,3 Facing left: mirror the whole buffer (#R$ECCB)
 N $CE77 At a whole or half scroll column (#R$DD93), count down the ten 9-byte map-cell timers from $B95E. When one runs out, its cell is given the stored box code less $19, a background code, so an uncovered item that was not collected disappears (one that was collected is already background); if the cell is on screen it is redrawn with #R$DB3B and the background block.
 C $CEC9,2 $93 when the first world in the bank is loaded, $82 for the second. It is the operand of LD C,$00 at $CEC9 and is also read at $DE19, where it replaces a block number before the block address is computed at $DE29-$DE36. It is the code of the world's plain background block: #R$DDFD draws map cells holding $00-$0F or $46-$5F with it, and here it is passed to #R$DB3B in C to draw a background cell into the buffer.
 N $CED3 Work out where the drawing code in #R$D08C puts things this pass: 16 pixel lines below the player's display address (24 while $BA07 is set) and two columns left, kept at $CF8D, and eight lines above that, one column left (one right when facing left), kept at $D1AF.
@@ -1184,7 +1325,7 @@ N $D06B Pause until a fresh key press.
 C $D06B,3 Is the pause key held?
 C $D06F,3 Yes: wait for its release and then for any key (the joystick cannot resume)
 N $D072 Time bonus. While the operand at $D073 is non-zero (#R$DC91 sets it to 60) each pass adds a second to the clock (#R$DAD7) instead of counting down, so a bonus adds one minute.
-C $D072,2 Any time bonus left (the operand at $D073)?
+C $D072,2 Operand of LD A,$00 at $D072: main-loop passes of time bonus left. Items $73 and $69 set it to 60; while it is non-zero each pass takes one off and adds a second to the clock (#R$DAD7) instead of running the countdown.
 C $D075,3 Jump if not to count the clock down
 C $D078,1 Use one second of it
 C $D07C,3 Add the second to the clock
@@ -1243,22 +1384,29 @@ B $D228,1,1 Sound effect number, read by #R$C408 (which returns past it)
 C $D229,3 Move its display address (the operand at $D22A, set at $D900) up two pixel lines with #R$C312
 C $D234,3 D=character row, E=column. From row 15 down, draw nothing; otherwise write the value at $D24D (set at $D8ED) into the heart's cell of the enemy position map
 C $D24E,4 Draw the 16-line heart at $7620 there
-C $D25A,3 DE=display address of the thrown shot (the operand here, set from $CF8D at $D2CA), or 0 when there is none
+C $D25A,3 Operand of LD DE,$0000 at $D25A: display address of the shot thrown by weapon kind 1 (the broad sword), with a low byte of 0 meaning no shot. $D2CA starts it at the weapon graphic's address ($CF8D) on a blow when no shot is out; $D272-$D27C moves it one character column a pass, right or left as ShotDirection says; it ends ($D26E zeroes the low byte) at column 2 or 29; $DEB0 clears it on a screen redraw. #R$D77A strikes its enemy map cell on every pass it is out ($C950-$C957). set from $CF8D at $D2CA), or 0 when there is none
 C $D261,2 End the shot when it has reached column 2 or 29
 C $D272,1 Move it a column right, or left if it was thrown facing left (the operand at $D277, set at $D2D0), when BC=$0580 picks the left-facing graphics
+C $D276,2 Operand of LD A,$00 at $D276: FacingLeft as it was when kind 1's shot was thrown ($D2D0); non-zero moves the shot left and draws it from the left-facing graphics ($D27B-$D27D).
 C $D280,3 Draw the 8-line shot at its old address: $6F60 or $6F80 on alternate columns, $0580 further on when going left
+C $D2A8,2 Operand of LD A,$00 at $D2A8: 1 on the pass fire starts a blow ($C9BD) and for as long as ShotTimer keeps the blow going, 2 on the pass that ends it ($C979), and 0 again when the weapon graphic is set up with it not 1 ($CF73, weapon kinds other than 5). While it is 1 the weapon is drawn in its striking frame ($CF39) and $D2A8-$D2AC goes on to draw the blow and, for kind 1, start the thrown shot.
 N $D2DC This entry point is used by the routine at #R$D923.
 @ $D2DC label=DrawPassWeapon
+C $D2DC,3 Operand of LD HL,$0000 at $D2DC (DrawPassWeapon): display address of the flail's ball, stored by #R$D923 at $D96F on each pass of a throw. The code from $D2E7 turns it into a row for $D746 and, while ShotTimer is 3 or more, strikes the map cells in that row, 8 times the chain length beyond column 7 ($D2FF-$D313; #R$D8D6, and $D660 in #R$D65E).
 c $D333 Main loop: run the map-cell routines on five pairs of cells beside the player
-D $D333 Part of the main loop's weapon code, reached only by JP $D333 at $DA9B (in #R$D991). For A=4 down to 0 it calls #R$D8D6 once and $D660 twice for the map cells at offsets worked out from A, the scroll step count at $D4A2 and the facing (#R$DD24), then joins the loop tail at $D3BE in #R$D38B. What the calls do to the cells is left to the weapon chunk.
+D $D333 Part of the main loop's weapon code, reached only by JP $D333 at $DA9B (in #R$D991). For A=4 down to 0 it calls #R$D8D6 once and $D660 twice for the map cells at offsets worked out from A, the scroll step count at $D4A2 and the facing (#R$DD24), then joins the loop tail at $D3BE in #R$D38B. These are the cells along the feathered blade's ground blast (#R$D991): #R$D8D6 releases a heart from a stepped cell, and each $D660 is a blow on the cell (#R$D65E), so the blast breaks blocks along its length.
 @ $D333 label=WeaponOnCells
+C $D333,3 Operand of LD HL,$0000 at #R$D333: display address where the feathered blade's ground beam starts, stored by #R$D991 at $DA58 on its last three passes; #R$D333 strikes the map cells along the beam from there.
 c $D38B Main loop: finish a pass
 D $D38B The last part of every pass of the main loop (#R$C553). It is reached from #R$D08C (JP C,$D38B at $D2D9, or JP $D3BE from $D2AC, $D2B6, $D2E4, $D330) and from the weapon code (#R$D333 at $D388, #R$D991 at $D9F2 and $DA3E), and it ends every pass with one of six JP $C553 instructions.
-D $D38B In order: while the operand at $D38C (set at $DCB9 by the weapon handler) is non-zero, it calls #R$D8D6 and #R$D64F for the map cells next to the player; from $D3BE it draws the effects that the counters $BA03 and $BA04 time ($E977, $EB72); from $D42B it moves the player between the two parts of the map: walking off the bottom of the screen (row 12 or more) sets $B957 to $40 and moves the map window ($BA17) $0680 on, and leaving by the top (row 0, with up held or a rise running, and the cell above passable) clears $B957 and moves it back (#R$DD66); at $D4A1 it completes a scroll column when the step count at $D4A2 (the operand of LD A,$08 at $D4A1) has reached 0 (#R$DDC4 resets it to 8 and moves the map window); and from $D4A5 it checks the enemy position map built by #R$D08C at the player's position.
+D $D38B In order: on the pass a blow starts with weapon kinds 1-5 (it is reached by JP C,$D38B at $D2D9 only after the AttackState and AttackFlag tests), while the operand at $D38C is non-zero it calls #R$D8D6 and, at scroll step 4, strikes the map cells next to the player with #R$D64F; from $D3BE it draws the effects that the counters $BA03 and $BA04 time ($E977, $EB72); from $D42B it moves the player between the two parts of the map: walking off the bottom of the screen (row 12 or more) sets $B957 to $40 and moves the map window ($BA17) $0680 on, and leaving by the top (row 0, with up held or a rise running, and the cell above passable) clears $B957 and moves it back (#R$DD66); at $D4A1 it completes a scroll column when the step count at $D4A2 (the operand of LD A,$08 at $D4A1) has reached 0 (#R$DDC4 resets it to 8 and moves the map window); and from $D4A5 it checks the enemy position map built by #R$D08C at the player's position.
 D $D38B The collision check reads the cell of that map at $EFB9 plus half the player's row and, if it is empty and $BA07 is zero, the cell before it; if both are empty the pass ends. $FF lengthens the energy bar by one empty unit (#R$BF39 adds one to the energy-lost count at $BF28 while energy plus lost is below 19, then redraws the bar) and $FE moves up to three units from the lost part of the bar back to the energy (#R$BF5E, #R$BF15), each with sound effect 11 (#R$C408). Any other value is an enemy's number. Unless the immunity timer at $BA2A is running, it plays sound effect 1 and counts the contact at $D504 (the operand of LD A,$00 at $D503): with B three quarters of the armour total $BA24+$BA25+$BA26 read by #R$DDA2 (halved, plus that halved again), B contact passes go by between drains, and on the next one #R$BEFE is called (which takes energy on every second call, $BA31) and the count restarts. With no armour every contact pass calls #R$BEFE.
 @ $D38B label=EndPass
+C $D38B,2 Operand of LD A,$00 at #R$D38B: how many blows (through #R$D64F) a weapon of kinds 1-5 gives the map cells beside the player when a blow starts. #R$D38B is reached only by JP C,$D38B at $D2D9, after $D2A8-$D2B6 have required AttackState $D2A9 = 1 and AttackFlag $C95B non-zero, which for kinds 1-5 is the pass fire starts a blow. If it is non-zero, the heart check #R$D8D6 runs; then, only while the scroll step count $D4A2 is 4, the cell at offset $38 (D = 0) is struck and, if that returns carry, the cell at $39 (D = 2). Set with the weapon at $DCB9 from byte 0 of its entry in $BCCE: 2 for kinds 1 and 4, 1 for kind 3, 0 for kinds 2, 5, 6 and 7.
 N $D3BE This entry point is used by the routines at #R$D08C, #R$D333 and #R$D991.
 @ $D3BE label=EndPassCounters
+C $D418,3 Operand of LD DE,$0000 at $D418: character row (high byte) and column (low byte) of the explosion of a destroyed enemy, copied from bytes 2-3 of its slot by #R$D77A ($D88B-$D891) and turned into a display address by #R$E977 at $D41B while ExplosionTimer $BA04 runs.
+C $D41E,2 Operand of LD B,$00 at $D41E: the count of the explosion drawing loop at $D420-$D429, 1 normally or 2 when bit 5 of the destroyed enemy's slot byte 5 is set ($D899-$D8A2).
 C $D437,3 Move the map window to the lower part of the map, $0680 bytes on...
 C $D43E,3 ...and rebuild the buffer at the current scroll position (#R$DD66)
 C $D46C,3 Is up held? (Not tested while $B953 is non-zero.)
@@ -1269,6 +1417,7 @@ C $D4A4,3 After the eighth step: move the window a column and draw the new edge 
 B $D4D1,1,1 Sound effect number, read by #R$C408 (which returns past it)
 B $D4EA,1,1 Sound effect number, read by #R$C408 (which returns past it)
 B $D4F8,1,1 Sound effect number, read by #R$C408 (which returns past it)
+C $D503,2 Operand of LD A,$00 at $D503: contact passes since the last call of #R$BEFE. On each pass the player touches an enemy (without immunity) it counts up; when it would pass B, the armour total (#R$DDA2) halved plus that halved again, rounded down each time (0-4), #R$BEFE is called and it restarts at 0. With under two armour levels B is 0 and every contact pass calls #R$BEFE.
 c $D513 Move and draw the end-of-world guardian
 D $D513 Used by the main loop at $D1DE, in place of drawing the enemies, while $B955 is set. The guardian follows a list of display-file addresses set up at $C59A-$C5A0 from the world data ($7667 and $7669, or $767E and $7680 when $B95A holds $046E), taking one entry a pass and starting again at the $FF that ends it; bit 7 of an entry's high byte selects the second of two sets of graphics. Each pass it marks a block of 16 cells in the collision map at $EF80 with $FD, which is how #R$D77A knows the player's weapon has hit it, and draws it in two parts. Once its damage at $B956 reaches 64 it also draws one extra 16-line sprite per point of damage above 63 (1-16, since at 80 it is destroyed), each picked at random from the four frames of the explosion animation at $6BA0 (16 by 16 pixels, 64 bytes each; the same frames #R$D38B draws where an enemy is hit) and placed at one of four spots chosen by the count divided by 4, so up to four sprites share each spot.
 @ $D513 label=DrawGuardian
@@ -1379,6 +1528,19 @@ C $D679,2 $79-$C5: unbreakable scenery or wall (carry set)
 C $D67E,2 $69-$78: a box holding the item of its own code
 C $D683,4 $5F-$68: choose the item, then return into #R$D603 to open the box
 C $D689,2 Item $72 unless a rule below gives another
+C $D68B,2 Box $68: item $62 (a weapon level), or item $63 while the weapon is kind 1 or 6, which the pot cannot raise
+C $D69D,2 Box $67: item $6F (down to level 0) while the weapon is kind 3 (level 1)...
+C $D6AD,1 ...otherwise, like box $63, the item of the next level's weapon; item $72 if already at level 6
+C $D6B3,2 item $63 when the next weapon is the broad sword (kind 1)
+C $D6B8,1 C=the next kind's item from WeaponItems ($BA54 = $BA53 + kind)
+C $D6C4,2 Box $66: item $76 unless ArmourC is already 2
+C $D6D2,2 Box $65: item $75 unless ArmourB is already 2
+C $D6E0,2 Box $64: item $74 unless ArmourA is already 2
+C $D6EE,2 Box $63: the item of the next level's weapon (as box $67)
+C $D6F3,2 Box $62: item $66, the feathered blade, only with the broad sword (kind 1)...
+C $D6FE,3 ...and at least 4 units of energy
+C $D707,2 Box $61: item $63, or item $64 while ArmourC is exactly 1
+C $D716,2 Boxes $60 and $5F: item $61 unless it is carried
 C $D71F,2 (Always below $79 here) Open the box
 C $D724,2 $D0 and up: take 7 off and draw the new block
 C $D730,2 $C6: becomes the climbable $7F
@@ -1399,8 +1561,58 @@ R $D763 A Kept
 R $D763 E Offset from the map window
 R $D763 H Adjustment in bytes for the scroll position
 @ $D763 label=StrikeColumn
-c $D77A Routine at D77A
-D $D77A Used by the routine at #R$C553.
+c $D77A Strike the enemies a blow reaches
+D $D77A Works out which cells of the enemy position map at $EF80 the player's weapon reaches and destroys the enemy, or damages the guardian, found in each. The map has 16 columns of 8 cells (a cell is two character columns by two character rows of the play area; index = column * 8 + row); the player is in column 7, rows PlayerRow/2 and the one below. The map is the one #R$D08C built on the previous pass, so a blow is judged against where the enemies were last drawn.
+D $D77A Nothing is struck while climbing (ClimbState 1 or 4), nor while crouching with weapon kind 5, so the kick can only reach the upper of the player's two rows. The cell reached depends on the weapon kind $BA2C. Kinds 2-5: the cell in front (column 8 facing right, 6 facing left), in the upper row, or the lower while crouching. Kind 1 (the broad sword): the cell of its thrown shot (display address in $D25B) and then the cell in front. Kind 6 (the feathered blade): only while ShotTimer $BA05 is below 2, the five cells in front in the lower row (columns 8-12 or 6-2; the ADD or SUB at $D7E3 is written first). Kind 7 (the flail): the cell in front moved on by the chain length at $D94E (0-3 cells, set by #R$D923 on the pass before).
+D $D77A From $D805 one cell is tested. $FD is the guardian: its damage GuardianDamage $B956 goes up by the weapon level $BA2D (so weapon level 0 never harms it), and at 80 it is destroyed - 500 * (world + 2) points (#R$C1F6; shown ten times larger), the damage and the left-walk block at $C9E7 are reset, and in worlds 1-6 the world is completed ($D04A); in world 7 GuardianActive is cleared and, after the second guardian, the ending runs ($D848-$D86D). Below 80 the blow only plays sound effect 0. Any other non-zero value is an enemy number 1-5: its slot (from EnemyDrawList $BA09) is freed at once (#R$D909), so every enemy dies to one blow from any weapon; the explosion is started at the slot's position ($D419, ExplosionTimer $BA04 = 8, drawn once or twice by the count at $D41F); an enemy whose slot byte 5 has bit 5 set may upgrade weapon levels 0, 1 and 4 (#R$DDBC); and the points are slot byte 4 times bits 3-5 of slot byte 5 (#R$C1F4), then sound effect 0; the points are an 8-bit product, so they wrap above 255, and a slot whose bits 3-5 are 0 gives 0 (the DJNZ at $D8CB runs 256 times).
+D $D77A Called at most twice a pass from #R$C553: at $C957 while a kind 1 shot is out, and then either at $C960 on the pass after a blow (and on every pass while ShotTimer runs) or at $C98C when fire is pressed. In the recording a war hammer blow hit a guardian on both of its passes ($C98C and then $C960), a hit on each pass of a flail throw, and hits one or two frames apart from the broad sword. A kind 1 blow on the fire pass itself uses the stale address in $D25B (low byte 0 when no shot is out), so it tests a cell in map column 0 or 1.
+R $D77A O:AF Corrupted
+R $D77A O:BC Corrupted
+R $D77A O:DE Corrupted
+R $D77A O:HL Corrupted
+R $D77A O:IX Slot of the enemy struck, if any
+@ $D77A label=StrikeEnemies
+C $D77A,3 Return while climbing (ClimbState 1 or 4)
+C $D780,3 Return if crouching with weapon kind 5
+C $D78D,3 E=enemy map cell in front of the player: column 8 (8 * 8 = $40) plus half the player's row, one row lower while crouching...
+C $D795,3 ...and column 6 instead (less $10) when facing left
+C $D79F,3 Weapon kind 1?
+C $D7A6,1 Kind 1: strike the cell of the thrown shot (its display address in the operand at $D25B; stale when no shot is out)...
+C $D7AD,1 A=column / 2 * 8 + row / 2, the shot's cell
+C $D7BA,1 ...then the cell in front
+C $D7BD,2 Weapon kind 6?
+C $D7C1,3 Kind 6: strike only while ShotTimer is below 2: on the pass fire is pressed (before $C9A2 sets it to 7) and the last two passes of the blast
+C $D7C7,2 Plant ADD A,C ($81) at $D7E3 facing right, SUB C ($91) facing left
+C $D7D4,2 Five cells, B=5 to 1
+C $D7D7,1 C=B * 8, B columns on
+C $D7DC,3 Column 7, the lower of the player's two rows ($38 + row / 2 + 1)
+C $D7E3,1 ADD A,C or SUB C, planted at $D7D3
+C $D7E4,1 Strike that cell
+C $D7EC,2 Weapon kind 7? If not (kinds 2-5), strike the cell in front
+C $D7F0,3 Kind 7: D=chain length (0-3, set by #R$D923 on the previous pass) * 8
+C $D7F7,3 Move the cell that many columns further out: left when facing left...
+C $D802,1 ...or right
+@ $D805 label=StrikeEnemyCell
+C $D805,2 Read the enemy position map at $EF80 + E
+C $D80C,2 Is it the guardian ($FD)?
+C $D810,3 Guardian: add the weapon level to GuardianDamage
+C $D818,2 Jump unless it has reached 80
+C $D81C,3 Destroyed: HL=500 * (world + 2) points (worlds 1-7: 1,500-4,500, shown ten times larger)
+C $D829,1 Add them to the score
+C $D82E,1 Reset the damage
+C $D832,2 Put back OR L at $C9E7, so the player can walk left again
+C $D837,3 Complete the world ($D04A) unless this is world 7
+C $D83F,1 World 7: the guardian is gone
+C $D843,3 Back to play after the first guardian (FinalGuardian 0)
+C $D848,2 After the second, seven times: #R$C07C and a 30-frame wait
+C $D859,3 Then the ending: blank the play area (#R$C511), print the message at $B5D3, play tune 12, wait for a key (#R$C2ED) and go to the credits picture at #R$B908
+C $D870,1 Guardian damaged but not destroyed: just the sound
+C $D874,1 Return if the cell is empty
+C $D876,1 Enemy number 1-5: point IX at its slot through EnemyDrawList entry (5 - number) * 2
+C $D888,3 Free the slot: one blow kills any enemy
+C $D88B,3 Start the explosion at the slot's position (bytes 2-3)...
+C $D894,2 ...for 8 passes
+C $D899,2 Draw it once, or twice when bit 5 of slot byte 5 is set (the operand at $D41F)
 N $D8A5 Hitting an enemy whose template has bit 5 of its second byte set (for example the type 6 enemy; some templates in the ($768E) table have it too) may upgrade a weak weapon at random.
 C $D8A5,4 Is bit 5 of the enemy's template byte set?
 C $D8A9,2 Jump if not
@@ -1411,6 +1623,9 @@ C $D8B6,2 Level 1?
 C $D8B8,2 If so, try for an upgrade
 C $D8BA,2 Level 4?
 C $D8BC,2 If so, try for an upgrade
+C $D8BE,3 Points = slot byte 4 times bits 3-5 of slot byte 5 (0 when those bits are 0)
+C $D8CE,3 Add them to the score
+C $D8D1,3 Sound effect 0
 B $D8D4,1,1 Sound effect number, read by #R$C408 (which returns past it)
 c $D8D6 Release a heart from a stepped-on cell
 D $D8D6 Part of a weapon blow. Looks at the map cell in the player's row at column offset A from the map window and, if it holds $0C or $0D - a $79 or $7A cell the player has stood on ($C708-$C71A in the main loop) - adds 2 to it ($0E or $0F, after which the cell does nothing more) and releases a heart: $D24D is set to $FE for a $79 cell or $FF for a $7A cell, the rising-heart counter at $D215 to $20, and the heart's display address ($D22A) to character column 14, one row above the player's row when the cell was stepped on (the operand at $C632 holds that row plus 2, and 3 is taken off); sound effect 10 plays. The main loop's drawing code (#R$D08C at $D214-$D25A) then draws the heart rising and writes $D24D into the enemy position map, where the collision check in #R$D38B turns $FE into up to three units of energy back and $FF into one more unit of bar length.
@@ -1423,16 +1638,75 @@ D $D909 Frees the enemy slot at IX: zeroes byte 0 (in use), byte 8 (type) and by
 D $D909 Called by the enemy mover at $CC90 when an enemy has left the play area (#R$DD29 returned no carry), and at $D888 in #R$D77A.
 R $D909 IX Address of the slot
 @ $D909 label=FreeEnemySlot
-c $D923 Routine at D923
-D $D923 Used by the routine at #R$D08C.
-c $D986 Routine at D986
-D $D986 Used by the routine at #R$D923.
-c $D991 Routine at D991
-D $D991 Used by the routine at #R$D08C.
-c $DA9E Routine at DA9E
-D $DA9E Used by the routine at #R$D991.
-c $DAA7 Routine at DAA7
-D $DAA7 Used by the routine at #R$C553.
+c $D923 Draw the flail's throw
+D $D923 Draws one pass of a throw of weapon kind 7, the flail (the weapon item $65 gives): a ball on a chain that flies out in front of the player and comes back. #R$D08C jumps here from $D2A5 on each of the seven passes the ShotTimer $BA05 runs, with A the timer after it was decremented (6 down to 0).
+D $D923 The chain length, stored at $D94E, is A for A below 4 and 6 - A otherwise, so over the throw it runs 0, 1, 2, 3, 2, 1, 0 links. From the weapon graphic's display address ($CF8D) moved one column forward, it draws the 16x8 end piece ($68E0), one 16x8 link ($6900) for each unit of length two columns further out each (#R$D986), and the 16x16 ball ($6920) two columns beyond the last, eight pixel lines higher; facing left the end and ball come from the mirrored copies at $7220 and $7240 and the steps go left. The ball's address is stored at $D2DD for DrawPassWeapon ($D2DC), where it jumps next: while the timer is 3 or more that code strikes the map cells that the chain length reaches (#R$D8D6, and $D660 in #R$D65E twice).
+D $D923 #R$D77A reads the same length on the next pass and strikes the enemy map cell that many cells beyond the one in front of the player, so at full stretch the flail reaches four cells (eight character columns) out.
+R $D923 A ShotTimer after its decrement (6-0)
+@ $D923 label=DrawFlail
+C $D923,2 Chain length: A while A is below 4, otherwise 6 - A (0, 1, 2, 3, 2, 1, 0 over the throw)
+C $D92C,3 Keep it for this code, #R$D77A and $D2FF
+C $D92F,4 DE=the weapon graphic's display address, one column forward (right or left)
+C $D93B,1 Draw the 8-line end piece, mirrored when facing left
+C $D94D,2 B=chain length (the operand here, ChainLength)
+C $D94F,1 No links at length 0
+C $D954,3 Two columns out and draw a link, once for each unit of length
+C $D965,3 Two columns out again and 8 pixel lines up for the ball
+C $D96F,3 Keep the ball's address for $D2DC (the operand at $D2DD)
+C $D972,1 Draw the 16-line ball, mirrored when facing left
+C $D983,3 On to $D2DC: while the timer is 3 or more, strike the map cells the chain reaches (#R$D8D6, and $D660 in #R$D65E)
+c $D986 Step the flail two columns out
+D $D986 Moves the display address in DE two character columns in the direction the player faces: right when facing right, left when facing left. Used by #R$D923 before each chain link and before the ball.
+R $D986 DE Display address
+R $D986 O:DE Two columns further out
+R $D986 O:A Corrupted
+@ $D986 label=FlailStep
+C $D986,1 Two columns right
+C $D988,3 Done if facing right
+C $D98C,1 Facing left: four back, two columns left in all
+c $D991 Draw the feathered blade's blast
+D $D991 Draws one pass of a blow with weapon kind 6, the feathered blade (the weapon item $66 gives, weapon level 6): a flame-like blast in three phases. #R$D08C jumps here from $D2A2 on each of the seven passes the ShotTimer $BA05 runs, with A the timer after it was decremented (6 down to 0). Each call first waits for the next frame interrupt (EI, HALT), so these passes take up to a frame longer.
+D $D991 A = 6 or 5: the blast rises. Two 24x24 dithered beams ($6A10) and a 16x16 end ($6AA0) are drawn in a diagonal line going up and forward from the weapon graphic's display address ($CF8D): two columns forward and 18 pixel lines up, then two columns and 16 lines, then two columns and 8 lines. A = 4 or 3: it turns over above the player: a 16x8 wisp ($69F0) 72 pixel lines up, and the 24x24 streaks ($6960) twice beside it. A = 2, 1 or 0: it strikes along the ground: two 32x16 shafts ($6AE0) end to end and the 16x16 tip ($6B60), from two columns in front of the weapon three pixel lines up, reaching ten character columns; the address of the first shaft is stored at $D334 and the code goes on to #R$D333, which strikes the map cells along the beam. On the last pass (A = 0) #R$BEFE is called, so every blast counts towards an energy loss and every second blast costs one unit of energy (and wears the armour while ArmourWear $BA34 is running).
+D $D991 Facing left, #R$DA9E adds $0920 to each graphic address for the mirrored copies, and the positions are adjusted for the mirrored graphics. The first two phases end at #R$D3BE. The enemies are struck separately, by #R$D77A: on the pass fire is pressed, and while the timer is below 2 (the ground phase), five enemy map cells in front of the player.
+R $D991 A ShotTimer after its decrement (6-0)
+@ $D991 label=DrawBladeBlast
+C $D991,1 Wait for the next frame
+C $D993,2 Timer 5 or 6: the blast rising
+C $D998,3 From the weapon graphic's address ($CF8D): two columns forward (three facing left)...
+C $D9A6,2 ...and 18 pixel lines up
+C $D9AC,3 Draw a 24-line beam there (mirrored facing left)
+C $D9B8,1 Two columns further forward and 16 lines higher
+C $D9CA,3 Draw the beam again
+C $D9D6,1 Two columns forward (one facing left) and 8 lines higher
+C $D9E7,3 Draw the 16-line end of the blast
+C $D9F2,3 On to the effect counters
+C $D9F5,2 Timer 3 or 4: the blast turning over above the player
+C $D9FA,3 Two columns behind and 72 pixel lines up
+C $DA0E,3 Draw the 8-line wisp
+C $DA19,1 Then the 24-line streaks, twice side by side
+C $DA3E,3 On to the effect counters
+C $DA41,1 Timer 0-2: the beam along the ground. On the last pass call #R$BEFE, so every second blast costs a unit of energy
+C $DA45,3 Two columns forward (four facing left) and 3 pixel lines up
+C $DA58,3 Keep the address for #R$D333 (the operand at $D334)
+C $DA5C,3 Draw a 32x16 shaft
+C $DA69,1 Four columns on, a second shaft
+C $DA83,1 Then the 16x16 tip
+C $DA9B,3 Strike the map cells along the beam
+c $DA9E Pick the left-facing strike graphic
+D $DA9E Returns HL unchanged while the player faces right, or $0920 further on while facing left: the mirrored copies of the strike graphics at $6960-$6B9F are $0920 bytes after the originals, at $7280-$74BF (made at start-up). Used by #R$D991 before drawing each piece of the feathered blade's blast.
+R $DA9E HL Address of a right-facing strike graphic
+R $DA9E O:HL The graphic for the way the player faces
+R $DA9E O:BC $0920 (facing left)
+R $DA9E O:A FacingLeft
+@ $DA9E label=MirrorStrikeGfx
+C $DA9E,3 Facing right: keep HL
+C $DAA2,3 Facing left: the mirrored copy, $0920 bytes on
+c $DAA7 Step the player's animation frame
+D $DAA7 Called on every pass the player takes a step: walking left ($C9E0) or right ($CA91), climbing up ($C94A) or down ($C89D), and holding down at the foot of a ladder ($C879). It counts the calls in $B950 and does nothing on every second call, so the frame at #R$B949 changes every other pass. Nothing changes while a jump is counting down ($B953). While the glide operand at $CE4B is non-zero (3, set at $C7FC while flying) the frame is set to that value; otherwise it goes 0, 1, 2, 3 and back to 0.
+D $DAA7 Walking frames 0-3 are the four pictures at #R$5DA0, so a walking cycle is 8 passes, 16 pixels of scroll, one map cell. The climbing sprite (#R$CD36) halves the frame, so the two climbing pictures at #R$6D60 alternate every 4 passes (a map cell of climbing).
+R $DAA7 O:A Corrupted
+R $DAA7 O:HL $B950
+@ $DAA7 label=AnimatePlayer
 c $DAC9 Take the time of a scroll when the map does not scroll
 D $DAC9 Part of the main loop (#R$C553). Every movement path that does not scroll the map jumps here (22 JP $DAC9 instructions between $C881 and $CB10) instead of calling #R$EA4D or #R$E989. The busy loop runs 3,000 times at 45 T-states each, about 135,000 T-states, close to the 150,000 a scroll takes, so a pass lasts about as long whether or not the map scrolls. It then rejoins the loop at $CB21.
 D $DAC9 Either way this part of a pass lasts nearly two frames (a 128K frame is 70,908 T-states; SkoolKit's simulator, which leaves out the ULA's contention delays, counts about 69,900 on average between the recording's frames); a whole pass takes four frames or more (#R$C553).
@@ -1545,71 +1819,219 @@ C $DBCB,1 A=the cell's code again
 C $DBCC,2 plus $32 is the item code ($60-$78), kept in the operand of LD A,$00 at $DBE4
 C $DBD1,2 Pick the item's handler from the table at $BA5B
 C $DBDF,3 and jump to it, returning to $DBE4 to add the item to the carried items
-c $DBE4 Routine at DBE4
+c $DBE4 Add a collected item to the carried items
+D $DBE4 Where every item handler returns: #R$DBAB pushes this address before jumping to the handler for the item just collected, and plants the item's code in the operand of the LD A,$00 here ($DBE5). Only the eleven items listed in the item colour table #R$BA37 can be carried; the carriable test (#R$C4B0) compares the code with twelve entries two bytes apart from $BA37, and the twelfth is the first byte of WeaponKinds (#R$BA4D), which holds no item code; any other item has done all it does in its handler and nothing more happens. A carriable item that is already held is not added again. Otherwise it goes into the first empty slot of HeldItems ($BA19) and the panel row is redrawn (#R$C33B).
+D $DBE4 There is no test for a full panel: when none of the ten slots is empty, #R$C4A2 leaves HL at the last slot, $BA22, and the item is written over whatever is there. With eleven carriable items and each held at most once, that needs ten different carriable items held at once.
+D $DBE4 The entry at $DBE6 takes the item code in A; the handler for item $61 (#R$DBFD) uses it, so item $61 is added twice over (the second attempt, back here, finds it held).
+R $DBE4 A Item code (entry at $DBE6 only)
+@ $DBE4 label=AddCarriedItem
+C $DBE4,2 A=the item code (operand planted at $DBCE)
 N $DBE6 This entry point is used by the routine at #R$DBFD.
-c $DBF7 Routine at DBF7
-c $DBFD Routine at DBFD
-c $DC01 Routine at DC01
+@ $DBE6 label=AddCarriedItemA
+C $DBE6,1 Keep it in C
+C $DBE7,3 Not in the item colour table: not an item that is carried
+C $DBEB,3 Already held: nothing to add
+C $DBEF,1 HL=the first empty slot (the last slot, $BA22, if none is empty)
+C $DBF3,1 Put the item there
+C $DBF4,3 and redraw the carried items
+c $DBF7 Collect item $60 (the lightning bolt): high jumps
+D $DBF7 Writes $34, the opcode of INC (HL), over the NOP at $C91F in the jump code, so that from now on every jump started at $C91C counts itself in JumpCount ($BA23), and a jump that leaves the count odd starts with JumpCounter at 12 instead of 4 ($C928-$C92C): a rise of 56 lines with a 5-pass hang, 20 passes in the air instead of 9: every other jump is a high jump (while not flying). The item is also carried (#R$DBE4), but nothing reads that.
+D $DBF7 The instruction is also the flag for the item boxes: while $C91F still holds the NOP every box opens to show item $60 (#R$D603, $D60F-$D615), so this is the first item of every game, and of every life lost without item $61, since losing a life puts the NOP back ($CD1D-$CD1E, with JumpCount cleared at $CD15). A new game does the same ($BD61-$BD62); a new world does not.
+@ $DBF7 label=ItemHighJump
+C $DBF7,2 INC (HL) over the NOP at $C91F: jumps are counted, and every other one is high
+c $DBFD Collect item $61 (the tile marked K): protection for one lost life
+D $DBFD Adds item $61 to the carried items through $DBE6, which is exactly what #R$DBE4 would have done on return (it then finds the item held and does nothing more). Holding it is what matters: when a life is lost, $CD0E-$CD13 find item $61 among the carried items and, instead of clearing $BA19-$BA2B (the carried items, jump count, armour, flight, immunity and energy drain) and putting back the NOP at $C91F, use the item up by emptying its slot ($CD23). So the next lost life still costs the life, but of the carried state only this item: the other carried items, JumpCount and the high jump, the armour, flight, immunity and the poison are all kept.
+D $DBFD The item box rules test for it as well: a box of code $5F or $60 gives item $61 only while it is not held ($D716-$D71E), and item $72 otherwise.
+@ $DBFD label=ItemProtection
+C $DBFD,2 Carry item $61
+c $DC01 Collect item $62 (the pot): raise the weapon a level
+D $DC01 Raises the weapon level ($BA2D) by one and installs the weapon of the new level, except while the weapon is kind 1 (level 5, the broad sword) or kind 6 (level 6, the feathered blade): so the pot takes the weapon up to level 5 at most, and never to the feathered blade.
+D $DC01 The entry RaiseWeaponLevel at $DC0A does the raise without the kind test, and is also used by #R$DDBC (a random upgrade when an enemy is hit). It asks #R$C141 for the next level's weapon, which refuses at level 6, then adds one to the level and joins #R$DCAC at $DCB2 to install the kind, the blow count and the graphics.
+@ $DC01 label=ItemWeaponUp
+C $DC01,3 Nothing for weapon kind 1 (level 5)
+C $DC07,2 or kind 6 (level 6)
 N $DC0A This entry point is used by the routine at #R$DDBC.
-c $DC17 Routine at DC17
-c $DC1C Routine at DC1C
-c $DC25 Data block at DC25
-c $DC29 Routine at DC29
+@ $DC0A label=RaiseWeaponLevel
+C $DC0A,3 HL, A and B=the next level's weapon; none above level 6
+C $DC0E,1 Up one level, keeping the lookup's HL
+C $DC14,3 Install the weapon
+c $DC17 Collect item $63 (the mound): a unit of energy and immunity
+D $DC17 Regains one unit of energy (#R$DC51, #R$BF5E) and starts the immunity timer (#R$DC54): 200 main-loop passes in which enemy contact costs no energy and the LIFE label flashes. The energy bar is not redrawn, so the regained unit only shows at the bar's next redraw. The item is carried (#R$DBE4), but nothing tests for it.
+D $DC17 The item boxes give it in place of a weapon item the player cannot use: a $68 box while the weapon is kind 1 or 6 (the pot would do nothing), and a $63 or $67 box when the next level would be the broad sword; a $61 box gives it unless ArmourC is 1.
+@ $DC17 label=ItemMound
+C $DC17,3 Regain a unit of energy
+C $DC1A,2 and start the immunity timer
+c $DC1C Collect item $64 (the star on a base): a level of every armour piece
+D $DC1C Raises all three armour counters by a level (#R$DC97, #R$DC9C, #R$DCA1), each up to 2, which also sets ArmourWear to 4. The item is carried (#R$DBE4), but nothing tests for it. An item box of code $61 gives it only while ArmourC is exactly 1 ($D70C-$D715).
+@ $DC1C label=ItemStar
+C $DC1C,3 A level of the hand piece
+C $DC1F,3 of the body armour
+C $DC22,3 and of the helmet
+c $DC25 Collect item $65 (the flail): weapon level 3
+D $DC25 Sets weapon level 3, the ball and chain (kind 7, graphics #R$67C0), through #R$DCAC by way of the JP at $DC2E.
+@ $DC25 label=ItemFlail
+C $DC25,2 Weapon level 3
+c $DC29 Collect item $66 (the feathered blade): full energy and weapon level 6
+D $DC29 Refills the energy bar (#R$DDAE) and sets weapon level 6, the best weapon (kind 6, graphics #R$66A0), through #R$DCAC. The weapon does not last: whenever the energy is below 4 units and no shot is in flight, the main loop drops kind 6 back to level 5, the broad sword ($D025-$D038, calling #R$DC35). The item boxes of code $62 give this item only to a player who has the broad sword and at least 4 units of energy ($D6F3-$D706). Its handler shares the tail at $DC2E with #R$DC25.
+@ $DC29 label=ItemFeatheredBlade
+C $DC29,3 Refill the energy
+C $DC2C,2 Weapon level 6
 N $DC2E This entry point is used by the routine at #R$DC25.
-c $DC31 Data block at DC31
-c $DC35 Routine at DC35
-D $DC35 Used by the routine at #R$C553.
-c $DC39 Routine at DC39
-c $DC48 Routine at DC48
-D $DC48 Used by the routine at #R$DC5A.
-c $DC4E Routine at DC4E
-c $DC51 Routine at DC51
-D $DC51 Used by the routine at #R$DC17.
-c $DC54 Routine at DC54
-D $DC54 Used by the routine at #R$DC17.
-c $DC5A Routine at DC5A
-c $DC61 Routine at DC61
-c $DC68 Data block at DC68
-c $DC7D Routine at DC7D
-c $DC89 Collect item $40: a random score bonus
-D $DC89 The handler for the map item $40: entry 18 of the handler table at $BA5B, reached through the JP (HL) at $DBE3 when the player collects an item (#R$DBAB). It adds 5 plus the R register (0-127) to the score counter at $BA15. The score is displayed with a fixed trailing zero, so the bonus is 50-1,320 points. It ran 12 times in the recording, adding 9 to 117 to the counter (90-1,170 points).
+C $DC2E,3 Install it
+c $DC31 Collect item $67 (the war hammer): weapon level 2
+D $DC31 Sets weapon level 2, the spiked hammer (kind 4, graphics #R$64C0), which strikes the map cells beside the player twice a pass, through #R$DCAC.
+@ $DC31 label=ItemWarHammer
+C $DC31,2 Weapon level 2
+c $DC35 Collect item $68 (the broad sword): weapon level 5
+D $DC35 Sets weapon level 5, the sword (kind 1, graphics #R$6160), which strikes the map cells beside the player twice a pass, through #R$DCAC. The main loop also calls it ($D038) to take the feathered blade (kind 6) away when the energy is below 4 units and no shot is in flight.
+@ $DC35 label=ItemBroadSword
+C $DC35,2 Weapon level 5
+c $DC39 Collect item $69 (the chequered chest): an extra life, 10,000 points and a time bonus
+D $DC39 Adds a life to the lives digit (the operand at $C1EE) and prints it (#R$C1E7, which prints nothing once the count passes 9), adds 1,000 to the score word, shown as 10,000 points because the panel adds a fixed last 0 (#R$C1F4's entry $C1F6), and starts the 60-pass time bonus (#R$DC91). The item is carried (#R$DBE4), but nothing tests for it.
+@ $DC39 label=ItemChest
+C $DC39,3 One more life
+C $DC3D,3 Print the lives digit
+C $DC40,3 Add 1,000 to the score (10,000 shown)
+C $DC46,2 and start the time bonus
+c $DC48 Collect item $6A (the crescent wing): flight
+D $DC48 Sets Flying ($BA27). From then on a jump always lasts 4 passes and never becomes a high jump ($C920-$C926, $C773), and a fall becomes a glide, two pixel lines down a pass, or four up while up is held ($C7F4-$C82A); a flapping wing is drawn beside the player (#R$7120, from $D18E-$D1B3), unless the flight came from item $6E. The item is carried (#R$DBE4).
+D $DC48 Flight lasts for the rest of the world: the world set-up takes it away with the item (#R$C1AA from $BD91), and so does a lost life unless item $61 is held ($CD15). The world 7 cells of code $98 take flight away only when it came from item $6E ($C740-$C748), so this item's flight survives them. #R$DC5A (item $6E) runs on into this handler.
+@ $DC48 label=ItemWing
+C $DC48,2 The player can fly
+c $DC4E Collect item $6B (the crystal ball): a longer energy bar
+D $DC4E Makes the energy bar one unit longer with an empty unit (#R$BF39 adds one to the lost count at $BF28 and redraws the bar), up to a bar of 19 units; the unit can then be filled by regaining energy, and the whole bar is refilled when a life is lost. The item is carried (#R$DBE4), but nothing tests for it.
+@ $DC4E label=ItemCrystalBall
+C $DC4E,3 Make the energy bar a unit longer
+c $DC51 Collect item $6C (the oil lamp): regain a unit of energy
+D $DC51 Moves one unit from the lost count back to the energy (#R$BF5E), if any unit is lost. The energy bar is not redrawn, so the unit only shows at the bar's next redraw. The item is carried (#R$DBE4), but nothing tests for it. #R$DC17 (item $63) calls it too.
+@ $DC51 label=ItemLamp
+C $DC51,3 Regain a unit of energy (the bar is not redrawn)
+c $DC54 Collect item $6D (the shield): immunity for 200 passes
+D $DC54 Sets the immunity timer ImmunityTimer ($BA2A) to 200 main-loop passes. While it runs, touching an enemy costs no energy ($D4EE-$D4F2) and the LIFE label is drawn in random colours ($D112-$D125), which also count the timer down. The energy drain of item $70 is not stopped by it. The item is carried (#R$DBE4), but nothing tests for it. #R$DC17 (item $63) uses it too.
+@ $DC54 label=ItemShield
+C $DC54,2 200 passes of immunity
+c $DC5A Collect item $6E (the winged boot): flight with winged feet
+D $DC5A Sets FlyingItem6E ($BA28) and runs on into #R$DC48 to set Flying. The flight is the same as item $6A's, but the player is drawn with small flapping wings at the feet (#R$70A0, from $CE3E-$CE6C) instead of the wing beside the player. It also makes the flight fragile in world 7: standing where the map cell tested at $C740 is $98 clears $BA28 and takes away Flying and both flight items (#R$C1AA, #R$C1B2). The world set-up clears $BA28 ($BD8E) and removes the item (#R$C1B2 from $BD94). The item is carried (#R$DBE4).
+@ $DC5A label=ItemWingedBoot
+C $DC5A,2 Flight from item $6E
+C $DC5F,2 and flight
+c $DC61 Collect item $6F (the gauntlet): lower the weapon a level
+D $DC61 Lowers the weapon level ($BA2D) by one and installs the weapon of that level through #R$DCAC; at level 0 nothing changes. The item boxes of code $67 give this item while the weapon is kind 3 (level 1), taking the player back to the starting weapon.
+@ $DC61 label=ItemWeaponDown
+C $DC61,3 One level lower
+C $DC65,1 None below level 0
+C $DC66,2 Install the weapon
+c $DC68 Collect item $70 (the flask marked with a skull): poison
+D $DC68 Starts the energy drain: EnergyDrain ($BA2B) is set, and the energy bar is drawn in bright magenta instead of bright red (#R$BF52). From then on each time the clock's seconds digit wraps, every ten clock seconds, #R$BEFE is called ($DAFB-$DB03); it takes a unit on every second call, so about a unit every twenty clock seconds (the call count $BA31 is shared with enemy contact). Immunity does not stop it.
+D $DC68 If item $71, the bottle, is carried, the poison does nothing: the bottle is used up instead (its slot emptied at $DC77), the handler's return to #R$DBE4 is dropped and the carried items are redrawn. The drain lasts until a bottle is collected (#R$DC7D) or a life is lost without item $61 ($CD15 clears $BA2B); a world change does not end it, although BeginLife puts the bar's colour back to bright red at the start of every world and life ($BE62, #R$BF4B), so the drain then carries on unseen.
+@ $DC68 label=ItemFlask
+C $DC68,2 Is item $71, the bottle, carried?
+C $DC6D,2 If so, go and use it up
+C $DC6F,2 Otherwise start the drain
+C $DC74,3 and draw the energy bar in bright magenta
+C $DC77,2 Empty the bottle's slot
+C $DC79,1 Drop the return to #R$DBE4
+C $DC7A,3 and redraw the carried items
+c $DC7D Collect item $71 (the bottle): antidote
+D $DC7D If the energy is draining (item $70's poison, EnergyDrain $BA2B), the bottle cures it at once: the drain stops, the bar is drawn in bright red again (#R$BF4B) and the bottle is used up, since the return to #R$DBE4 is dropped. Otherwise the handler does nothing and the bottle is carried, and cures the next poison the moment the flask is collected (#R$DC68).
+@ $DC7D label=ItemBottle
+C $DC7D,3 Is the energy draining?
+C $DC82,1 If not, return to #R$DBE4, which carries the bottle
+C $DC83,2 Stop the drain
+C $DC85,1 Drop the return to #R$DBE4: the bottle is used up
+C $DC86,3 and draw the energy bar in bright red again
+c $DC89 Collect item $72 (the bag): a random score bonus
+D $DC89 The handler for item $72, the bag (shown in the map as cell code $40 once its box is open): entry 18 of the handler table at $BA5B, reached through the JP (HL) at $DBE3 when the player collects an item (#R$DBAB). It adds 5 plus the R register (0-127) to the score counter at $BA15. The score is displayed with a fixed trailing zero, so the bonus is 50-1,320 points. It ran 12 times in the recording, adding 9 to 117 to the counter (90-1,170 points).
 @ $DC89 label=ItemScoreBonus
 C $DC89,2 Take a pseudo-random number (0-127) from R
 C $DC8B,2 Add 5
 C $DC8D,1 C=bonus, 5-132
 C $DC8E,3 Add it to the score
-c $DC91 Routine at DC91
-D $DC91 Used by the routine at #R$DC39.
-c $DC97 Routine at DC97
-D $DC97 Used by the routine at #R$DC1C.
-c $DC9C Routine at DC9C
-D $DC9C Used by the routine at #R$DC1C.
-c $DCA1 Routine at DCA1
-D $DCA1 Used by the routine at #R$DC1C.
-c $DCA6 Routine at DCA6
-c $DCAA Data block at DCAA
-c $DCAC Routine at DCAC
-D $DCAC Used by the routines at #R$DC29, #R$DC35, #R$DC61 and #R$DCA6.
+c $DC91 Collect item $73 (the hourglass): a time bonus
+D $DC91 Sets the time bonus, the operand at $D073, to 60. On each of the next 60 main-loop passes the clock gains a second ($D072-$D07C, #R$DAD7) instead of counting down, so the clock ends about a minute higher. #R$DC39 (item $69) uses it too.
+@ $DC91 label=ItemHourglass
+C $DC91,2 60 passes that each add a second to the clock
+c $DC97 Collect item $74: armour for the hand (ArmourA)
+D $DC97 Raises ArmourA ($BA24) through #R$DCCA. ArmourA is the piece drawn at the right-hand edge of the body's lines 16-23 in the right-facing graphic, where D2 saw a hand (#R$6120, not while climbing); the item's picture is a round, figured plate, perhaps a small shield. Like every armour level it slows the energy lost to enemy contact (#R$D38B) and is the first piece to wear away (#R$C178). #R$DC1C (item $64) calls it too.
+@ $DC97 label=ItemArmourA
+C $DC97,3 Raise ArmourA, the hand piece
+c $DC9C Collect item $75: body armour (ArmourB)
+D $DC9C Raises ArmourB ($BA25) through #R$DCCA. ArmourB is drawn in place of the body's middle lines 16-23, the waist (#R$6020, and #R$6EE0 while climbing); the item's picture is a torso piece. It slows the energy lost to enemy contact (#R$D38B) and wears away once ArmourA has gone (#R$C178). #R$DC1C (item $64) calls it too.
+@ $DC9C label=ItemArmourB
+C $DC9C,3 Raise ArmourB, the body armour
+c $DCA1 Collect item $76 (the helmet): head armour (ArmourC)
+D $DCA1 Raises ArmourC ($BA26) through #R$DCCA. ArmourC is the helmet drawn over the top of the player (#R$5FA0, one picture for each level). It does more than the other two pieces: the HIT bar counts it twice (#R$C091's entry $C0BC), it wears away last (#R$C178), and when a jump starts or a rise is made at scroll step 4 (below character row 0), the cell above the player's head takes as many blows as its level (#R$DCD7), so the helmet breaks blocks from below. #R$DC1C (item $64) calls it too.
+@ $DCA1 label=ItemHelmet
+C $DCA1,3 Raise ArmourC, the helmet
+c $DCA6 Collect item $77 (the club): weapon level 1
+D $DCA6 Sets weapon level 1 (kind 3, graphics #R$63A0), which strikes the map cells beside the player once a pass, through #R$DCAC. The item's picture looks like a key (D3's reading), but the weapon it gives is drawn as a club with a round head.
+@ $DCA6 label=ItemClub
+C $DCA6,2 Weapon level 1
+c $DCAA Collect item $78 (the dagger): weapon level 4
+D $DCAA Sets weapon level 4, the light blade (kind 2, graphics #R$6280), by running on into #R$DCAC. Its picture is an outlined sword, like the weapon's frames.
+@ $DCAA label=ItemDagger
+C $DCAA,2 Weapon level 4
+c $DCAC Set the weapon level and install its weapon
+D $DCAC Stores A as the weapon level ($BA2D) and installs the weapon for that level: #R$C141's entry $C14C looks up its kind in WeaponKinds ($BA4D) and the kind's three bytes in the weapon table at $BCCE; the graphics address goes to WeaponGfxAddr ($BA2E), the kind to WeaponKind ($BA2C), and the table's first byte to the operand at $D38C, the number of blows #R$D38B strikes on the map cells beside the player when a blow starts at scroll step 4 (2 for kinds 1 and 4, 1 for kind 3, 0 for the others). The weapon's 288 bytes of graphics are copied to $EE60 and mirrored for facing left (#R$ECE9, which returns to the caller).
+D $DCAC The weapon items jump here with their own level, so collecting one sets that level whatever the weapon was: a lower weapon replaces a higher one. The entry at $DCB2 installs a weapon already looked up (HL graphics, A kind, B blows): #R$DC01 uses it after raising the level, and NewGame ($BD17) with the level 0 weapon.
+R $DCAC A Weapon level, 0-6
+@ $DCAC label=SetWeaponLevel
+C $DCAC,3 Store the level
+C $DCAF,3 HL, A and B=its weapon's graphics, kind and blows
 N $DCB2 This entry point is used by the routines at #R$BCE6 and #R$DC01.
-c $DCCA Routine at DCCA
-D $DCCA Used by the routines at #R$DC97, #R$DC9C and #R$DCA1.
+@ $DCB2 label=InstallWeapon
+C $DCB2,3 Store the graphics address
+C $DCB5,3 and the kind
+C $DCB8,1 The blows a pass on the cells beside the player, for #R$D38B
+C $DCBC,3 Copy the weapon's 288 bytes of graphics to $EE60
+C $DCC7,3 and mirror them for facing left
+c $DCCA Raise an armour counter
+D $DCCA Adds a level to the armour counter at HL (ArmourA, ArmourB or ArmourC, $BA24-$BA26), up to 2, colouring the HIT bar again (#R$C091's entry $C0BC) when the level rises. Every call first sets ArmourWear ($BA34) to 4, even when the piece is already at level 2: after four more units of energy are lost, #R$C178 takes one level off the first armour counter that is not zero, and then no more until the next armour pickup.
+R $DCCA HL ArmourA, ArmourB or ArmourC
+@ $DCCA label=RaiseArmour
+C $DCCA,2 Four units of energy before a piece wears away
+C $DCCF,1 Nothing more at level 2
+C $DCD3,1 Up a level
+C $DCD4,3 and colour the HIT bar
 c $DCD7 Strike the cell above the player's head
 D $DCD7 Called from the main loop at $C90B while the player rises, when the scroll step count is 4. If D is not zero and armour counter $BA26 is not zero, it strikes the cell above the player's head (offset $2F) $BA26 times through #R$D65E's entry $D663, after setting the redraw column $D744 to $0E and the row $D746 to the player's row less 2 ($DCEA-$DD03): the head armour breaks blocks from below.
 R $DCD7 D Non-zero to strike
 @ $DCD7 label=StrikeCellAbove
-c $DD06 Routine at DD06
-D $DD06 Used by the routine at #R$C553.
-c $DD12 Routine at DD12
-D $DD12 Used by the routine at #R$C553.
-c $DD1E Routine at DD1E
-D $DD1E Used by the routines at #R$C553, #R$D08C, #R$D923 and #R$D991.
+c $DD06 Move the player up B pixel lines
+D $DD06 Moves the player's display address at #R$B94E up B pixel lines, one at a time with #R$C312, and stores it back. The main loop calls it with B=8 for each pass of a jump ($C7B5), B=4 for a flight rise while up is held ($C824), for each climbing step up ($C947) and for the last step off the top of a ladder ($C8EC).
+D $DD06 Nothing stops the address at the top of the screen: from row 0 it goes below the display file ($3FF0, $3CF0, $38F0 ...). The main loop does not correct it until $CD36, which puts any address below $4000 back to $4010 before the sprite is built, so the player sticks at the top line. In the recording the address is below $4000 at 628 frame ends, always between the movement and $CD36. In between, a wall test at step count 4 (#R$DD58, $CA42/$CAE6) reads its cells from that address and so tests the wrong cells.
+R $DD06 B Number of pixel lines (not 0)
+R $DD06 O:HL The new display address
+R $DD06 O:A Corrupted
+@ $DD06 label=PlayerUp
+c $DD12 Move the player down B pixel lines
+D $DD12 Moves the player's display address at #R$B94E down B pixel lines, one at a time with #R$C303, and stores it back. The main loop calls it with B=8 for each pass of a fall ($C7F2 then $C82C), B=2 for each pass of a glide while flying ($C82A) and B=4 for each climbing step down ($C89A, B loaded at $C898).
+D $DD12 It has no lower limit of its own: the loop tail at $D42B moves the player into the lower part of the map once the character row stored at $B95D reaches 12.
+R $DD12 B Number of pixel lines (not 0)
+R $DD12 O:HL The new display address
+R $DD12 O:A Corrupted
+@ $DD12 label=PlayerDown
+c $DD1E Move a display address up B pixel lines
+D $DD1E Moves the display address in HL up B pixel lines with #R$C312, without reading or storing the player's address. $CEEC uses it to place the drawing position for the player's extra graphics eight lines above the one kept at $CF8D; the weapon code uses it at $CF30, $D22E, $D96C, $D9A8, $D9C6, $D9E3, $DA0A and $DA55.
+R $DD1E B Number of pixel lines (not 0)
+R $DD1E HL Display address
+R $DD1E O:HL Display address B lines higher
+R $DD1E O:A Corrupted
+@ $DD1E label=AddressUp
 c $DD24 Get the player's facing
 D $DD24 Loads A with FacingLeft ($B952) and sets the flags from it: zero means the player faces right.
 R $DD24 O:A The facing: zero for right
 R $DD24 O:F Zero flag set if facing right
 @ $DD24 label=GetFacing
-c $DD29 Routine at DD29
-D $DD29 Used by the routine at #R$C553.
+c $DD29 Test whether an enemy is inside the play area
+D $DD29 The enemy mover calls it for each active slot after moving it ($CC8D), with the slot's column (byte 2) in E and row (byte 3) in D, and frees the slot with #R$D909 when it returns with the carry flag clear. An enemy is inside when its column is at least 2 and less than 31 minus its width in bytes (byte 4 of the slot, from the template), and its row is 0-13 (a row with bit 7 set, above the top, counts as outside).
+R $DD29 D Row of the enemy
+R $DD29 E Column of the enemy
+R $DD29 IX Address of the enemy slot
+R $DD29 O:F Carry set if the enemy is inside the play area
+R $DD29 O:A Corrupted
+R $DD29 O:H 31 minus the width (when the column is at least 2)
+@ $DD29 label=EnemyInPlayArea
 c $DD41 Fill in an enemy slot
 D $DD41 Starts an enemy in the slot at HL: marks it in use, sets its column and row, copies the five bytes of its template into bytes 4-8 (byte 8 being its type) and sets byte 9 to $80 if the carry flag in the alternate flags is set (the enemy starts in the left half of the screen), or $00 otherwise. Byte 1 is left alone. Used by the three random spawns in #R$C553 and by $C691.
 R $DD41 A Non-zero value marking the slot in use
@@ -1629,7 +2051,7 @@ C $DD53,1 Did the enemy start on the left?
 C $DD55,2 If so, set bit 7
 c $DD58 Test a map cell beside the player for walking
 D $DD58 The wall test for walking. Reads the map cell at offset C from the map window in the player's row (#R$C2D9 with the player's even character row) and tests it with #R$DB90, returning with the carry flag set if the player may move into it. The main loop calls it only when the scroll step count is 4, with the player squarely on a cell: for a step left it tests offsets $28 and $29 (the player's two cells in column 5, $CA40-$CA4D) and for a step right $38 and $39 (column 7, $CAE4-$CAF1); if either is solid the player does not walk.
-D $DD58 This is all that bounds the player sideways: nothing checks the map window against the ends of the map or of a part, so the maps themselves stop the player, with solid cells or with a gap in the floor that drops the player into the lower part (as at the right end of world 3's upper part). The left end of world 1's upper part is open: in map column 0 only the floor cell is solid, and the eight bytes before the map, read as a column, hold no solid cell at the player's height or underfoot, so a player walking off the left end would not be stopped but would fall. The recording never walks there: world 1's window stays between map columns 4 and 189.
+D $DD58 Apart from this test only the left end of the map bounds the player: walking left stops when the scroll position $B958 is 0 ($C9E3-$C9E8). Nothing checks the map window against the right end of the map or the ends of a part, so the maps themselves stop the player there, with solid cells or with a gap in the floor that drops the player into the lower part (as at the right end of world 3's upper part). The left end of world 1's upper part is open (in map column 0 only the floor cell is solid, and the eight bytes before the map, read as a column, hold no solid cell at the player's height or underfoot), but the player cannot reach it: the window is the map's address plus the scroll position (world set-up gives it header word 1 plus $20 with the scroll position at 32, $BE1B and $BD99), so when the scroll position reaches 0 the player is still over map columns 5 and 6, and the walk stops there. The recording never walks there: world 1's window stays between map columns 4 and 189.
 R $DD58 C Offset from the map window: eight times the column, plus the row in the column
 R $DD58 O:F Carry set if the cell can be moved through
 @ $DD58 label=IsSideCellPassable
@@ -1655,12 +2077,22 @@ c $DD93 Test for a scroll step count of 4 or 8
 D $DD93 Returns with the zero flag set when the scroll step count at $D4A2 is 4 or 8, the two steps at which the player stands squarely on a map cell; the main loop and #R$C606 use it to time cell tests and effects to whole cells.
 R $DD93 O:F Zero flag set if the count is 4 or 8
 @ $DD93 label=IsWholeColumnStep
-c $DD9C Routine at DD9C
-D $DD9C Used by the routines at #R$BCE6 and #R$C553.
-c $DDA2 Routine at DDA2
-D $DDA2 Used by the routine at #R$C091.
-c $DDAE Routine at DDAE
-D $DDAE Used by the routine at #R$DC29.
+c $DD9C Start the player falling
+D $DD9C Sets Falling ($B954) to 1. The next time the main loop reaches $C75E (the same pass when called from $C78A) the fall code at $C7BB tests the cells under the player and either moves the player down, glides, or lands and clears the flag again. Called when a world starts ($BDA7 in NewWorld, which a new game also runs), so the player drops onto the floor from the top of the screen; when a jump's counter runs out or its rise is blocked ($C78A), and when a walking step left or right finds the cell under the player's feet open ($CA28, $CACD). A lost life does not call it: $CD33 jumps to BeginLife $BE47, past $BDA1-$BDA7, so the player's position and Falling carry over into the new life.
+R $DD9C O:A 1
+@ $DD9C label=StartFalling
+c $DDA2 Add up the armour
+D $DDA2 Returns ArmourA + ArmourB + ArmourC ($BA24-$BA26), 0-6. Two users: the HIT bar (#R$C091's entry $C0BC) adds ArmourC again and lights that many cells, up to 8; the enemy contact code ($D4F9, in #R$D38B) takes half the total plus a quarter of it (B, rounded down each time) as the number of contact passes that go by without harm between calls of #R$BEFE, so a total of 0-1 costs a unit every 2 contact passes, 2-3 every 4, 4-5 every 8 and 6 every 10.
+R $DDA2 O:A Armour total, 0-6
+R $DDA2 O:HL $BA26
+@ $DDA2 label=ArmourTotal
+c $DDAE Refill the energy bar
+D $DDAE Adds the lost count ($BF28) to the energy ($BF1B), sets the lost count to 0 and redraws the bar (#R$BF15): every unit of the bar is full again. Used only by the handler for item $66, the feathered blade (#R$DC29); the refill after a lost life ($CD25-$CD2D) does the same with its own code.
+@ $DDAE label=RefillEnergy
+C $DDAE,3 Energy plus lost units
+C $DDB6,2 None lost
+C $DDB8,1 All of them energy
+C $DDB9,3 Draw the bar
 c $DDBC Upgrade the weapon on a one in two chance
 D $DDBC Used by #R$D77A when the player's weapon hits an enemy whose template has bit 5 of its second byte set while the weapon level at $BA2D is 0, 1 or 4. If bit 0 of the R register is set, the weapon goes up a level through $DC0A (unless it is already at level 6), without the weapon-kind check the item at #R$DC01 makes; otherwise nothing happens. In the recording this ran 17 times and upgraded the weapon 8 times.
 @ $DDBC label=MaybeUpgradeWeapon
