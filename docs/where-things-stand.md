@@ -18,8 +18,9 @@ recording as the oracle that proves the game logic never changed.
 | G0 | provenance, repository, licence | **passed** - approved by David 2026-09-16; repository public |
 | G1 | the original under ZEsarUX; the recording played to the end | **passed** - David said go 2026-09-16 |
 | G2 | code map; byte-identical reassembly; ctl round trip | **passed** - David said go 2026-09-16 |
-| **G3** | the original as `athena.nex`; the oracle | **built, checks green (oracle passes at 3.5 and 28 MHz) - waiting at checkpoint G3** |
-| D1-D7 | complete annotated disassembly | not started |
+| G3 | the original as `athena.nex`; the oracle | **passed** - David played it and said go 2026-09-16 |
+| **D1** | disassembly: boot, paging, memory map, main loop, interrupts, input, randomness | **annotated, checks green - waiting at checkpoint D1** |
+| D2-D7 | the rest of the complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
 
@@ -105,7 +106,7 @@ real time - with no desynchronisation. Each world is loaded by paging another
 | 6 | 70,145 | 23.4 | 6 |
 | 7 | 85,975 | 28.7 | 7 |
 | ending picture | 117,637 | 39.2 | 1 |
-| hi-score table | 119,119 | 39.7 | 1 |
+| Combat School advert | 119,119 | 39.7 | 1 |
 
 So the level data lives two worlds to a bank (3, 4, 6) with world 7 alone in
 bank 7 and the ending in bank 1. The manual and Crash say six worlds, Your
@@ -208,9 +209,11 @@ graphics-like constant data, the stack, and 2,870 bytes of workspace.
 
 ### Found the hard way
 
-- **The menu only sees taps.** It waits at `$C2E6` until every key is up before it
-  polls the 1-5 row at `$F1E9`, so a held key is never read and a single tap can
-  miss the poll. The scripts press three frames, release twelve, and repeat.
+- **The first key press only closes the credits** (corrected at D1). The title
+  waits at `$C2ED` for any key; the menu at `$F1C9` then waits until every key is
+  up (`$C2F6`) and polls the 1-5 row at `$F1E9` with no further wait, so a key held
+  from the first press is ignored until it is released. The scripts press three
+  frames, release twelve, and repeat, which gets past both waits.
 - **My own header was wrong by 512 bytes** (`$5B00`-`$765F` is 7,008 bytes, not
   6,496); `make ctl`'s canonical form caught it on the first round trip.
 
@@ -239,7 +242,7 @@ could never have worked: the game reads the R register for randomness, its tunes
 are driven by interrupts, and its key-wait loops read the port as fast as the CPU
 allows - all of which depend on CPU speed. So `make oracle-stream` records every
 value the game took from outside (914,021 port and R reads, compressed to 348,106
-bytes, with 893 state hashes along the way and the 22 tunes as records of what they
+bytes, with 893 state hashes along the way and the 22 tunes that finish as records of what they
 changed), and the check build patches those 23 instructions into calls to a handler
 that feeds the values back and checks every hash on the machine.
 
@@ -257,23 +260,107 @@ that feeds the values back and checks every hash on the machine.
 - **Tunes use their own interrupt routines to run the note timing** (`$DF90`,
   `$DFEF`), and abort loops by discarding return addresses. E1 (pacing) and E5
   (sound) have to treat the tune player as one unit, not patch into its middle.
-- **The game overwrites its own menu code** (`$F1E9`-`$F486`) with data during play.
+- **The game overwrites its own menu code** (all of `$F001`-`$F4FE`) with data during play.
 - **ZEsarUX differs from the Next's documentation on NextReg `$8E`** (it remaps
   `$C000-$FFFF` with bit 3 clear); the stub is written to work either way, and the
   KS3 will show which the hardware does.
 
-## Checkpoint G3 - for David
+## Checkpoint G3 - closed
 
-1. **Play the original on the Next:** `make play` (CSpect). It should be
-   indistinguishable from the original 128K game - that is the point of this gate.
-2. Read `docs/oracle.md`.
-3. Optionally rerun: `make g3` (about 20 minutes, most of it the 3.5 MHz oracle).
+David ran `make play` (CSpect) on 2026-09-16: "pretty accurate", and "hard as
+nails" - which is the original's difficulty, and why the gameplay options (E6)
+matter. He said go for D1.
 
-**Next, if you say go - D1:** the complete disassembly begins - boot, 128K paging,
-the memory map, the main loop and its HALT, both interrupt routines, input
-(including the run-time-written control routines), and the R-based randomness,
-each annotated in `src/athena.ctl` and checked with `make check-ctl` and
-`make check-reasm`.
+## D1 - what was built and what it proved
+
+`make html`, then open `build/html/athena/index.html`. How the annotation is done,
+the naming decisions and the questions carried to later chunks are in
+**`docs/disassembly.md`**.
+
+**What is annotated.** 61 of the 399 blocks now have real titles, and between them
+129 labels and 507 instruction comments, all in `src/athena.ctl`:
+
+- **Start-up and game flow:** the entry point `$F0C0` (the tape loader's
+  `JP $F0C0`), the control menu `$F1C9` and its two code templates, new game
+  `$BCE6`/`$BD01`, next world `$BD85`, the world loader `$B8C3`, world set-up
+  `$BDC0` with the life start `$BE47`, game over `$C3C0`, the hi-score table
+  `$BF6A`, the ending `$B908`.
+- **Memory map:** the world area `$7660` and its overflow `$B660`, the IM 2 table
+  `$B700`, the stack `$B801`, the variables block `$B949` (every byte named or shown
+  to be unused), four constant tables `$BA37`-`$BA8C`, the run-time control routine
+  and key table `$BA8D`/`$BAA6`, the control flags `$BAB2`.
+- **The main loop** `$C553`, with the pieces it jumps through (`$DAC9`, `$DAD7`,
+  `$DAF2`, `$D08C`, `$D333`, `$D38B`), its exits, the pause, abort, time bonus and
+  clock.
+- **Interrupts:** the vector `$B8B8` and everything that rewrites it, the title
+  routine and its colour cycling, the in-game `EI; RETI`, and how the tune player's
+  interrupt routines drive note timing.
+- **Input and randomness:** every control method, and all eight `LD A,R` sites with
+  what each value decides.
+
+Every description and variable meaning was checked by an adversarial reviewer
+(292 items, of which 91 needed correcting) before it went in. `make check-ctl` and
+`make check-reasm` pass: annotations cannot change the game.
+
+**Structure corrected** (bytes unchanged): the start-up code `$F0C0`-`$F1C8` was
+read as text and data; the item handlers `$DC25`, `$DC31`, `$DC68`, `$DCAA` and the
+unused fill routine `$F4AC` were read as data; `$BA43` and `$BA54` were read as
+text; and the byte after each of the nine `CALL $C408` is not an instruction but
+the sound effect number `$C408` reads (at `$D4F8` the misreading had swallowed the
+next three instructions).
+
+### Findings that change later work
+
+- **The game's speed is its main loop's.** One pass is one step of play; a pass
+  never takes less than 4 frames and averages 4.32-4.49 per world. The drawing
+  routine `$EBFA` runs 53,592 T-states with interrupts off, so about one interrupt
+  a pass is lost. The clock ticks every 13 passes (about 54 frames, 1.085 s). E1's
+  "original game speed" is this pass rate.
+- **Collisions with enemies are read from a map, not from the screen.** Each pass
+  writes enemy numbers into a 128-byte map at `$EF80` and checks the player's
+  cells there (`$D38B`). D5 still has to confirm there is no screen read, but
+  the plan's hidden-buffer fallback looks unlikely to be needed.
+- **Scroll geometry:** one scroll step is two pixels; map cells are 16 pixels,
+  8 cells a column, with the play area drawn in a 128-line buffer at `$F000` and
+  copied to the screen. That fixes the step for E4's hardware scroll.
+- **The byte after `CALL $C408` is data.** Any patch that moves or rewrites those
+  calls must keep it.
+- **Difficulty levers for E6 are simple values:** lives (`$C1EE`, an ASCII digit,
+  5), credits (`$CCB9`, three continues, none in world 7), the clock (5:00 per
+  world, not reset by a lost life), immunity (200 passes).
+- **Tune numbers:** 0-3 world intros (a counter that is never reset), 4-10 start of
+  play in worlds 1-7 (again after every lost life), 11 after the hi-score table,
+  12 world 7 completed, 13 life lost and game over, 0 again for the ending.
+
+### Found the hard way
+
+- **Three analysts failed 37 times** before the cause was found: each died when
+  writing its whole annotation set as one final answer took more than three
+  minutes. They now write annotations to files as they go
+  (`docs/disassembly.md`).
+- **Five of my own earlier statements were wrong, and are corrected:** the
+  start-up code, not the tape loader, sets IM 2 and the title vector; frame
+  119,119 is a Combat School advert, not the hi-score table; there are 23 tune
+  calls, of which 22 finish; play overwrites the whole of `$F001`-`$F4FE`; and
+  the menu's tap trap is two waits (the first key only closes the credits), not a
+  release wait before every poll.
+
+## Checkpoint D1 - for David
+
+1. `make html`, then open `build/html/athena/index.html` and browse. Good places
+   to start: **Main game loop** (`C553`), **Start the game and draw the title
+   screen** (`F0C0`), **Load the next world from its RAM bank** (`B8C3`), **Game
+   variables** (`B949`), **Choose the control method** (`F1C9`), and **Cycle the
+   colours at the top of the title screen** (`F240`). Are the descriptions
+   readable and useful to you, and is the level of detail right for the other
+   six chunks?
+2. Read `docs/disassembly.md` - the method, the naming decisions and the open
+   questions each later chunk inherits.
+
+**Next, if you say go - D2:** the renderer - the back buffer at `$F000` and its
+copy to the screen, the two-pixel scroll, attributes, sprite drawing and the cause
+of the flicker, the panel, and the message printer; plus `tools/extract_gfx.py`
+exporting every tile and sprite as PNG sheets (the reference for the new art).
 
 ## Method notes that carried over
 

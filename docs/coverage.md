@@ -15,9 +15,11 @@ Two runs of evidence, merged into `build/g2/map-all.txt` (5,772 addresses):
   never reached: the define-keys routine from `$F355`, the game-over path from
   `$BCE6`, and the cursor and Sinclair input code.
 
-The menu has a trap worth knowing: it waits at `$C2E6` until **all** keys are up
-before it polls the 1-5 row at `$F1E9`, so a held key is never seen and one tap
-can miss the poll. The scripts tap: three frames down, twelve up, repeated.
+The menu has a trap worth knowing (corrected at D1): the first key press only
+closes the credits (`$C2ED`), then the menu waits until **all** keys are up
+(`$C2F6`) before it polls the 1-5 row at `$F1E9`, so a key held from that first
+press is ignored until released. The scripts tap: three frames down, twelve up,
+repeated.
 
 | Where | Executed addresses | What |
 |---|---|---|

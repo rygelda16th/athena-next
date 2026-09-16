@@ -40,7 +40,7 @@ site, the value A received and, where the instruction sets flags, F. Runs of
 identical values are compressed. Every 1,024th event carries a hash of the game's
 state; every 16,384th hashes all of `$5B00-$FFFF` except the stack, the input
 routine rewritten at game start, the title interrupt's own counters, and every
-patched byte. **Tunes are not replayed**: each of the 22 tune calls becomes one
+patched byte. **Tunes are not replayed**: each of the 22 tunes that finish becomes one
 record holding the bytes the tune changed (at most 24) and the registers it left,
 and the 1,091,225 reads inside tunes are not in the stream. The result is 914,021
 events in 141,374 records - 348,106 bytes.
@@ -77,7 +77,7 @@ address while the emulator runs.
    the handler in the ROM's unused space from `$386E`, and write-protects it, so
    the game's stray writes are ignored exactly as on the original.
 3. **A full checkpoint failed on 8 bytes that were all patch sites.** The game
-   overwrites its menu code (`$F1E9`-`$F486`) with data during play, and the
+   overwrites its menu code (all of `$F001`-`$F4FE`, patch sites included) with data during play, and the
    reference had hashed the patch bytes rather than what was really there. Patched
    bytes are now left out of every hash, on both sides.
 4. **The recording ends inside a tune.** With all 914,021 events consumed and all

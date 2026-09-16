@@ -1,0 +1,36 @@
+;
+; skool2html ref file for Athena (Imagine Software, 1987), 128K version.
+; make html builds the pages under build/html from YOUR snapshot. They hold the
+; game's bytes, so they are for local reading only and are never published.
+;
+
+[Game]
+Game=Athena (128K)
+Copyright=Athena &#169; 1987 Imagine Software. Annotations CC BY-SA 4.0 (athena-next).
+Release=Built locally from your own snapshot - do not publish
+AddressAnchor={address#IF({mode[base]}==16)(:04X)}
+
+[OtherCode:bank1]
+Source=work/bank1.skool
+
+[OtherCode:bank3]
+Source=work/bank3.skool
+
+[OtherCode:bank4]
+Source=work/bank4.skool
+
+[OtherCode:bank6]
+Source=work/bank6.skool
+
+[OtherCode:bank7]
+Source=work/bank7.skool
+
+[Titles]
+bank1-Index=Bank 1: ending, hi-scores and world settings
+bank3-Index=Bank 3: world data
+bank4-Index=Bank 4: world data
+bank6-Index=Bank 6: world data
+bank7-Index=Bank 7: world data
+
+[Paths]
+CodeFiles={address:04X}.html

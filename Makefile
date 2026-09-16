@@ -27,7 +27,7 @@ ZESARUX128 := zesarux --vo null --ao null --machine 128k --enable-remoteprotocol
 # `make play` points at the Homebrew cask in ~/Applications, which is not patched.
 NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
 
-.PHONY: help certs image doctor shell fetch check-data provenance toolchain-diff \
+.PHONY: help certs image doctor shell fetch check-data provenance html toolchain-diff \
         rzx-end check-orig orig play-orig bank-exec scripts ctl-bootstrap skool ctl \
         check-ctl check-reasm coverage g2 oracle-stream nex oracle-nex check-play \
         check-oracle check-cspect g3 play clean distclean
@@ -43,6 +43,7 @@ help:
 	@echo "make check-orig     G1: the original runs in headless ZEsarUX as a 128K"
 	@echo "make orig           headless original with ZRCP on 127.0.0.1:$(ZRCP_PORT)"
 	@echo "make play-orig      play the original in the native (patched) ZEsarUX"
+	@echo "make html           local HTML disassembly from your snapshot (never publish it)"
 	@echo "make bank-exec      G2: does code ever run at \$$C000 from a bank other than 0?"
 	@echo "make scripts        G2: scripted runs of the original (menu, keys, game over)"
 	@echo "make skool          regenerate work/*.skool from src/*.ctl and YOUR snapshot"
@@ -134,6 +135,12 @@ ctl:
 
 check-ctl:
 	$(RUN) python3 tools/checkctl.py
+
+# Local HTML disassembly from YOUR snapshot (it contains the game's bytes: never publish it).
+html: skool
+	rm -rf build/html
+	$(RUN) skool2html.py -H -q -d build/html work/athena.skool src/athena.ref
+	@echo "open build/html/athena/index.html"
 
 check-reasm: | $(BUILD)
 	$(RUN) python3 tools/reasm.py
