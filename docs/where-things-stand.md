@@ -16,8 +16,8 @@ recording as the oracle that proves the game logic never changed.
 | Gate | What | State |
 |---|---|---|
 | G0 | provenance, repository, licence | **passed** - approved by David 2026-09-16; repository public |
-| **G1** | the original under ZEsarUX; the recording played to the end | **built, checks green - waiting at checkpoint G1** |
-| G2 | code map; byte-identical reassembly; ctl round trip | not started |
+| G1 | the original under ZEsarUX; the recording played to the end | **passed** - David said go 2026-09-16 |
+| **G2** | code map; byte-identical reassembly; ctl round trip | **built, checks green - waiting at checkpoint G2** |
 | G3 | the original as `athena.nex`; the oracle | not started |
 | D1-D7 | complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
@@ -159,17 +159,73 @@ extra lives and loses three. Time at `$B94D` counts 9 to 0 as one digit of the
 clock. The other four change far too often (megajumps 1,906 times, immunity
 1,655) to be what the POKE file's names suggest; D4 names them properly.
 
-## Checkpoint G1 - for David
+## Checkpoint G1 - closed
 
-1. Look at `build/g1/worlds-play.png` (and `sheet.png` if curious): seven worlds,
-   the ending, the hi-score table.
-2. Play the original: `make play-orig`.
-3. Optionally rerun: `make rzx-end && make check-orig`.
+David said go on 2026-09-16.
 
-**Next, if you say go - G2:** the killing experiment first (does code ever run at
-`$C000` from a bank other than 0? The paging log says only five frames per world
-load, which is promising), then the code map from `map.txt`, then a byte-identical
-reassembly of all eight banks with sjasmplus and a lossless ctl round trip.
+## G2 - what was built and what it proved
+
+`make g2` - all green on 2026-09-16, 35 seconds end to end. The details, with every
+number, are in **`docs/coverage.md`**.
+
+**The disassembly exists, and rebuilds the game exactly.** `src/athena.ctl` (the 64K
+view, bank 0 at `$C000`) and `src/bank1.ctl` ... `bank7.ctl` are SkoolKit control files:
+addresses, block types and comments, no instructions and no data (`make check-ctl`
+proves both that, and that ctl -> skool -> ctl loses nothing). From them and the
+player's own snapshot, `make skool` writes the full skool files, and
+`make check-reasm` assembles them with sjasmplus into a 128K image **twice** - as
+written, and with every instruction labelled and every address SkoolKit can
+resolve replaced by its label - and **both reproduce all 131,072 bytes of all eight
+banks**. The labelled build's 952 "unreplaced address" warnings are the honest
+measure of the disassembly work left.
+
+**Code only ever runs from bank 0** (`make bank-exec`): every frame of the recording
+in which another bank was paged was traced instruction by instruction - 129,252
+instructions with bank 1, 3, 4, 6 or 7 in, none of them at `$C000` or above. So one
+skool file holds all the code and the other banks are data, which is how the
+control files are laid out. The replay engine this needed (`tools/rzxsim.py`) ends
+the recording in exactly the state SkoolKit's own player does, and is what G3's
+oracle will be built on.
+
+**Coverage is the recording plus six scripted runs** (`make scripts`): the original
+driven on SkoolKit's C simulator with keys pressed from a schedule - define keys (N
+and Y), Kempston, cursor, Sinclair, and a game left alone to its game over. They add
+206 addresses the recording never ran. Everything no run executed is accounted for
+in `docs/coverage.md`: variables, the message table, the menu text, tables,
+graphics-like constant data, the stack, and 2,870 bytes of workspace.
+
+### Two findings that change later plans
+
+- **There is no AY sound in the 128K version.** In forty minutes the recording
+  writes the beeper port 368,992 times and the AY ports not once. The planning
+  assumption of 128K AY music - and D6's "AY player at `$FB28`" - was wrong: that
+  "instruction" is workspace. "Better sound" (E5) therefore has beeper music and
+  effects to start from, not AY tunes; that is a Checkpoint A decision.
+- **The input routine at `$BA8D` is written at run time** according to the control
+  method chosen: its bytes in play differ from the title's, and the cursor and
+  Sinclair runs execute parts of it the recording never did. The complete
+  disassembly must describe each variant, not the title-time bytes (D1).
+
+### Found the hard way
+
+- **The menu only sees taps.** It waits at `$C2E6` until every key is up before it
+  polls the 1-5 row at `$F1E9`, so a held key is never read and a single tap can
+  miss the poll. The scripts press three frames, release twelve, and repeat.
+- **My own header was wrong by 512 bytes** (`$5B00`-`$765F` is 7,008 bytes, not
+  6,496); `make ctl`'s canonical form caught it on the first round trip.
+
+## Checkpoint G2 - for David
+
+1. Read `docs/coverage.md`.
+2. Browse the skeleton if curious: `make skool`, then `work/athena.skool` (local
+   only - it holds every instruction).
+3. Optionally rerun everything: `make g2`.
+
+**Next, if you say go - G3:** `athena.nex`, the reassembled original as a Next
+program, and the oracle - the recording replayed through the port with the game
+state checked on the machine, iteration by iteration. Its first killing
+experiment is whether the game's logic depends on how many interrupts a loop
+iteration spans.
 
 ## Method notes that carried over
 

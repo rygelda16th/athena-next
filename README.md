@@ -7,8 +7,8 @@ against a full playthrough recording, and enhanced one subsystem at a time.
 **This repository contains no copy of the original game's code or data.** You supply your own
 copy; see `data/README.md` and `docs/licence.md`.
 
-Status: **G1** (the original running, the recording played to the end) - see
-`docs/where-things-stand.md`, which is canonical.
+Status: **G2** (the disassembly's skeleton, rebuilding the game byte for byte) -
+see `docs/where-things-stand.md`, which is canonical.
 
 ## Requirements
 
@@ -27,6 +27,7 @@ make provenance   # the snapshot is the original tape's game
 make rzx-end      # play the whole recording: pictures, snapshots, code map
 make check-orig   # the original runs in headless ZEsarUX as a 128K
 make play-orig    # play it yourself (native ZEsarUX)
+make g2           # code map, skool files, ctl round trip, byte-identical rebuild
 ```
 
 ## Layout
@@ -36,8 +37,9 @@ make play-orig    # play it yourself (native ZEsarUX)
 | `docs/where-things-stand.md` | canonical status |
 | `docs/provenance.md` | which Athena, and how we know |
 | `docs/licence.md` | what is and is never in this repository |
+| `docs/coverage.md` | where code runs, and every byte no run executed |
 | `tools/` | fetch, checks, format readers (standard library Python) |
-| `src/` | SkoolKit control files (from G2) and new Z80 code |
+| `src/` | SkoolKit control files - the disassembly - and (later) new Z80 code |
 | `data/` | your game files - never committed |
 | `build/` | everything generated - never committed |
 

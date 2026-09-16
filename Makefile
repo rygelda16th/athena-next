@@ -28,7 +28,8 @@ ZESARUX128 := zesarux --vo null --ao null --machine 128k --enable-remoteprotocol
 NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
 
 .PHONY: help certs image doctor shell fetch check-data provenance toolchain-diff \
-        rzx-end check-orig orig play-orig clean distclean
+        rzx-end check-orig orig play-orig bank-exec scripts ctl-bootstrap skool ctl \
+        check-ctl check-reasm coverage g2 clean distclean
 
 help:
 	@echo "make certs          extract the corporate TLS-inspection CA for the image"
@@ -41,6 +42,14 @@ help:
 	@echo "make check-orig     G1: the original runs in headless ZEsarUX as a 128K"
 	@echo "make orig           headless original with ZRCP on 127.0.0.1:$(ZRCP_PORT)"
 	@echo "make play-orig      play the original in the native (patched) ZEsarUX"
+	@echo "make bank-exec      G2: does code ever run at \$$C000 from a bank other than 0?"
+	@echo "make scripts        G2: scripted runs of the original (menu, keys, game over)"
+	@echo "make skool          regenerate work/*.skool from src/*.ctl and YOUR snapshot"
+	@echo "make ctl            write work/*.skool back to src/*.ctl (after annotating)"
+	@echo "make check-ctl      G2: ctl -> skool -> ctl loses nothing; no game bytes in src/"
+	@echo "make check-reasm    G2: all eight banks rebuilt byte for byte, two ways"
+	@echo "make coverage       G2: what no run executed, sorted by evidence"
+	@echo "make g2             everything G2, in order"
 	@echo "make toolchain-diff has the shared toolchain drifted from anotherworld-next?"
 
 certs:
@@ -91,6 +100,41 @@ orig:
 play-orig:
 	@test -x "$(NATIVE_ZESARUX)" || { echo "no native ZEsarUX at $(NATIVE_ZESARUX)"; exit 1; }
 	"$(NATIVE_ZESARUX)" --noconfigfile --machine 128k --zoom 2 --snap "$(CURDIR)/data/athena128.z80"
+
+# ---- G2: the disassembly's skeleton ------------------------------------------
+# The control files in src/ ARE the disassembly. `make skool` regenerates the full
+# skool files (which contain every instruction, so they live in work/, never in
+# git); annotate there, then `make ctl` writes the control files back.
+BANKS := 1 3 4 6 7
+
+bank-exec: | $(BUILD)
+	$(RUN) python3 tools/bankexec.py
+
+scripts: | $(BUILD)
+	$(RUN) sh -c 'for s in tools/scripts/*.py; do python3 tools/scriptplay.py $$s || exit 1; done; python3 tools/mergemaps.py'
+
+ctl-bootstrap:
+	$(RUN) python3 tools/mkctl.py
+
+skool:
+	@mkdir -p work
+	$(RUN) sh -c 'sna2skool.py -H -c src/athena.ctl data/athena128.z80 > work/athena.skool 2>/dev/null && \
+		for n in $(BANKS); do sna2skool.py -H -p $$n -c src/bank$$n.ctl data/athena128.z80 > work/bank$$n.skool 2>/dev/null || exit 1; done'
+
+ctl:
+	$(RUN) sh -c 'skool2ctl.py -h work/athena.skool > src/athena.ctl && \
+		for n in $(BANKS); do skool2ctl.py -h work/bank$$n.skool > src/bank$$n.ctl || exit 1; done'
+
+check-ctl:
+	$(RUN) python3 tools/checkctl.py
+
+check-reasm: | $(BUILD)
+	$(RUN) python3 tools/reasm.py
+
+coverage: | $(BUILD)
+	python3 tools/coverage.py
+
+g2: bank-exec scripts skool check-ctl check-reasm coverage
 
 # ---- drift check --------------------------------------------------------------
 # The shared files are copied from anotherworld-next rather than submoduled.
