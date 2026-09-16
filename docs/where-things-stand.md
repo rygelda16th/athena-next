@@ -18,7 +18,7 @@ recording as the oracle that proves the game logic never changed.
 | G0 | provenance, repository, licence | **passed** - approved by David 2026-09-16; repository public |
 | G1 | the original under ZEsarUX; the recording played to the end | **passed** - David said go 2026-09-16 |
 | G2 | code map; byte-identical reassembly; ctl round trip | **passed** - David said go 2026-09-16 |
-| **G3** | the original as `athena.nex`; the oracle | **built; see the G3 section for the checks' state** |
+| **G3** | the original as `athena.nex`; the oracle | **built, checks green (oracle passes at 3.5 and 28 MHz) - waiting at checkpoint G3** |
 | D1-D7 | complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
@@ -246,7 +246,7 @@ that feeds the values back and checks every hash on the machine.
 | Build | Result |
 |---|---|
 | `athena-oracle-28.nex` (28 MHz) | **PASS** - all 914,021 events, all 893 checkpoints, 316 s at 20x emulator speed |
-| `athena-oracle-35.nex` (3.5 MHz) | running at the time of writing; about an hour at 20x |
+| `athena-oracle-35.nex` (3.5 MHz) | **PASS** - all 914,021 events, all 893 checkpoints, 782 s at 20x emulator speed |
 
 ### Findings that change later work
 
@@ -267,7 +267,7 @@ that feeds the values back and checks every hash on the machine.
 1. **Play the original on the Next:** `make play` (CSpect). It should be
    indistinguishable from the original 128K game - that is the point of this gate.
 2. Read `docs/oracle.md`.
-3. Optionally rerun: `make g3` (the 3.5 MHz oracle takes about an hour).
+3. Optionally rerun: `make g3` (about 20 minutes, most of it the 3.5 MHz oracle).
 
 **Next, if you say go - D1:** the complete disassembly begins - boot, 128K paging,
 the memory map, the main loop and its HALT, both interrupt routines, input
