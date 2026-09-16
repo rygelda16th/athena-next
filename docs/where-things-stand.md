@@ -17,8 +17,8 @@ recording as the oracle that proves the game logic never changed.
 |---|---|---|
 | G0 | provenance, repository, licence | **passed** - approved by David 2026-09-16; repository public |
 | G1 | the original under ZEsarUX; the recording played to the end | **passed** - David said go 2026-09-16 |
-| **G2** | code map; byte-identical reassembly; ctl round trip | **built, checks green - waiting at checkpoint G2** |
-| G3 | the original as `athena.nex`; the oracle | not started |
+| G2 | code map; byte-identical reassembly; ctl round trip | **passed** - David said go 2026-09-16 |
+| **G3** | the original as `athena.nex`; the oracle | **built; see the G3 section for the checks' state** |
 | D1-D7 | complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
@@ -214,18 +214,66 @@ graphics-like constant data, the stack, and 2,870 bytes of workspace.
 - **My own header was wrong by 512 bytes** (`$5B00`-`$765F` is 7,008 bytes, not
   6,496); `make ctl`'s canonical form caught it on the first round trip.
 
-## Checkpoint G2 - for David
+## Checkpoint G2 - closed
 
-1. Read `docs/coverage.md`.
-2. Browse the skeleton if curious: `make skool`, then `work/athena.skool` (local
-   only - it holds every instruction).
-3. Optionally rerun everything: `make g2`.
+David said go on 2026-09-16.
 
-**Next, if you say go - G3:** `athena.nex`, the reassembled original as a Next
-program, and the oracle - the recording replayed through the port with the game
-state checked on the machine, iteration by iteration. Its first killing
-experiment is whether the game's logic depends on how many interrupts a loop
-iteration spans.
+## G3 - what was built and what it proved
+
+`make g3`. The oracle's design, and the four things that went wrong while building
+it, are in **`docs/oracle.md`**.
+
+**The original runs as a Next program.** `build/athena.nex` is the game exactly as
+check-reasm rebuilt it, plus a resume stub in 16K bank 8 (`src/next/resume.asm`)
+that starts it where the snapshot was saved: 48K ROM selected, registers, I and
+IM 2 restored, and a last `NEXTREG $8E` that pages bank 0 over the stub itself so
+the next fetch lands on the game's own `RET` at `$E985`. `make check-play` runs it
+under headless ZEsarUX as a Next (all three banks equal the snapshot outside the
+title's moving bytes, interrupts running, the title pixel for pixel), and
+`make check-cspect` runs it in CSpect under a probe plugin
+(`tools/cspect/athprobe.cs`) with the same result - its screen equals ZEsarUX's
+in all 49,152 pixels. **`make play` opens it in CSpect.**
+
+**The oracle replays Rafal's forty minutes through the port.** Replaying key presses
+could never have worked: the game reads the R register for randomness, its tunes
+are driven by interrupts, and its key-wait loops read the port as fast as the CPU
+allows - all of which depend on CPU speed. So `make oracle-stream` records every
+value the game took from outside (914,021 port and R reads, compressed to 348,106
+bytes, with 893 state hashes along the way and the 22 tunes as records of what they
+changed), and the check build patches those 23 instructions into calls to a handler
+that feeds the values back and checks every hash on the machine.
+
+| Build | Result |
+|---|---|
+| `athena-oracle-28.nex` (28 MHz) | **PASS** - all 914,021 events, all 893 checkpoints, 316 s at 20x emulator speed |
+| `athena-oracle-35.nex` (3.5 MHz) | running at the time of writing; about an hour at 20x |
+
+### Findings that change later work
+
+- **The game's text printer draws into `$0000-$3FFF`** (off-screen text, harmless on
+  a Spectrum's ROM). Anything the port ever puts at `$0000-$3FFF` must be
+  write-protected - which is why the oracle handler lives in the Next's alternative
+  ROM. The enhanced port inherits this constraint.
+- **Tunes use their own interrupt routines to run the note timing** (`$DF90`,
+  `$DFEF`), and abort loops by discarding return addresses. E1 (pacing) and E5
+  (sound) have to treat the tune player as one unit, not patch into its middle.
+- **The game overwrites its own menu code** (`$F1E9`-`$F486`) with data during play.
+- **ZEsarUX differs from the Next's documentation on NextReg `$8E`** (it remaps
+  `$C000-$FFFF` with bit 3 clear); the stub is written to work either way, and the
+  KS3 will show which the hardware does.
+
+## Checkpoint G3 - for David
+
+1. **Play the original on the Next:** `make play` (CSpect). It should be
+   indistinguishable from the original 128K game - that is the point of this gate.
+2. Read `docs/oracle.md`.
+3. Optionally rerun: `make g3` (the 3.5 MHz oracle takes about an hour).
+
+**Next, if you say go - D1:** the complete disassembly begins - boot, 128K paging,
+the memory map, the main loop and its HALT, both interrupt routines, input
+(including the run-time-written control routines), and the R-based randomness,
+each annotated in `src/athena.ctl` and checked with `make check-ctl` and
+`make check-reasm`.
 
 ## Method notes that carried over
 

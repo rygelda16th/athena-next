@@ -29,7 +29,8 @@ NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
 
 .PHONY: help certs image doctor shell fetch check-data provenance toolchain-diff \
         rzx-end check-orig orig play-orig bank-exec scripts ctl-bootstrap skool ctl \
-        check-ctl check-reasm coverage g2 clean distclean
+        check-ctl check-reasm coverage g2 oracle-stream nex oracle-nex check-play \
+        check-oracle check-cspect g3 play clean distclean
 
 help:
 	@echo "make certs          extract the corporate TLS-inspection CA for the image"
@@ -50,6 +51,12 @@ help:
 	@echo "make check-reasm    G2: all eight banks rebuilt byte for byte, two ways"
 	@echo "make coverage       G2: what no run executed, sorted by evidence"
 	@echo "make g2             everything G2, in order"
+	@echo "make nex            build/athena.nex: the original, rebuilt, as a Next program"
+	@echo "make check-play     G3: athena.nex runs the original under headless ZEsarUX (Next)"
+	@echo "make oracle-stream  G3: every value the game took from outside, from the recording"
+	@echo "make check-oracle   G3: the recording replayed through the port at 3.5 and 28 MHz"
+	@echo "make check-cspect   G3: athena.nex runs in CSpect too (opens a window briefly)"
+	@echo "make play           play build/athena.nex in CSpect"
 	@echo "make toolchain-diff has the shared toolchain drifted from anotherworld-next?"
 
 certs:
@@ -135,6 +142,46 @@ coverage: | $(BUILD)
 	python3 tools/coverage.py
 
 g2: bank-exec scripts skool check-ctl check-reasm coverage
+
+# ---- G3: the original as a Next program, and the oracle -------------------------
+# Headless ZEsarUX as a Next (TBBlue). --emulatorspeed lets the forty-minute
+# recording replay faster than real time.
+ZESARUX_NEXT := zesarux --vo null --ao null --machine tbblue --enable-remoteprotocol \
+                        --remoteprotocol-port $(ZRCP_PORT) --enable-breakpoints \
+                        --tbblue-max-turbo-rom 8 --tbblue-max-turbo-everywhere 8 \
+                        --nosplash --noconfigfile
+ORACLE_SPEED ?= 2000
+CSPECT ?= $(HOME)/src/cspect
+
+nex: | $(BUILD)
+	@test -f build/g2/plain/bank0.bin || { echo "run make check-reasm first"; exit 1; }
+	@test -f build/g3/play_gen.asm || { echo "run make oracle-stream first"; exit 1; }
+	$(RUN) sjasmplus --nologo --msg=war -DSPEED=0 src/next/athena.asm
+
+oracle-stream: | $(BUILD)
+	$(RUN) python3 tools/mkstream.py
+
+oracle-nex: | $(BUILD)
+	$(RUN) sh -c 'sjasmplus --nologo --msg=war -DSPEED=0 -DORACLE src/next/athena.asm && \
+		sjasmplus --nologo --msg=war -DSPEED=3 -DORACLE src/next/athena.asm'
+
+check-play: nex
+	$(RUN) sh -c '$(ZESARUX_NEXT) >/tmp/zesarux.log 2>&1 & sleep 3; python3 tools/checknex.py play'
+
+check-oracle: oracle-nex
+	$(RUN) sh -c '$(ZESARUX_NEXT) --emulatorspeed $(ORACLE_SPEED) >/tmp/zesarux.log 2>&1 & sleep 3; \
+		python3 -u tools/checknex.py oracle build/g3/athena-oracle-35.nex 7200'
+	$(RUN) sh -c '$(ZESARUX_NEXT) --emulatorspeed $(ORACLE_SPEED) >/tmp/zesarux.log 2>&1 & sleep 3; \
+		python3 -u tools/checknex.py oracle build/g3/athena-oracle-28.nex 7200'
+
+check-cspect: check-play
+	python3 tools/checkcspect.py
+
+g3: oracle-stream nex check-play check-cspect check-oracle
+
+play: nex
+	cp build/athena.nex $(CSPECT)/sd/ATHENA.NEX
+	cd $(CSPECT)/CSpect && mono CSpect.exe -w3 -basickeys -mouse -zxnext -nextrom -mmc=../sd/ ../sd/ATHENA.NEX
 
 # ---- drift check --------------------------------------------------------------
 # The shared files are copied from anotherworld-next rather than submoduled.

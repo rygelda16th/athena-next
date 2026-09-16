@@ -23,6 +23,10 @@ class Z80Snapshot:
          self.i, r) = struct.unpack("<BBBBBBHHBB", raw[:12])
         flags = raw[12]
         self.r = (r & 0x7F) | ((flags & 1) << 7)
+        (self.de, self.bc_, self.de_, self.hl_, self.a_, self.f_, self.iy,
+         self.ix) = struct.unpack("<HHHHBBHH", raw[13:27])
+        self.bc = self.c | self.b << 8
+        self.hl = self.l | self.h << 8
         self.iff1, self.iff2 = raw[27], raw[28]
         self.im = raw[29] & 3
         if pc1 != 0:
