@@ -7,7 +7,8 @@
     make ctl && make check-ctl && make check-reasm                 # canonical ctl, gates
 
 The JSON is the merged, reviewed output of a chunk's analysis:
-  {"ctl_blocks": [{"address", "kind", "end"?, "subs"?}],                     step 1
+  {"text_corrections": [{"old", "new"}],                                     step 1
+   "ctl_blocks": [{"address", "kind", "end"?, "subs"?}],                     step 1
    "variables": [{"address", "length", "label", "meaning", "sub"?}],         steps 1 and 2
    "blocks": [{"address", "kind", "label", "title", "description",           step 2
                "registers": [...], "comments": [{"address", "text"}],
@@ -40,6 +41,8 @@ ADDR = re.compile(r"\$([0-9A-Fa-f]{4})")
 INSTR = re.compile(r"^([a-z* ])\$([0-9A-F]{4}) ")
 BLOCK = re.compile(r"^([bcgistuw]) \$([0-9A-F]{4})(.*)$")
 SUB = re.compile(r"^[BCSTW] \$")
+DATA_SUB = re.compile(r"^[BSTW] \$")
+LINE = re.compile(r"^[A-Za-z@] \$([0-9A-F]{4})")
 
 
 def addr(text):
@@ -71,6 +74,12 @@ def block_body(lines, i):
 def step_ctl(ann, path="src/athena.ctl"):
     lines = open(path).read().splitlines()
     n_blocks = n_vars = 0
+    # Corrections to text an earlier chunk published: each old text must occur exactly once.
+    for tc in ann.get("text_corrections", []):
+        hits = [i for i, ln in enumerate(lines) if tc["old"] in ln]
+        if len(hits) != 1:
+            sys.exit(f"text correction matches {len(hits)} lines, not 1: {tc['old'][:70]!r}")
+        lines[hits[0]] = lines[hits[0]].replace(tc["old"], tc["new"])
     for cb in ann.get("ctl_blocks", []):
         a = addr(cb["address"])
         if "insert" in cb:
@@ -94,12 +103,15 @@ def step_ctl(ann, path="src/athena.ctl"):
             lines[at[0]] = f"{kind} ${a:04X}{m.group(3)}"
             i = at[0]
         else:
-            later = [i for i, _, s in block_starts(lines) if s > a]
-            i = later[0] if later else len(lines)
+            # In address order among ALL lines, so the old block's later sub-blocks
+            # (e.g. T $F10B inside a new code block at $F0C0) move into the new block.
+            i = next((k for k, ln in enumerate(lines) if (m := LINE.match(ln)) and int(m.group(1), 16) > a), len(lines))
             lines.insert(i, f"{kind} ${a:04X}")
         if "subs" in cb:
+            # replace the layout; in a code block, C lines are comments and stay
             lo, hi = block_body(lines, i)
-            keep = [ln for ln in lines[lo:hi] if not SUB.match(ln)]
+            keep = [ln for ln in lines[lo:hi]
+                    if not (DATA_SUB.match(ln) or (kind != "c" and ln.startswith("C $")))]
             lines[lo:hi] = keep + cb["subs"]
         n_blocks += 1
 
@@ -130,7 +142,7 @@ def step_ctl(ann, path="src/athena.ctl"):
         keep = [ln for ln in lines[lo:hi] if not SUB.match(ln) and not ln.startswith("@ ")]
         lines[lo:hi] = keep + subs
     open(path, "w").write("\n".join(lines) + "\n")
-    print(f"{path}: {n_blocks} block changes, {n_vars} variables laid out")
+    print(f"{path}: {len(ann.get('text_corrections', []))} text corrections, {n_blocks} block changes, {n_vars} variables laid out")
 
 
 def header(block):

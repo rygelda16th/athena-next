@@ -5,9 +5,10 @@
 ; WHERE IT LIVES, AND WHY. The build patches every port read and every LD A,R
 ; the recording executed into RST $28 + a site index byte (tools/mkstream.py
 ; lists them), so something must answer at $0028. That something cannot be RAM:
-; the game's text printer ($C25x) draws off-screen text into $0000-$3FFF, which
-; on a Spectrum is ROM and ignores it - in RAM it wrote over the handler's jump
-; at $0028 and killed the second tune service (found 2026-09-16). So the stub
+; something in the game writes into $0000-$3FFF, which on a Spectrum is ROM and
+; ignores it - in RAM it wrote over the handler's jump at $0028 and killed the
+; second tune service (found 2026-09-16; not the text printer, as first thought -
+; see docs/disassembly.md, D2). So the stub
 ; copies the 48K ROM into the Next's alternative ROM (NextReg $8C), patches the
 ; jump at $0028 and KEY-SCAN's IN A,(C) there, puts this code in the 48K ROM's
 ; unused space from $386E, and write-protects it. Writes to $0000-$3FFF are then

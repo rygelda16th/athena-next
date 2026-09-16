@@ -19,8 +19,9 @@ recording as the oracle that proves the game logic never changed.
 | G1 | the original under ZEsarUX; the recording played to the end | **passed** - David said go 2026-09-16 |
 | G2 | code map; byte-identical reassembly; ctl round trip | **passed** - David said go 2026-09-16 |
 | G3 | the original as `athena.nex`; the oracle | **passed** - David played it and said go 2026-09-16 |
-| **D1** | disassembly: boot, paging, memory map, main loop, interrupts, input, randomness | **annotated, checks green - waiting at checkpoint D1** |
-| D2-D7 | the rest of the complete annotated disassembly | not started |
+| D1 | disassembly: boot, paging, memory map, main loop, interrupts, input, randomness | **passed** - David said go 2026-09-16 |
+| **D2** | disassembly: the renderer; every graphic exported (`make gfx`) | **annotated, checks green - waiting at checkpoint D2** |
+| D3-D7 | the rest of the complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
 
@@ -253,8 +254,9 @@ that feeds the values back and checks every hash on the machine.
 
 ### Findings that change later work
 
-- **The game's text printer draws into `$0000-$3FFF`** (off-screen text, harmless on
-  a Spectrum's ROM). Anything the port ever puts at `$0000-$3FFF` must be
+- **Something in the game writes into `$0000-$3FFF`** (harmless on a Spectrum's
+  ROM; D2 showed it is not the text printer first blamed, and the writer is still
+  unidentified). Anything the port ever puts at `$0000-$3FFF` must be
   write-protected - which is why the oracle handler lives in the Next's alternative
   ROM. The enhanced port inherits this constraint.
 - **Tunes use their own interrupt routines to run the note timing** (`$DF90`,
@@ -303,7 +305,8 @@ Every description and variable meaning was checked by an adversarial reviewer
 `make check-reasm` pass: annotations cannot change the game.
 
 **Structure corrected** (bytes unchanged): the start-up code `$F0C0`-`$F1C8` was
-read as text and data; the item handlers `$DC25`, `$DC31`, `$DC68`, `$DCAA` and the
+read as text and data (only `$F0C0`-`$F10A` actually became code at D1 - a tool bug
+that D2 found and fixed); the item handlers `$DC25`, `$DC31`, `$DC68`, `$DCAA` and the
 unused fill routine `$F4AC` were read as data; `$BA43` and `$BA54` were read as
 text; and the byte after each of the nine `CALL $C408` is not an instruction but
 the sound effect number `$C408` reads (at `$D4F8` the misreading had swallowed the
@@ -345,22 +348,85 @@ next three instructions).
   the menu's tap trap is two waits (the first key only closes the credits), not a
   release wait before every poll.
 
-## Checkpoint D1 - for David
+## Checkpoint D1 - closed
 
-1. `make html`, then open `build/html/athena/index.html` and browse. Good places
-   to start: **Main game loop** (`C553`), **Start the game and draw the title
-   screen** (`F0C0`), **Load the next world from its RAM bank** (`B8C3`), **Game
-   variables** (`B949`), **Choose the control method** (`F1C9`), and **Cycle the
-   colours at the top of the title screen** (`F240`). Are the descriptions
-   readable and useful to you, and is the level of detail right for the other
-   six chunks?
-2. Read `docs/disassembly.md` - the method, the naming decisions and the open
-   questions each later chunk inherits.
+David said go for D2 on 2026-09-16.
 
-**Next, if you say go - D2:** the renderer - the back buffer at `$F000` and its
-copy to the screen, the two-pixel scroll, attributes, sprite drawing and the cause
-of the flicker, the panel, and the message printer; plus `tools/extract_gfx.py`
-exporting every tile and sprite as PNG sheets (the reference for the new art).
+## D2 - what was built and what it proved
+
+`make html` (the disassembly), **`make gfx`** (PNG sheets of every graphic, from your
+own files, in `build/gfx/index.html`) and **`make check-gfx`** (the gate). The method,
+what went wrong and the open questions are in **`docs/disassembly.md`**.
+
+**What is annotated.** 146 of the 358 blocks now have real titles (the count of
+blocks fell because dozens of SkoolKit's guessed text and data fragments became whole
+routines, tables and messages), with 230 labels and 809 instruction comments:
+
+- **The play area:** the redraw from the map (`$DE96`, `$DDC4`, `$DDFD`), the
+  two-pixel scrolls (`$E989`, `$EA4D`), the copy to the screen (`$EBFA`), the cell
+  redraw, the back buffer at `$F000`.
+- **Sprites:** the player built in its own buffer (`$EDB4`, `$EDD5`, `$ECCB`,
+  `$ECE9`), the masked sprite drawers (`$EB11`, `$EB71`, `$EBAF`), the drawing parts of
+  the main loop and the guardian.
+- **Text and the panel:** the character and message printers with their control
+  codes, the large characters, every message as its own text entry, the hi-score
+  table, the energy bar, weapon colours and carried items, the screen utilities.
+- **Graphics:** `$5B00`-`$765F` split into the bit-reversal table, the player's
+  sprite buffer, the font and 29 blocks of graphics (28 sets and one unused), each described and drawn; bank 1 split
+  into the world overflow, the ending picture and the Combat School advert.
+
+`make check-ctl` and `make check-reasm` pass. **`make check-gfx`** rebuilds the play
+area from each world's map and cell table and matches every buffer byte in all seven
+world snapshots.
+
+### Findings that change later work
+
+- **The flicker, explained and measured.** Every pass the play-area copy wipes all
+  sprites off the screen; only the player is built off screen and put back at once.
+  Everything else (enemies, guardian, explosions, hit effects) is redrawn later in
+  the pass, so a TV frame whose beam passes those lines in between shows the sprite
+  missing: 1.2-3.2% of TV frames per world, the player never, guardian explosions
+  nearly always. Hardware sprites (E3) remove the cause entirely.
+- **The copy is timed to the beam.** The game balances the work before the copy
+  (matching delays for empty enemy slots and guardian passes) so it starts about
+  14,000 T-states after the interrupt, just as the beam reaches the screen (inferred
+  from the measured start times). The enhanced port does not need to keep this.
+- **Play area geometry for E2/E4:** a 128-line buffer of 32 bytes a line; 15 map
+  columns of 8 cells drawn into bytes 1-30, 13 shown (columns 3-28 of the screen);
+  one attribute for the whole play area, from the world header; 16x16 cells, 116 per
+  world bank (131 in world 7).
+- **Every graphic is one of two formats:** plain 1 bit a pixel, or a mask byte before
+  each graphic byte; left-facing sprites are mirrored copies (the player's made at start-up
+  through the bit-reversal table at `$5B00`; each world's enemies have theirs at a
+  fixed offset, the operand at `$CC7E`, half-way through the bank's frame area). This is the grid the new art must fit (art bible).
+- **The title graphics exist only in the tape-loaded machine:** the start-up code
+  overwrites the ATHENA logo and part of the figure after drawing them, so
+  `make gfx` reads them from `make provenance`'s snapshot.
+
+### Found the hard way
+
+- **D1's start-up block was only partly code** (`tools/annotate.py` bug, now fixed;
+  re-running all of D1 changed only `$F10B`-`$F1C8`).
+- **The G3 claim that the text printer writes into `$0000-$3FFF` was wrong**; the
+  constraint stands, the writer is unknown (a D5 question). Corrected in
+  `docs/oracle.md` and `src/next/oracle.asm`.
+- **Screens taken at the frame interrupt show far more flicker than a TV** - every
+  sprite missing once a pass; the measurement had to model the beam.
+
+## Checkpoint D2 - for David
+
+1. `make gfx`, then open `build/gfx/index.html`: every graphic in the game, including
+   the map cells, enemies and guardians of each world. This is the reference for the
+   new art - is it the right form for the art bible at Checkpoint A?
+2. `make html` and browse the renderer: **Copy the play area from the buffer to the
+   screen** (`EBFA`), **Redraw the play area buffer from the map window** (`DE96`),
+   **Draw a masked sprite** (`EB11`), **Print a message** (`C292`), **Font** (`5C40`),
+   and the main loop's drawing part (`D08C`).
+3. Read the flicker finding above and `docs/disassembly.md`.
+
+**Next, if you say go - D3:** level data - the world headers, the map format, the
+enemy templates and start lists, and `tools/render_world.py` rendering each whole
+world map from the data, compared by eye with Spectrum Computing's maps.
 
 ## Method notes that carried over
 

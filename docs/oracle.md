@@ -69,10 +69,12 @@ address while the emulator runs.
    tune player's interrupt-driven control flow was found, and why tunes became a
    service instead of being replayed.
 2. **The handler was destroyed by the game.** It first lived in RAM paged at
-   `$0000-$3FFF`. The game's text printer (`$C25x`) draws some text off screen,
-   into `$0000-$3FFF` - on a Spectrum that is ROM and the writes vanish; in RAM they
-   overwrote `JP handler` at `$0028`, found by stepping ZEsarUX 2,000 opcodes at a
-   time until those three bytes changed. The handler now lives in the Next's
+   `$0000-$3FFF`. Something in the game writes into `$0000-$3FFF` - on a Spectrum
+   that is ROM and the writes vanish; in RAM they overwrote `JP handler` at `$0028`,
+   found by stepping ZEsarUX 2,000 opcodes at a time until those three bytes
+   changed. (This was first blamed on the text printer at `$C25x`; D2 showed that
+   routine cannot address below `$4000`, so which instruction writes there is still
+   open - `docs/disassembly.md`.) The handler now lives in the Next's
    **alternative ROM** (NextReg `$8C`): the stub copies the 48K ROM into it, adds
    the handler in the ROM's unused space from `$386E`, and write-protects it, so
    the game's stray writes are ignored exactly as on the original.
