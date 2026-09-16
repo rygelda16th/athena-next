@@ -20,3 +20,4 @@ certs/
 *.exp
 __pycache__/
 local.mk
+.DS_Store
