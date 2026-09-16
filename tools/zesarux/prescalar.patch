@@ -1,0 +1,49 @@
+--- a/src/datagear.c
++++ b/src/datagear.c
+@@ -87,6 +87,9 @@
+ 
+ //Valor de la DMA de TBBLUE de prescaler
+ z80_byte datagear_dma_tbblue_prescaler;
++
++//T-estados a 3.5 MHz por cada unidad del prescaler: 875 kHz es 3.5 MHz / 4
++#define DATAGEAR_ZXN_PRESCALAR_TSTATES 4
+ 
+ 
+ //
+@@ -599,6 +602,26 @@
+ 
+ 
+         int dmapre=2; //Cada 2 estados, una transferencia
++
++        //ZXN PRESCALAR: fixed-time transfer. wiki.specnext.dev/DMA gives the
++        //rate as "Frate = 875kHz / prescalar" for a 28 MHz system clock, so
++        //one prescalar tick is 32 system clocks - which is 4 T-states at
++        //3.5 MHz and 4*turbo at any other CPU speed, since t_estados counts
++        //at the selected speed.
++        //
++        //The older text quoted below in this file says a tick is ONE cycle
++        //of the CPU clock instead, i.e. four times faster. The wiki is the
++        //current document and its worked example (16 kHz -> prescalar 55)
++        //only holds at 875 kHz, so that is what this implements; the
++        //constant is in one place if hardware says otherwise.
++        //
++        //BURST MODE ONLY. In continuous mode the spec says the same delay
++        //applies with the CPU blocked, which here would mean advancing
++        //t_estados from inside one opcode by up to 64K * 1020 T-states;
++        //that is left as it was until someone needs it.
++        if (MACHINE_IS_TBBLUE && datagear_dma_tbblue_prescaler) {
++            dmapre=datagear_dma_tbblue_prescaler*DATAGEAR_ZXN_PRESCALAR_TSTATES*cpu_turbo_speed;
++        }
+ 
+ 		int resta=datagear_return_resta_testados(datagear_dma_last_testados,t_estados);
+ 
+@@ -696,8 +719,7 @@
+ 
+ 
+         //Si prescaler=0, no se permite ejecucion de la cpu
+-        //TODO: gestionar otros valores de prescaler, permitiendo ejecucion de la cpu entre dos transferencias de la dma,
+-        //las cuales estan separadas por un tiempo determinado por el propio prescaler
++        //Con prescaler distinto de cero, dmapre ya lleva el tiempo entre dos transferencias (ver arriba)
+         //Atic Atac usa prescaler=0
+         if (datagear_dma_tbblue_prescaler==0) dma_continuous=1;
+ 

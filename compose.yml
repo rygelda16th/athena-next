@@ -1,0 +1,16 @@
+# Copied from anotherworld-next @d6f2736 (itself from wolf3d-next @5a870c8); see
+# the Dockerfile header. The ZRCP port is 10010 here so this project's headless
+# emulator can run while another project's is up on 10000/10001.
+#
+# The workspace is bind-mounted at /work, so sources are edited natively on the
+# Mac and only compilation/measurement crosses into the container.
+services:
+  tools:
+    build: .
+    image: athena-next-tools
+    working_dir: /work
+    volumes:
+      - .:/work
+    ports:
+      - "127.0.0.1:10010:10010"
+    tty: true

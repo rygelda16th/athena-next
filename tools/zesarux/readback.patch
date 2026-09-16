@@ -1,0 +1,165 @@
+--- a/src/datagear.c
++++ b/src/datagear.c
+@@ -91,7 +91,19 @@
+ //T-estados a 3.5 MHz por cada unidad del prescaler: 875 kHz es 3.5 MHz / 4
+ #define DATAGEAR_ZXN_PRESCALAR_TSTATES 4
+ 
++//READ-BACK. Which registers a read sequence returns (WR6 0xBB, read mask
++//follows: bit 0 status, 1-2 byte counter, 3-4 port A address, 5-6 port B
++//address), where the sequence is, whether one is pending at all, and the
++//two facts the status byte reports: bytes transferred since the last LOAD or
++//CONTINUE, and whether the block has completed at least once since then.
++//A read of the port with nothing pending returns the status byte.
++z80_byte datagear_read_mask=0x7F;   //at power up the read mask is 0x7f
++z80_byte datagear_read_pending=0;   //1 = a read sequence, 2 = the status byte once
++int datagear_read_index=0;          //which bit of the mask comes next
++z80_int datagear_bytes_done=0;
++z80_byte datagear_block_done=0;
+ 
++
+ //
+ // Fin variables que hay que guardar en un snapshot
+ //
+@@ -126,8 +138,53 @@
+     datagear_wr0=datagear_wr1=datagear_wr2=datagear_wr3=datagear_wr4=datagear_wr5=datagear_wr6=0;
+     datagear_is_dma_transfering.v=0;
+ 
++    datagear_read_mask=0x7F;
++    datagear_read_pending=0;
++    datagear_read_index=0;
++    datagear_bytes_done=0;
++    datagear_block_done=0;
++}
++//Status byte, 00E1101T: E clear once the block has completed at least once
++//since LOAD or CONTINUE, T set once a byte has moved since then.
++z80_byte datagear_status_byte(void)
++{
++    z80_byte st=0x1A;
++    if (!datagear_block_done) st|=0x20;
++    if (datagear_bytes_done) st|=0x01;
++    return st;
++}
++
++//A read of the DMA port. With a read sequence pending, the next register the
++//mask names, looping round at the end; with the status byte pending, that,
++//once; with nothing pending, the status byte.
++z80_byte datagear_read_port(void)
++{
++    if (datagear_read_pending==2) {
++        datagear_read_pending=0;
++        return datagear_status_byte();
++    }
++    if (datagear_read_pending==1 && (datagear_read_mask & 0x7F)) {
++        int tries=7;
++        while (tries--) {
++            int bit=datagear_read_index;
++            datagear_read_index=(datagear_read_index+1)%7;
++            if (datagear_read_mask & (1<<bit)) {
++                switch (bit) {
++                    case 0: return datagear_status_byte();
++                    case 1: return value_16_to_8l(datagear_bytes_done);
++                    case 2: return value_16_to_8h(datagear_bytes_done);
++                    case 3: return datagear_port_a_start_addr_low;
++                    case 4: return datagear_port_a_start_addr_high;
++                    case 5: return datagear_port_b_start_addr_low;
++                    case 6: return datagear_port_b_start_addr_high;
++                }
++            }
++        }
++    }
++    return datagear_status_byte();
+ }
+ 
++
+ /*void datagear_do_transfer(void)
+ {
+     if (datagear_dma_is_disabled.v) return;
+@@ -365,6 +422,14 @@
+                 //sleep(1);
+ 			break;
+ 
++			//WR6 0xBB: the read mask, and it implies Initialize Read Sequence
++			case 131:
++				datagear_read_mask=value & 0x7F;
++				datagear_read_index=0;
++				datagear_read_pending=1;
++				datagear_mask_commands=0;
++			break;
++
+ 		}
+ 
+ 	}
+@@ -433,8 +498,34 @@
+ 		switch (value) {
+ 			case 0xCF:
+ 				//DBG_PRINT_DMA VERBOSE_DEBUG,"DMA: Load starting address for both ports, clear byte counter");
++			datagear_bytes_done=0;
++				datagear_block_done=0;
+ 			break;
+ 
++			case 0xD3:
++				//Continue: the byte counter cleared, the addresses left where they are
++				datagear_bytes_done=0;
++				datagear_block_done=0;
++			break;
++			case 0xBB:
++				//Read Mask Follows: the next byte is the mask
++				datagear_last_command=131;
++				datagear_mask_commands=1;
++			break;
++			case 0xA7:
++				//Initialize Read Sequence, even part way through one
++				datagear_read_index=0;
++				datagear_read_pending=1;
++			break;
++			case 0xBF:
++				//Read Status Byte: the next read is it
++				datagear_read_pending=2;
++			break;
++			case 0x8B:
++				//Reinitialize Status Byte
++				datagear_block_done=0;
++				datagear_bytes_done=0;
++			break;
+ 			case 0xAB:
+ 				//DBG_PRINT_DMA VERBOSE_DEBUG,"DMA: Enable interrupts");
+ 			break;
+@@ -742,6 +833,8 @@
+                         byte_leido=datagear_read_operation(transfer_port_b,datagear_wr2 & 8);
+ 					    datagear_write_operation(transfer_port_a,byte_leido,datagear_wr1 & 8);
+                     }
++
++                    datagear_bytes_done++;
+ 
+                     if ( (datagear_wr1 & 32) == 0 ) {
+                         if (datagear_wr1 & 16) transfer_port_a++;
+@@ -796,6 +889,7 @@
+ 
+     if (transfer_length==0) {
+         datagear_is_dma_transfering.v=0;
++        datagear_block_done=1;
+         //DBG_PRINT_DMA VERBOSE_DEBUG,"DMA: End of transfer");
+         //Y reseteamos contador de bytes inicial si conviene
+         //printf("WR5: %02XH\n",datagear_wr5);
+--- a/src/datagear.h
++++ b/src/datagear.h
+@@ -29,6 +29,7 @@
+ 
+ extern void datagear_reset(void);
+ extern void datagear_write_value(z80_byte value);
++extern z80_byte datagear_read_port(void);
+ 
+ extern z80_bit datagear_dma_emulation;
+ extern z80_bit datagear_dma_is_disabled;
+--- a/src/operaciones.c
++++ b/src/operaciones.c
+@@ -7325,8 +7325,7 @@
+ 
+ 	if (datagear_dma_emulation.v && (puerto_l==DATAGEAR_DMA_FIRST_PORT || puerto_l==DATAGEAR_DMA_SECOND_PORT) ) {
+ 			//printf ("Reading Datagear DMA Port %04XH\n",puerto);
+-			//TODO
+-			return 0;
++			return datagear_read_port();
+ 	}
+ 
+     //Puertos ZXMMC. Interfiere con Fuller Audio Box

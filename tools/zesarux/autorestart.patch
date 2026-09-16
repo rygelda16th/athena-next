@@ -1,0 +1,56 @@
+--- a/src/datagear.c
++++ b/src/datagear.c
+@@ -103,7 +103,13 @@
+ z80_int datagear_bytes_done=0;
+ z80_byte datagear_block_done=0;
+ 
++//AUTO-RESTART. WR5 bit 5: at the end of a block the DMA reloads both
++//addresses and the count and carries on. The addresses have to be the ones
++//LOAD copied in, which the transfer then walks - so LOAD keeps a copy.
++z80_int datagear_loaded_port_a=0;
++z80_int datagear_loaded_port_b=0;
+ 
++
+ //
+ // Fin variables que hay que guardar en un snapshot
+ //
+@@ -498,10 +504,18 @@
+ 		switch (value) {
+ 			case 0xCF:
+ 				//DBG_PRINT_DMA VERBOSE_DEBUG,"DMA: Load starting address for both ports, clear byte counter");
+-			datagear_bytes_done=0;
++			datagear_loaded_port_a=value_8_to_16(datagear_port_a_start_addr_high,datagear_port_a_start_addr_low);
++				datagear_loaded_port_b=value_8_to_16(datagear_port_b_start_addr_high,datagear_port_b_start_addr_low);
++				datagear_bytes_done=0;
+ 				datagear_block_done=0;
+ 			break;
+ 
++			case 0xC3:
++				//Reset: a transfer in flight stops, and nothing is pending to read.
++				//Upstream had no case for it, and a ring stopped this way played on.
++				datagear_is_dma_transfering.v=0;
++				datagear_read_pending=0;
++			break;
+ 			case 0xD3:
+ 				//Continue: the byte counter cleared, the addresses left where they are
+ 				datagear_bytes_done=0;
+@@ -890,6 +904,19 @@
+     if (transfer_length==0) {
+         datagear_is_dma_transfering.v=0;
+         datagear_block_done=1;
++
++        //WR5 bit 5, auto restart: both addresses back to what LOAD copied in,
++        //the count reloaded below, the byte counter cleared, and the transfer
++        //carries on without a gap. What the wiki says the zxnDMA does, and
++        //what a ring buffer fed from an interrupt needs.
++        if (datagear_wr5 & 0x20) {
++            datagear_port_a_start_addr_low=value_16_to_8l(datagear_loaded_port_a);
++            datagear_port_a_start_addr_high=value_16_to_8h(datagear_loaded_port_a);
++            datagear_port_b_start_addr_low=value_16_to_8l(datagear_loaded_port_b);
++            datagear_port_b_start_addr_high=value_16_to_8h(datagear_loaded_port_b);
++            datagear_bytes_done=0;
++            datagear_is_dma_transfering.v=1;
++        }
+         //DBG_PRINT_DMA VERBOSE_DEBUG,"DMA: End of transfer");
+         //Y reseteamos contador de bytes inicial si conviene
+         //printf("WR5: %02XH\n",datagear_wr5);

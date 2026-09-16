@@ -1,0 +1,22 @@
+# The player's own game files, and everything derived from them, never enter the
+# repository - see docs/licence.md. Only control files (src/*.ctl) carry the
+# disassembly, and a .ctl holds annotations, not code bytes.
+data/*
+!data/README.md
+build/
+work/
+certs/
+*.nex
+*.z80
+*.szx
+*.sna
+*.rzx
+*.tzx
+*.tap
+*.skool
+*.bin
+*.map
+*.lst
+*.exp
+__pycache__/
+local.mk
