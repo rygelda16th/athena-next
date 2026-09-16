@@ -17,8 +17,18 @@ WOLF3D  ?= $(HOME)/src/wolf3d-next
 -include local.mk
 FETCH_VIA ?=
 
+# Headless ZEsarUX running the ORIGINAL game as a Spectrum 128K. ZRCP on 10010
+# so it can run beside the other projects' emulators (10000, 10001).
+ZRCP_PORT := 10010
+ZESARUX128 := zesarux --vo null --ao null --machine 128k --enable-remoteprotocol \
+                      --remoteprotocol-port $(ZRCP_PORT) --enable-breakpoints \
+                      --nosplash --noconfigfile --snap data/athena128.z80
+# The PATCHED native build (wolf3d-next's three DMA patches). The older projects'
+# `make play` points at the Homebrew cask in ~/Applications, which is not patched.
+NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
+
 .PHONY: help certs image doctor shell fetch check-data provenance toolchain-diff \
-        clean distclean
+        rzx-end check-orig orig play-orig clean distclean
 
 help:
 	@echo "make certs          extract the corporate TLS-inspection CA for the image"
@@ -27,6 +37,10 @@ help:
 	@echo "make fetch          download and verify YOUR game files into data/ (host)"
 	@echo "make check-data     G0: the files are the dump, recording and tape we measured"
 	@echo "make provenance     G0: the snapshot is the original tape's game, byte for byte"
+	@echo "make rzx-end        G1: play the whole recording; pictures, snapshots, code map"
+	@echo "make check-orig     G1: the original runs in headless ZEsarUX as a 128K"
+	@echo "make orig           headless original with ZRCP on 127.0.0.1:$(ZRCP_PORT)"
+	@echo "make play-orig      play the original in the native (patched) ZEsarUX"
 	@echo "make toolchain-diff has the shared toolchain drifted from anotherworld-next?"
 
 certs:
@@ -61,6 +75,22 @@ check-data:
 
 provenance: | $(BUILD)
 	$(RUN) python3 tools/provenance.py
+
+# ---- G1: the original game, and the recording ----------------------------------
+rzx-end: | $(BUILD)
+	$(RUN) python3 tools/rzxwalk.py
+
+check-orig: | $(BUILD)
+	@mkdir -p $(BUILD)/g1
+	$(RUN) sh -c '$(ZESARUX128) >/tmp/zesarux.log 2>&1 & python3 tools/checkorig.py'
+
+# Leaves the headless original running with ZRCP published to the host.
+orig:
+	$(DC) run --rm --service-ports tools $(ZESARUX128)
+
+play-orig:
+	@test -x "$(NATIVE_ZESARUX)" || { echo "no native ZEsarUX at $(NATIVE_ZESARUX)"; exit 1; }
+	"$(NATIVE_ZESARUX)" --noconfigfile --machine 128k --zoom 2 --snap "$(CURDIR)/data/athena128.z80"
 
 # ---- drift check --------------------------------------------------------------
 # The shared files are copied from anotherworld-next rather than submoduled.

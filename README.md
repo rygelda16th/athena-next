@@ -7,7 +7,8 @@ against a full playthrough recording, and enhanced one subsystem at a time.
 **This repository contains no copy of the original game's code or data.** You supply your own
 copy; see `data/README.md` and `docs/licence.md`.
 
-Status: **G0** (provenance) - see `docs/where-things-stand.md`, which is canonical.
+Status: **G1** (the original running, the recording played to the end) - see
+`docs/where-things-stand.md`, which is canonical.
 
 ## Requirements
 
@@ -23,6 +24,9 @@ make doctor       # versions, and a Z80N assembly smoke test
 make fetch        # download YOUR game files into data/ and verify them
 make check-data   # the files are the dump and recording this project measured
 make provenance   # the snapshot is the original tape's game
+make rzx-end      # play the whole recording: pictures, snapshots, code map
+make check-orig   # the original runs in headless ZEsarUX as a 128K
+make play-orig    # play it yourself (native ZEsarUX)
 ```
 
 ## Layout

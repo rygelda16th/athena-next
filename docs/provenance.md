@@ -104,8 +104,12 @@ explanations, and G1 can tell them apart when it replays the recording:
 - **The dump is corrupt by one bit.** Then the recording was made on a machine
   with a one-pixel flaw and the oracle must start from the snapshot's `40`.
 
-Until G1 settles it, the byte is treated as volatile: the byte-identical
-reassembly at G2 excludes it, and the value we build with is decided then.
+**Answered at G1 (2026-09-16):** the byte is `40` when the recording starts
+and never changes in all 119,655 frames (the probe sees values, not writes).
+It is not state the game updates, so the dump carries one bit the tape does not. The oracle starts from `40`
+because the recording was made on it; the Next build uses the tape's `00`;
+G2's byte-identical reassembly excludes the byte. Whether the game ever reads
+it is for D2/D3.
 
 ## Why this matters for the rest of the plan
 
