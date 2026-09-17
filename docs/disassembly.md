@@ -1,7 +1,7 @@
 # The disassembly - how it is annotated, and what is still open
 
 Chunks D1-D7 (David's decision: the disassembly is complete before any enhancement).
-D1-D3 established 2026-09-16, D4-D6 2026-09-17.
+D1-D3 established 2026-09-16, D4-D7 2026-09-17. **The disassembly is complete.**
 
 ## Where it lives
 
@@ -217,6 +217,39 @@ and matches all 23 tune calls in the recording frame by frame.
   they are now named from the items that give them (broad sword, dagger, club, war
   hammer, kick, feathered blade, flail), which D4 established and the weapon table and
   pictures agree with.
+
+## D7 - the completeness gate
+
+**`make check-audit`** (`tools/disasm_audit.py`) checks the main program and every bank:
+every block has a real title and a description; every unused block says why; every
+instruction that code outside its block jumps to or calls is marked; every address the
+code reads or writes by absolute address is explained (a label, a commented statement, or
+named in its block's text); and every instruction whose operand the code rewrites carries
+a comment. It passes: 355 blocks, 388 labels in the main program and 67 in the banks,
+1,633 instruction comments.
+
+D7 also added the **Bugs, Pokes and Trivia pages** to the HTML (`src/athena.ref`, from the
+reviewed findings of D3-D6), and measured **what a pass of the main loop costs**
+(`build/d7/costs.py`, from the recording):
+
+| Stage (world 2, 59 passes) | T-states | |
+|---|---|---|
+| move the player, including the two-pixel buffer scroll or the delay that matches it | 151,723 | 53% |
+| copy the play area to the screen (interrupts off) | 53,592 | 19% |
+| wait for the frame (HALT) | 32,386 | 11% |
+| build the player's sprite | 15,289 | 5% |
+| enemy position map, immunity | 11,021 | 4% |
+| draw weapons, enemies, effects | 9,287 | 3% |
+| read controls, start enemies | 4,112 | 1% |
+| everything else (enemy moves, clock, end checks, loop tail, player to screen) | about 9,000 | 3% |
+| **a pass** | **286,327 (4.04 frames)** | |
+
+World 7 is the same shape (300,561 T-states, 4.24 frames). **The game logic is a small
+part of a pass; the scroll and the copy dominate** - which hardware scrolling (E4) removes.
+
+**Found the hard way (D7):** replacing a block's header dropped its existing label when
+the new annotation gave none (`WorldArea`); the tool now keeps it, and a check of every
+tag shows no label was ever lost in D1-D6.
 
 ## Open questions carried forward
 

@@ -4,6 +4,8 @@ b $4000 Display file
 D $4000 The screen at the moment the snapshot was saved: the title's credits page.
 B $4000,6144,32
 b $5800 Attribute file
+D $5800 The screen's colours at the moment the snapshot was saved: 768 attributes, 24 rows of 32.
+D $5800 A few cells are read or written by address rather than through the screen routines: the start-up code sets two white cells at row 21, columns 4-5 ($5AA4, at $F19F); define keys blacks out row 7, column 16 ($58F0, at $F3FF) so that a letter of the menu does not show through; and at weapon level 6 the main loop reads the top cell of the HIT bar ($59BE, row 13, column 30, at $CB32) and, when the bar is full, flashes the POW label's cells ($597E and $599E, rows 11-12, columns 30-31, at $CB3F-$CB49).
 B $5800,768,32
 b $5B00 Bit-reversal table
 D $5B00 Entry n is n with its eight bits in reverse order (bit 7 swapped with bit 0, bit 6 with bit 1, and so on), so looking up a byte of a graphic here mirrors it left to right.
@@ -149,6 +151,7 @@ D $7620 A 16x16 masked dithered heart (4 bytes a line, mask then graphic for eac
 B $7620,64,4
 b $7660 World area
 D $7660 The loader at #R$B8C3 copies the whole of the current world's bank here (16,384 bytes, #R$7660 to $B65F). In the snapshot, taken at the title screen before any world was loaded, it still holds what the tape loader left behind.
+D $7660 Each world bank starts with two 23-byte world headers ($7660 and $7677) and four template words ($768E-$7695), described field by field with the banks (#R$C000@bank3 and the other world banks). The main program reads these fields by address: $7661 (map address), $7663 (map length), $7665 (cell table), $7667 (guardian path), $7669 (guardian graphics record), $7678 (the second header's map address), $767E and $7680 (the second header's guardian path and record, used only for world 7's second guardian), $768E (the enemy template table) and $7690, $7692 and $7694 (the templates for type 4, 7 and 6 enemies); the rest go to operands at world set-up (#R$BDC0).
 @ $7660 label=WorldArea
 B $7660,16384,16 A whole world bank (3, 4, 6 or 7) copied by #R$B8C3. It starts with two 23-byte world headers, at $7660 for the first world and $7677 for the second (bank 7's second header is never used to set up a world: only its bytes 7-10, the path and graphics record of world 7's second guardian, are read in play, at $C57D; its zero map length at $767A is also read by the map transform #R$BCE6 when a game ends in world 7). The data they point to all lies inside the area, except world 4's list (from its header) and the world-7 text at $B5D3 (addressed directly by $D85C), both of which run on into #R$B660.
 b $B660 The part of the world data that did not fit in its bank
@@ -410,7 +413,8 @@ T $BB69,64,19,10,11,14,2,8
 N $BBA9 PRESS ANY KEY and TO PLAY, printed large on the world start screen (#R$C4ED from $BDC9 and $BDD0).
 T $BBA9,22,14,8
 N $BBBF CONTINUE? at row 4, column 12 ($CCCE), then the countdown digit, which $CCD3 writes into the first byte of its one-character message before printing it large ($CCDD).
-T $BBBF,12,10,2
+T $BBBF,10,10
+T $BBC9,2,2 The CONTINUE? countdown digit, written at $CCD3 and printed on its own
 N $BBCB CONGRATULATIONS, above the hi-score table when a score gets in ($BFAE).
 T $BBCB,16,16
 b $BBDB Hi-score table
@@ -1492,6 +1496,7 @@ C $CE4A,2 Gliding (the glide frame at $CE4B, 3) and not on a ladder: draw the le
 C $CE63,3 Otherwise draw the frame's lines 24-31
 C $CE6F,3 Facing left: mirror the whole buffer (#R$ECCB)
 N $CE77 At a whole or half scroll column (#R$DD93), count down the ten 9-byte map-cell timers from $B95E. When one runs out, its cell is given the stored box code less $19, a background code, so an uncovered item that was not collected disappears (one that was collected is already background); if the cell is on screen it is redrawn with #R$DB3B and the background block.
+C $CEC0,2 A=the cell's buffer column when the record was made (record byte 8, planted at $CEA4), less the $B95A units scrolled since
 C $CEC9,2 $93 when the first world in the bank is loaded, $82 for the second. It is the operand of LD C,$00 at $CEC9 and is also read at $DE19, where it replaces a block number before the block address is computed at $DE29-$DE36. It is the code of the world's plain background block: #R$DDFD draws map cells holding $00-$0F or $46-$5F with it, and here it is passed to #R$DB3B in C to draw a background cell into the buffer.
 N $CED3 Work out where the drawing code in #R$D08C puts things this pass: 16 pixel lines below the player's display address (24 while $BA07 is set) and two columns left, kept at $CF8D, and eight lines above that, one column left (one right when facing left), kept at $D1AF.
 C $CED3,3 Start from the player's display address
@@ -1561,6 +1566,7 @@ D $D08C The second part of every pass of the main loop (#R$C553), reached by JP 
 D $D08C In order: it clears the enemy position map at $EF80-$EFFF by pushing 64 zero words from SP=$F000; lists up to five active enemy slots at $BA09-$BA12 with five calls to #R$C51F; unless a guardian is active, writes each listed enemy's number (5 down to 1) into its cells of that map, which the loop tail reads for collisions; calls #R$C091; counts down the immunity timer at $BA2A and flashes the LIFE label while it runs (#R$D5C2); after a short delay, copies the play area from the buffer at $F000 to the screen with $EBFA; puts the player's sprite (16 pixels wide and 32 lines, from the buffer at $5C00) on the screen in the two bytes before the display address in $B94E on each of its 32 lines; draws the weapon graphic set up at $CEFC ($EBB0) and the other overlays ($EB72); draws the guardian (#R$D513) or the listed enemies ($E977, #R$EB11); runs the sound effect and shot counters at $D214 and $D25A (#R$C408); and while $BA05 counts down continues into the weapon code, #R$D991 for weapon kind 6 or #R$D923 for the others, otherwise into #R$D38B or straight to its $D3BE part.
 D $D08C Two stretches run with interrupts disabled because they use SP as a data pointer: $EBFA (about 53,600 T-states, three quarters of a frame) and $D13A-$D170 (about 2,360 T-states). The first almost always spans a frame interrupt, which is lost: 1.01-1.03 lost interrupts per pass in every world.
 @ $D08C label=DrawPass
+C $D09B,3 Put SP back (saved at $D08C)
 C $D0C8,2 A guardian is active: wait instead of writing the enemies to the map (100 DJNZs), which keeps the start of the copy below at about the same time after the frame interrupt
 C $D0CE,4 Walk the five entries of EnemyDrawList ($BA09), B=5 down to 1: the number written into the map is 5 for the first entry, 1 for the last
 C $D0D4,3 An empty entry has a zero high byte
@@ -1600,6 +1606,8 @@ C $D168,1 Next pair of lines
 C $D16D,3 Restore SP
 C $D171,3 Draw the held weapon with #R$EBAF unless ClimbState has bit 0 or bit 2 set, a shot is in flight (ShotTimer $BA05), or the operand at $D17F (set at $CEFD or $CF52) is non-zero
 C $D183,2 Line count, display address and graphic address, all written at $CFBD-$CFC4
+C $D185,3 DE=the weapon graphic's display address (written at $CFC0)
+C $D188,3 HL=the weapon graphic's address (written at $CFC4)
 C $D18E,3 While flying ($BA27), unless the flight came from item $6E ($BA28), $BA29 is set or the player is climbing, draw the 16-line flight graphic (the operand at $D1AC, set at $D016) at the display address in the operand at $D1AF (set at $CEF7)
 C $D1B6,3 Is the player crouching ($BA07)?
 C $D1BC,1 Put PlayerBufferPos back to $5C00 (crouching moved it eight lines down)
@@ -1637,6 +1645,8 @@ D $D38B The collision check reads the cell of that map at $EFB9 plus half the pl
 C $D38B,2 Operand of LD A,$00 at #R$D38B: how many blows (through #R$D64F) a weapon of kinds 1-5 gives the map cells beside the player when a blow starts. #R$D38B is reached only by JP C,$D38B at $D2D9, after $D2A8-$D2B6 have required AttackState $D2A9 = 1 and AttackFlag $C95B non-zero, which for kinds 1-5 is the pass fire starts a blow. If it is non-zero, the heart check #R$D8D6 runs; then, only while the scroll step count $D4A2 is 4, the cell at offset $38 (D = 0) is struck and, if that returns carry, the cell at $39 (D = 2). Set with the weapon at $DCB9 from byte 0 of its entry in $BCCE: 2 for kinds 1 and 4, 1 for kind 3, 0 for kinds 2, 5, 6 and 7.
 N $D3BE This entry point is used by the routines at #R$D08C, #R$D333 and #R$D991.
 @ $D3BE label=EndPassCounters
+C $D3CD,2 A=the struck cell's character row (planted at $D752)
+C $D3DD,2 A=the struck cell's buffer column (planted at $D758)
 C $D418,3 Operand of LD DE,$0000 at $D418: character row (high byte) and column (low byte) of the explosion of a destroyed enemy, copied from bytes 2-3 of its slot by #R$D77A ($D88B-$D891) and turned into a display address by #R$E977 at $D41B while ExplosionTimer $BA04 runs.
 C $D41E,2 Operand of LD B,$00 at $D41E: the count of the explosion drawing loop at $D420-$D429, 1 normally or 2 when bit 5 of the destroyed enemy's slot byte 5 is set ($D899-$D8A2).
 C $D437,3 Move the map window to the lower part of the map, $0680 bytes on...
@@ -3255,6 +3265,8 @@ C $EC3C,2 Until all eight are done
 C $EC41,2 Next character row of the top third
 C $EC47,3 Until the eighth row (lines 0-63) is done
 C $EC4A,2 The middle third (lines 64-127): the same loop with H=$48-$4F
+C $EC68,2 L=the low byte just past the last 10 bytes of this line (column 29, planted at $EC51)
+C $EC86,2 L=the low byte just past the first 16 bytes of this line (column 19, planted at $EC4C)
 C $EC97,3 Restore the stack pointer
 C $EC9A,1 A frame interrupt that fell in the copy is lost
 c $EC9C Clear the screen
@@ -3288,6 +3300,7 @@ C $ED28,3 Words to push on each line
 C $ED2B,3 Zero
 C $ED2E,2 Eight pixel lines a character row
 C $ED30,1 Clear one line leftwards from HL
+C $ED31,2 B=the width in words (planted at $ED28)
 C $ED36,1 Next pixel line of this character row
 C $ED3B,1 Next character row...
 C $ED3F,2 ...moving H back to the row's first pixel line unless it has crossed into the next third

@@ -34,3 +34,92 @@ bank7-Index=Bank 7: world data
 
 [Paths]
 CodeFiles={address:04X}.html
+
+[Bug:worldSevenList:The enemy list of world 7 is damaged before it is played]
+At every world change #R$BDC0 clears the started flags of the enemy start list (#R$C169) twice before it installs the new world's list address and count, so the walk runs over the previous world's list positions in the world data just loaded.
+
+Going from world 6 to world 7 this clears bit 7 of nine bytes of world 7's list: six enemies start 64 map columns early and three at the left edge instead of the right. Going from world 2 to world 3 it clears bits in two of bank 4's cell pictures (codes $BA and $BC), which world 3 then draws.
+
+[Bug:firstGameWalk:The first game's list walk writes into the ROM]
+At the first game after loading, the operands at $D5D2 and $D5DB still hold 0, so #R$C169 walks 256 entries from address 0 and clears bit 7 of every third byte of $0001-$02FE. On a Spectrum that is ROM and nothing happens; in a machine with RAM there (as in this project's first oracle build) it corrupts whatever is at those addresses.
+
+[Bug:bladeAboveScreen:The feathered blade's blast is drawn above the screen]
+Nothing clips the rising and turning phases of the feathered blade's blast (#R$D991) at the top of the screen. With the player in the top rows the sprite drawers read ROM bytes as the screen and push the combined bytes back into $3800-$3FFF, where they vanish; on a Spectrum the blast just looks cut off at the top.
+
+[Bug:guardianRow:The guardian's hit area ignores its row]
+#R$D513 marks the guardian's cells in the enemy position map from the low byte and the third of its display address, so the row within a third of the screen drops out and the marked block always starts on character row 0 or 8. In worlds 3-7 blows and contact land where no guardian is drawn and miss where one is; the recording shows both.
+
+[Bug:guardianDamage:Guardian damage carries into the next guardian]
+The enemy position map is not rebuilt until the next pass, so strikes later in the pass that destroys a guardian still find it and add to the damage just reset. In the recording world 7's next guardians started with 5, 5 and 15 damage, and the first guardians of worlds 6 and 7 with 2 and 3.
+
+[Bug:guardianSevenColumn:World 7's guardian column still matches]
+World 7's header gives $FF as the guardian's map column, apparently meaning none, but the map column is the low byte of the scroll position divided by 8 and wraps in world 7's long map, so the test still matches at view columns 255 and 511.
+
+[Bug:fullPanel:A full item panel overwrites the tenth slot]
+#R$DBE4 does not test for a full panel: with ten different carriable items held, the eleventh overwrites the tenth slot.
+
+[Bug:energyNotRedrawn:Some energy is not shown]
+Items $63 and $6C give a unit of energy without redrawing the energy bar, which catches up at the next redraw.
+
+[Bug:heartStrike:A struck heart is taken for an enemy]
+#R$D77A takes any non-zero cell of the enemy position map for an enemy number, including a rising heart's $FE or $FF; the "slot" address then comes from MapWindow or Score and zeros are written there. Only the broad sword's shot can reach the column hearts rise in; a controlled run shows it, the recording never does.
+
+[Poke:lives:Infinite lives]
+POKE 52397,0 ($CCAD: DEC (HL) on the lives digit). The game can no longer end by running out of lives; it still ends by running out of time, by the abort keys or by completing world 7.
+
+[Poke:continues:Infinite continues]
+POKE 52410,183 ($CCBA: OR A in place of DEC A on the continues count). Do not use 0: without the DEC A the flags left by the comparison before it say that no continues are left, and the game ends at once.
+
+[Poke:countdown:No hurry to continue]
+POKE 52461,0 ($CCED). The CONTINUE? countdown stays on 9 until a key is pressed. This is the published "infinite continues" POKE, but it gives no extra continues.
+
+[Poke:keepItems:Keep the carried items after a lost life]
+POKE 52499,24: POKE 52500,16 ($CD13-$CD14: JR $CD25). A lost life keeps the carried items, armour, flight, immunity and any poison. With only the first POKE the tenth item slot is still emptied.
+
+[Poke:energy:Infinite energy]
+POKE 48912,0: POKE 48916,0 ($BF10 and $BF14). With only the first POKE the energy bar grows by a unit on every loss and, past the bottom of the panel, draws over the attribute file, the font and the player's graphics.
+
+[Poke:contact:Enemies do no harm]
+POKE 54514,195 ($D4F2: JP in place of JP NZ). Enemy contact never costs energy or wears armour. The poison and the feathered blade's cost still take energy.
+
+[Poke:clock:Stop the clock]
+POKE 53386,28 ($D08A: JP $DB1C in place of JP $DAF2). The clock stops, and so does the poison's drain, which is timed by the clock. The published time POKE (56052,0) also stops the clock but makes a poison drain ten times faster.
+
+[Poke:megajump:Endless jumps]
+POKE 51052,0 ($C76C). A jump never runs out: the player rises until the cell above is solid.
+
+[Fact:sevenWorlds:Seven worlds]
+The manual and Crash's review say six worlds; the game has seven, in four RAM banks (worlds 1-2, 3-4, 5-6 and 7), and its own congratulations message agrees.
+
+[Fact:combatSchool:An advert after the ending]
+After world 7's credits picture, bank 1 holds a second full screen: an advert for Ocean's Combat School, shown until a key is pressed, before the hi-score table.
+
+[Fact:titleLogo:The title logo is gone before the title is seen]
+The start-up code (#R$F0C0) draws the ATHENA logo and the figures, then moves 800 bytes over the end of their graphics. The logo can only be recovered from the tape-loaded machine; the title snapshot has already lost it. The title has one page, with no timeout.
+
+[Fact:flicker:Why sprites flicker]
+Each pass the play-area copy (#R$EBFA) wipes every sprite off the screen. Only the player is built off screen and put back at once; everything else is redrawn later in the pass, so a TV frame whose beam passes those lines in between shows the sprite missing - in the recording 1.2-3.2% of TV frames per world. The game times the copy to start as the beam reaches the screen.
+
+[Fact:invisibleEnemies:Most enemies from the lists never appear]
+721 of the recording's 851 list starts were at a screen edge over a ledge: the ledge test steps the enemy back out of bounds, it is freed in the same pass, and it is started again on the next pass - every pass, invisibly, while the view stays there.
+
+[Fact:screenColumns:Enemies do not scroll]
+An enemy's position is a screen column: when the map scrolls under the player, the enemies stay where they are on the screen.
+
+[Fact:mapRepair:A map repair that is never needed]
+After a game, #R$BCE6 and #R$C0F1 undo most of what play did to the map, although every world is copied fresh from its bank when it starts - a survivor, perhaps, of a version that kept its maps in memory.
+
+[Fact:passCost:Where the time goes]
+A pass of the main loop takes about four frames. Scrolling the play-area buffer (or the delay that stands in for it) takes about half of that and copying it to the screen another fifth; the game logic itself - controls, enemies, collisions - takes well under a frame.
+
+[Fact:mirrors:Retouched enemies]
+Each world bank stores its enemies facing left and, half-way through the frame area, facing right; only 29 of the 56 right-facing frames are exact mirror images of the left-facing ones.
+
+[Fact:multiface:The Multiface One's port]
+The title colour cycler (#R$F240) starts by reading port $9F and throws the value away. On a Multiface One that read pages the interface's memory in over the ROM; a partially decoded Kempston interface also answers it. Nothing in the game uses the value, and the code does not show why it is there.
+
+[Fact:tunes:Two oscillators on one beeper]
+Martin Galway's tunes play through a tone generator (#R$DF5A) that runs two counters out of step, each toggling the speaker, so each note's pulse narrows as it sounds; a note's pitch is 3,546,900 / (48 x BC + 92) Hz, where BC comes from the pitch table. Effect lists lay sweeps over the tune, timed by the interrupt.
+
+[Fact:loaderStack:A copy of the tape loader's stack]
+Right after drawing the title, the start-up code copies 800 bytes from the tape loader's stack area over $FCE0-$FFFF, destroying the end of the title graphics it has just drawn. Nothing ever reads the copy.

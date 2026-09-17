@@ -30,6 +30,10 @@ make play-orig    # play it yourself (native ZEsarUX)
 make g2           # code map, skool files, ctl round trip, byte-identical rebuild
 make g3           # athena.nex, and the recording replayed through it on a Next
 make play         # play build/athena.nex in CSpect
+make html         # the annotated disassembly as HTML, from YOUR snapshot (never publish it)
+make gfx          # PNG sheets of every graphic (build/gfx)
+make worlds       # every world's whole map (build/worlds)
+make check-gfx check-worlds check-audit   # the play area, the maps, and completeness
 ```
 
 ## Layout

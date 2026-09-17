@@ -226,7 +226,8 @@ def step_skool(ann, path="work/athena.skool", other="main"):
             j = len(out)
             while j > 0 and (out[j - 1].startswith(";") or out[j - 1].startswith("@")):
                 j -= 1
-            directives = [d for d in out[j:] if d.startswith("@") and not d.startswith("@label=")]
+            # keep the entry's existing label unless the annotation gives one
+            directives = [d for d in out[j:] if d.startswith("@") and (not d.startswith("@label=") or not by_block[a].get("label"))]
             del out[j:]
             out.extend(header(by_block[a]))
             out.extend(directives)

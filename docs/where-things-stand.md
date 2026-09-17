@@ -24,8 +24,8 @@ recording as the oracle that proves the game logic never changed.
 | D3 | disassembly: level data; every world's map drawn (`make worlds`) | **passed** - David said go 2026-09-16 |
 | D4 | disassembly: the player; difficulty controls for E6 (`docs/difficulty.md`) | **passed** - David said go 2026-09-17 |
 | D5 | disassembly: the enemies, collision, the stray writes | **passed** - David set the goal "finish the disassembly" 2026-09-17 |
-| **D6** | disassembly: sound, the front end, every block titled | **annotated, checks green** |
-| D7 | completeness gate (`make check-audit`), Bugs/Pokes/Facts pages, pass costs | in progress |
+| D6 | disassembly: sound, the front end, every block titled | **done** (goal: finish the disassembly) |
+| **D7** | completeness gate (`make check-audit`), Bugs/Pokes/Trivia pages, pass costs | **done - the disassembly is complete; waiting at checkpoint D7** |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
 
@@ -609,6 +609,34 @@ E5's "better sound".
   notes. Sound effects are 13 table entries, 8 of them used.
 - **The game reads the Multiface One's page-in port** in the title colour cycler; nothing
   uses the value.
+
+## D7 - what was built and what it proved
+
+**The disassembly is complete.** `make check-audit` passes: all 355 blocks in the six ctl
+files are titled and described, and every entry point, every absolute data reference and
+every rewritten operand is explained. The HTML (`make html`) has Bugs, Pokes and Trivia
+pages. Every disassembly gate passes - `check-ctl`, `check-reasm`, `check-gfx`,
+`check-worlds` and `check-audit` - and because `check-reasm` shows the rebuild is still
+byte for byte the game, G3's oracle result stands.
+
+**What a pass costs** (the plan's measured T-state costs, `docs/disassembly.md`): about
+4 frames, of which the two-pixel buffer scroll (or the delay that matches it) is half and
+the copy to the screen a fifth; controls, enemies, collisions and the player's sprite
+together are under a fifth.
+
+## Checkpoint D7 - for David: the finished disassembly
+
+1. `make html` and open `build/html/athena/index.html`: every routine and data block
+   described, with the **Bugs**, **Pokes** and **Trivia** pages linked from the index.
+2. `make check-audit` to see the completeness gate pass.
+3. Read `docs/disassembly.md` (the method, all naming decisions, the open questions) and
+   `docs/difficulty.md`.
+
+**Next, if you say go - Checkpoint A: the enhancement design (no code; you decide).**
+From D1-D7: the playfield layer (Tilemap or Layer 2), the hardware sprite budget, the
+palette, the frame-rate target, the options list (`docs/difficulty.md`), the sound
+direction (the decoded tunes re-voiced for the Next's AY chips, or another arrangement),
+and the art bible (the grid in `make gfx`).
 
 ## Method notes that carried over
 
