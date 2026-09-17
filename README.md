@@ -45,6 +45,11 @@ make check-gfx check-worlds check-audit   # the play area, the maps, and complet
 | `docs/licence.md` | what is and is never in this repository |
 | `docs/coverage.md` | where code runs, and every byte no run executed |
 | `docs/oracle.md` | how the port is proved to still be the original game |
+| `docs/disassembly.md` | how the disassembly was made, and what is still open |
+| `docs/difficulty.md` | why it is hard; the POKEs as they really behave; the levers for the options |
+| `docs/design.md` | the enhanced design (Checkpoint A) |
+| `docs/art-bible.md` | where every play-area graphic comes from, and what it must cover |
+| `docs/plan.md` | every step from Checkpoint A to the finished port |
 | `src/next/` | the Next side: resume stub, oracle handler, top-level source |
 | `tools/` | fetch, checks, format readers (standard library Python) |
 | `src/` | SkoolKit control files - the disassembly - and (later) new Z80 code |

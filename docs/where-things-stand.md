@@ -24,10 +24,21 @@ recording as the oracle that proves the game logic never changed.
 | D3 | disassembly: level data; every world's map drawn (`make worlds`) | **passed** - David said go 2026-09-16 |
 | D4 | disassembly: the player; difficulty controls for E6 (`docs/difficulty.md`) | **passed** - David said go 2026-09-17 |
 | D5 | disassembly: the enemies, collision, the stray writes | **passed** - David set the goal "finish the disassembly" 2026-09-17 |
-| D6 | disassembly: sound, the front end, every block titled | **done** (goal: finish the disassembly) |
-| **D7** | completeness gate (`make check-audit`), Bugs/Pokes/Trivia pages, pass costs | **done - the disassembly is complete; waiting at checkpoint D7** |
-| **A** | enhancement design and art bible (David decides) | **waiting at checkpoint A** - all ten answers in; `docs/design.md` and `docs/art-bible.md` for approval |
-| E1-E8 | enhancements; art track alongside | - |
+| D6 | disassembly: sound, the front end, every block titled | **passed** (goal: finish the disassembly) |
+| D7 | completeness gate (`make check-audit`), Bugs/Pokes/Trivia pages, pass costs | **passed** - David moved on to Checkpoint A 2026-09-17 |
+| A | enhancement design and art bible (David decides) | **passed** - David approved `docs/design.md` and `docs/art-bible.md` 2026-09-17 |
+| **E1** | pace at 28 MHz (`docs/plan.md` has every step from here) | **next** |
+| C1 | arcade capture tooling; David's MAME play-through | - |
+| E2 | play area on Layer 2; recolouring rules; `tools/artimport.py` | - |
+| E3 | hardware sprites, image cache, gliding | - |
+| C2 | contact sheets; first mapping (player, weapons, effects) | - |
+| E4 | hardware scrolling | - |
+| E5 | sound: classic, arcade capture, AY conversion | - |
+| C3 | remaining mappings: items, each bank's enemies and guardian | - |
+| E6 | controls and options | - |
+| E7 | integration; the three build levels | - |
+| E8 | the KS3 | - |
+| H | David's hand-made art (any time after E2) | - |
 
 The approved plan, with every decision and the reasons, is
 `~/.claude/plans/i-am-thinking-of-resilient-panda.md`.
@@ -642,7 +653,13 @@ palette, the frame-rate target, the options list (`docs/difficulty.md`), the sou
 direction (the decoded tunes re-voiced for the Next's AY chips, or another arrangement),
 and the art bible (the grid in `make gfx`).
 
-## Checkpoint A - the enhancement design (in progress)
+## Checkpoint A - closed
+
+David approved the design and the art bible on 2026-09-17 and asked for the rest of the
+plan to be lined up: **`docs/plan.md`** (the order of E1-E8, C1-C3 and H, each step's
+gate and David's part). Next: E1.
+
+### How Checkpoint A was decided
 
 The six questions put to David on 2026-09-17, with the options and recommendations,
 and his answers:
