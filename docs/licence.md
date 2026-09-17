@@ -50,6 +50,23 @@ bytes" are both true at once.
 The HTML disassembly is built locally and **never hosted**, because it shows
 every instruction.
 
+## The arcade game's sound (decided at Checkpoint A, 2026-09-17)
+
+The enhanced port's arcade sound mode converts SNK's 1986 arcade music and sound
+effects onto the Next's AY chips. SNK Corporation owns them. The same rule applies,
+with one addition:
+
+- **The player supplies their own copy of the arcade game.** The sound program is in
+  the Steam SNK 40th Anniversary Collection (the same files as MAME's `athena` set),
+  extracted with community scripts. Whether that extraction is lawful depends on the
+  country; the choice is the player's.
+- The files go in `data/arcade/` and are checked against MAME's published checksums.
+  **They, the chip register logs captured from them and the converted music are
+  build products, never committed or released.**
+- The repository holds only what a POKE list would: addresses, command numbers, and
+  the conversion rules - including an instrument table keyed by a hash of each FM
+  patch, as wolf3d-next's MIDI table is, so it contains nothing of SNK's.
+
 ## Decided later, not here
 
 - **The new art.** It will be generated and hand-cleaned, and it depicts

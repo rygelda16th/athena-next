@@ -26,7 +26,7 @@ recording as the oracle that proves the game logic never changed.
 | D5 | disassembly: the enemies, collision, the stray writes | **passed** - David set the goal "finish the disassembly" 2026-09-17 |
 | D6 | disassembly: sound, the front end, every block titled | **done** (goal: finish the disassembly) |
 | **D7** | completeness gate (`make check-audit`), Bugs/Pokes/Trivia pages, pass costs | **done - the disassembly is complete; waiting at checkpoint D7** |
-| A | enhancement design and art bible (David decides) | - |
+| **A** | enhancement design and art bible (David decides) | **waiting at checkpoint A** - all ten answers in; `docs/design.md` and `docs/art-bible.md` for approval |
 | E1-E8 | enhancements; art track alongside | - |
 
 The approved plan, with every decision and the reasons, is
@@ -624,7 +624,11 @@ byte for byte the game, G3's oracle result stands.
 the copy to the screen a fifth; controls, enemies, collisions and the player's sprite
 together are under a fifth.
 
-## Checkpoint D7 - for David: the finished disassembly
+## Checkpoint D7 - closed
+
+David moved on to Checkpoint A on 2026-09-17 (asked for the design decisions).
+
+### What it asked David to check
 
 1. `make html` and open `build/html/athena/index.html`: every routine and data block
    described, with the **Bugs**, **Pokes** and **Trivia** pages linked from the index.
@@ -637,6 +641,92 @@ From D1-D7: the playfield layer (Tilemap or Layer 2), the hardware sprite budget
 palette, the frame-rate target, the options list (`docs/difficulty.md`), the sound
 direction (the decoded tunes re-voiced for the Next's AY chips, or another arrangement),
 and the art bible (the grid in `make gfx`).
+
+## Checkpoint A - the enhancement design (in progress)
+
+The six questions put to David on 2026-09-17, with the options and recommendations,
+and his answers:
+
+| # | Question | Answer (David, 2026-09-17) |
+|---|---|---|
+| 1 | Art style | **a) faithful remaster**: Ivan Horn's poses and outlines, coloured and shaded. (Extra screens not answered; the recommendation stands for now: new title, panel, font and ending, the Combat School advert dropped.) |
+| 2 | Motion | **a) sprites glide** between pass positions, over the smooth scroll - **and asked whether extra frames of animation can be added** (being researched) |
+| 3 | Sound | **c) the original beeper sound, played cleanly, as a classic mode** - **and asked whether the arcade game's music and sound effects can be converted** (being researched) |
+| 4 | Options menu | **c) presets that set the individual settings**, which can then be adjusted; one switch for the nine bug fixes; the invisible enemies as their own switch |
+| 5 | Pad controls | **b) up still jumps, a second button also jumps, Start pauses**; keyboard, Kempston, cursor and Sinclair stay |
+| 6 | Classic mode switch | **yes**: the options menu switches between the new graphics and sound and the original ones |
+| 7 | How many extra frames | **a) about double** the original counts (per asset in `docs/art-bible.md`) |
+| 8 | Arcade sound from the player's own copy | **a) yes**: David buys the Steam SNK 40th Anniversary Collection and accepts the extraction step; nothing of SNK's is committed |
+| 9 | How the arcade sound plays | **b) converted onto the AY chips only** (no DAC samples, no Pi) |
+| 10 | Where the arcade sound plays | **a) the proposed mapping**: world themes through play, boss themes at the guardian, the arcade's ending, name entry and game over; effects on the original's moments plus new ones; final choices by ear at E5 |
+
+**Calls made from the measurements, unless David objects:** scenery on Layer 2
+(256x192, 256 colours, hardware scroll clipped to the 208x128 play area; the Tilemap
+allows 16 colours per 8x8 tile and 512 tiles, and world 7's 131 cells need 524);
+everything that moves on hardware sprites (worst case about 40 of 128, under 20 on a
+line against 100), 256-colour patterns loaded per world and as needed (64 at once - the research showed they must stream, see `docs/design.md`);
+a scenery palette per world and a sprite palette with a shared part and a per-world
+part; the panel on its own unscrolled layer; game speed matched to the original's
+measured pace (4.1-4.2 frames a pass in ordinary play; a strict 4 would be 3-5% fast),
+the same on 60 Hz displays; settings saved to the SD card.
+
+### The two research questions (2026-09-17)
+
+Four researchers and two adversarial verifiers (`build/checkpoint-a/`, local): arcade sound
+hardware, arcade soundtrack and legal sources, Next playback routes, animation frames.
+
+**Extra animation frames: yes, in the renderer alone.** The only game logic that reads an
+animation frame is the walkers' step timing (slot byte 9 bit 1, `$CC36`, loaded at `$CBFE`
+and `$CC11`), which stays inside the unchanged logic; frame addresses are only tested as
+"slot in use". But the original computes several logic positions inside its drawing code
+(the flail length and ball, the blade's beam, the broad sword's shot, the rising heart, the
+enemy position map, the guardian's path step, the map-blow row), so the port must keep
+running those once a pass. Suggested art is about double the original counts (player walk
+4 to 8, walkers and fliers 2 to 4 each way, explosion 4 to 8, wings 4 to 8, guardians 2 to 4,
+plus jump, crouch, glide and swing poses); the ceiling is one picture per display frame.
+**Sprite images must stream:** even the original counts need 80-98 16x16 images a world
+against the 64 256-colour slots, so images are uploaded as they change - worst case 38 in
+one frame, about 36% of a 28 MHz frame, done while the beam is outside the play area.
+Open: 60 Hz shrinks that window; compositing the player's armour and wings in software
+into its two images would save slots.
+
+**Arcade music and effects: technically yes, from the player's own copy.** Arcade Athena
+has a 4 MHz sound Z80 and two YM3526 FM chips, no samples (MAME `snk.cpp`); on a real board
+one chip plays the music and the other the effects. The music has a theme per world
+(Forest, Cavern, Sea, Sky, Ice, Hell, Labyrinth), three boss themes, ending, name entry and
+game over (SNK's licensed album CLRC-10031); no effect list or command numbers are
+published. The arcade sound program is in the Steam SNK 40th Anniversary Collection with
+the same checksums as MAME's set (extraction is by community scripts; lawfulness depends on
+the country). A build-time capture - the sound board emulated (Z80 + two ymfm YM3526 cores
+with their timers, which pace the music) - records each tune and effect as chip register
+writes. Playback routes: converted onto the AYs as wolf3d-next does (the tunes, not the FM
+sound; every Next); the real FM sound rendered to samples on the DACs through anotherworld-
+next's copper method (sounds like the arcade; about 914 KB a minute at 15.6 kHz, so loaded
+per world); or MP3/MOD on the Pi accelerator (no Next cost; needs the Pi). SNK Corporation
+owns the music and publishes no fan-work policy.
+
+**Found by the verifiers:** classic sound is not free at 28 MHz - the beeper tunes and
+effects are timing loops and would play about 8x too high, so classic mode needs them
+rendered to samples at build time (or the CPU dropped to 3.5 MHz around each); the OPL
+timers at 4 MHz are 72/288 us per step, not the datasheet's 80/320; SkoolKit's
+`accept_interrupt` does not test IFF and its HALT release is tied to the Spectrum frame.
+
+**Written from the answers (2026-09-17), waiting for David's approval:**
+**`docs/design.md`** (layers, motion and timing, the sprite image cache, classic sound
+recorded at build time, the arcade capture-and-convert pipeline and its cue mapping,
+controls and options, memory, the phases from here) and **`docs/art-bible.md`** (style,
+hard limits, animation keying, every asset's size and frame counts, the order of work).
+Both were checked by two adversarial reviewers against the research, the graphics and the
+disassembly; all 36 problems they raised (4 errors, 19 misleading, 13 omissions) are
+corrected. The ones that changed the design: the crescent wing and crouch peak sit
+outside the player's 16x32 box; 1-bit recordings cannot play the beeper cleanly (edges
+at T-state resolution, box-filtered, or a re-implemented tone generator); the game's
+waits read only the keyboard, so the pad must answer them; the MAME play-through log is
+the only way to identify the arcade effects; uploads start from a line interrupt below
+the play area; at 60 Hz the logic keeps a 50 Hz timer; new poses need their own armour.
+Approving those closes Checkpoint A. Not decided now: whether generated character art
+goes in the public repository (at the first art delivery); a playable release (out of
+scope without the rights holders).
 
 ## Method notes that carried over
 
