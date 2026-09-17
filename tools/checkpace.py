@@ -21,8 +21,14 @@ each speed's run:
 and, from a short run of the play build with the engine told the display is 60 Hz:
 
   60 Hz      five logic ticks in every six interrupts
+
+Only the 28 MHz runs are paced: at 3.5 MHz the new renderer cannot draw a pass inside
+four frames (the 3.5 MHz oracle build exists to replay the recording, not to be played),
+so `make check-pace` takes build/e1/pace-28.json and, where the arcade set is in,
+build/e1/pace-28-arcade.json.
 """
 import json
+import os
 import sys
 
 FAILS = []
@@ -46,7 +52,8 @@ def stats(hist, world, kinds, cap=12):
 
 def main():
     orig = json.load(open("build/e1/orig-passes.json"))["hist"]
-    runs = sys.argv[1:] or ["build/e1/pace-28.json", "build/e1/pace-35.json"]
+    runs = sys.argv[1:] or [r for r in ("build/e1/pace-28.json", "build/e1/pace-28-arcade.json")
+                            if os.path.exists(r)]
     for run in runs:
         port = json.load(open(run))["hist"]
         print(f"{run}:")

@@ -1,5 +1,9 @@
 # The plan from Checkpoint A to the finished port
 
+**Progress is in `docs/where-things-stand.md`, which is canonical.** This file is the plan as it
+was written; where the work deviated from it - the classic sound's form, MAME as the sound
+harness, which mappings and bug fixes are done - that file says so.
+
 Written 2026-09-17, the day David approved Checkpoint A. It lines up everything left:
 the order of the steps, what each builds, the command that proves it, and what David
 checks or does at each checkpoint. The design is `docs/design.md`, the art

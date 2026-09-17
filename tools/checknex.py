@@ -67,7 +67,7 @@ def play(z):
     check(keyscan[-2:] == b"\xED\x78", "the ROM has KEY-SCAN's IN A,(C) at $0296", keyscan.hex())
     check(mem(z, 0x2000, 4) == b"ATHE", "the engine's RAM is at $2000")
     volatile = [(0xB8A0, 0xB8C0), (0x5800, 0x5B00), (0xF240, 0xF2B0)]
-    patched = nexpatches.addresses()
+    patched = nexpatches.addresses() | {a + i for a, orig in nexpatches.PLAY_PATCHES for i in range(len(orig))}
     view = snap.view64()
     for name, lo in (("bank 5", 0x4000), ("bank 2", 0x8000), ("bank 0", 0xC000)):
         got = mem(z, lo, 0x4000)
@@ -76,7 +76,7 @@ def play(z):
         check(not stray, f"{name} equals the snapshot outside the title's moving bytes and the engine's patches",
               f"{len(diff)} differ" + (f"; UNEXPECTED at {', '.join(f'${a:04X}' for a in stray[:6])}"
                                        if stray else ""))
-    unpatched = [a for a, orig in nexpatches.ENGINE_PATCHES
+    unpatched = [a for a, orig in nexpatches.ENGINE_PATCHES + nexpatches.PLAY_PATCHES
                  if mem(z, a, len(orig)) == orig]
     check(not unpatched, "every engine patch is in place",
           ", ".join(f"${a:04X}" for a in unpatched))

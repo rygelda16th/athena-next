@@ -2,11 +2,11 @@
 ; E2: the play area on Layer 2 (included in the engine, src/next/engine.asm).
 ;
 ; The game still builds its back buffer and copies it to the screen; the copy's
-; call at $D137 now comes here (eng_copy). After the original copy, the play
-; area's pixels on the ULA are cleared - so the original's sprites, drawn after
-; this point, show alone over Layer 2 (the ULA's black is transparent and the
-; ULA is in front, until E3 moves the sprites to hardware) - and the play area is
-; drawn on Layer 2 from the map, recoloured (tools/mkassets.py).
+; call at $D137 now comes here (eng_copy), and after the original copy the play
+; area is drawn on Layer 2 from the map, recoloured (tools/mkassets.py). Since E3
+; Layer 2 is in front of the ULA inside its clip window, so the original's own
+; picture and sprites there are never seen; the hardware sprites are in front of
+; both (src/next/sprites.asm).
 ;
 ; THE PICTURE. As the original's buffer holds it (tools/l2ref.py, the reference):
 ; 15 map columns of 8 cells from the column before the map window, shifted left 2
@@ -41,10 +41,19 @@ E_CELLS_COUNT   EQU $2028               ; cells in its sheet
 E_BADCELLS      EQU $2029               ; codes that pointed past the sheet (16 bits)
 E_SAMPLE_REQ    EQU $202B               ; set by a checker: keep the next draw's inputs and output
 E_SAMPLE_DONE   EQU $202C               ; draws sampled
-E_SAMPLE        EQU $2400               ; sample: window(2) shift world offset, the 120 map codes,
+E_SAMPLE        EQU $3600               ; sample: window(2) shift world offset, the 120 map codes,
                                         ; the item and background blocks
-E_SHADOW        EQU $2500               ; 16 slots x 8 rows: the cell drawn there ($FF = none)
+E_SHADOW        EQU $3710               ; 16 slots x 8 rows: the cell drawn there ($FF = none)
 E_COPY_RET      EQU $203A               ; the copy's real return address ($D13A)
+E_L2_OFF_OLD    EQU $203C               ; E4: Layer 2's X offset at the last pass...
+E_L2_OFF_NEW    EQU $203D               ; ...and this pass's
+E_L2_TICK       EQU $203E               ; the logic tick this pass's offset was set on (16 bits)
+E_L2_SNAP       EQU $2040               ; non-zero: the next offset is set, not glided to
+E_SCR_REQ       EQU $2042               ; set by a checker: sample the next frame in mid-glide
+E_SCR_DONE      EQU $2043               ; scroll samples taken
+E_SCR_DRAW      EQU $3680               ; the last draw: window(2) shift world -, 120 codes, item, background
+E_SCR_SAMPLE    EQU $3700               ; a sample: old new t shown
+E_SCR_FROZEN    EQU $2500               ; a sample: the draw's inputs as E_SCR_DRAW held them
 SAMPLE_PAGE0    EQU 84                  ; ...and the 256x128 Layer 2 lines, in pages 84-87
 ; the drawing's working variables (the engine's code is in ROM: nothing mutable there)
 draw_window     EQU $2030
@@ -86,7 +95,6 @@ eng_copy_tail:
         ex af,af'
         push af
         ex af,af'
-        call ula_clear
         call draw_play
         pop af
         ex af,af'
@@ -155,7 +163,10 @@ l2_visibility:
         ld a,l
         cp HIDE_TICKS
         jr nc,.off
-.on:    ld a,(E_DRAWS)
+.on:    ld a,(E_CLASSIC)                ; E6: classic mode keeps the original's picture
+        or a
+        jr nz,.off
+        ld a,(E_DRAWS)
         ld hl,E_DRAWS+1
         or (hl)
         jr z,.off                       ; nothing drawn yet
@@ -163,6 +174,7 @@ l2_visibility:
         or a
         jr nz,.done
         nextreg $69,%10000000           ; Layer 2 on
+        nextreg $15,%00000001           ; and the sprites (layers: sprites, Layer 2, ULA)
         ld a,1
         ld (E_L2_SHOWN),a
         jr .done
@@ -170,6 +182,7 @@ l2_visibility:
         or a
         jr z,.done
         nextreg $69,%00000000           ; Layer 2 off
+        nextreg $15,%00000000           ; and the sprites
         xor a
         ld (E_L2_SHOWN),a
 .done:  pop de
@@ -210,11 +223,33 @@ world_setup:
         inc hl
         nextreg $44,a
         djnz .pal
+        ; the sprite palette (E3): paper, the world's highlight as ink, the player
+        ld a,(E_PAL_WORLD)
+        dec a
+        add a,a
+        ld h,a
+        ld l,18 * 2                     ; index 18 (HIGHLIGHT) of this world's palette
+        ld de,$4000
+        add hl,de
+        nextreg $43,%00100000           ; the sprites' first palette
+        nextreg $40,IDX_PAPER
+        nextreg $44,%00100100           ; paper: dark grey-green
+        nextreg $44,0
+        ld a,(hl)
+        nextreg $44,a                   ; ink: the world's highlight
+        inc hl
+        ld a,(hl)
+        nextreg $44,a
+        nextreg $44,%11101101           ; the player: warm pink
+        nextreg $44,1
+        ld a,1
+        ld (E_L2_SNAP),a                ; E4: no glide into a new world
         ld hl,E_SHADOW                  ; nothing is drawn in this world's colours yet
         ld de,E_SHADOW+1
         ld bc,127
         ld (hl),$ff
         ldir
+        call arc_world                  ; C2: the arcade images and colours, if any
         nextreg $52,10                  ; bank 5's first half back
         ret
 
@@ -288,8 +323,32 @@ draw_play:
         ld a,(draw_shift)
         add a,a
         add a,b
-        nextreg $16,a
         ld (draw_offset),a
+        ; E4: glide Layer 2's offset from the last pass's to this one's over the pass
+        ; (frame_update sets it each frame); a jump of more than 16 pixels snaps
+        ld b,a
+        ld a,(E_L2_OFF_NEW)
+        ld (E_L2_OFF_OLD),a
+        ld c,a
+        ld a,b
+        ld (E_L2_OFF_NEW),a
+        sub c
+        jp p,.pos
+        neg
+.pos:   cp 17
+        jr c,.glide
+        ld a,b
+        ld (E_L2_OFF_OLD),a
+.glide: ld hl,(E_TICK)
+        ld (E_L2_TICK),hl
+        ld a,(E_L2_SNAP)
+        or a
+        jr z,.nosnap
+        xor a
+        ld (E_L2_SNAP),a
+        ld a,b
+        ld (E_L2_OFF_OLD),a
+.nosnap:
         ; 15 columns x 8 cells
         ld a,15
         ld (draw_i),a
@@ -343,6 +402,24 @@ draw_play:
         ld hl,(E_DRAWS)
         inc hl
         ld (E_DRAWS),hl
+        ; E4: keep this draw's inputs for a scroll sample (tools/checkscroll.py)
+        ld hl,(draw_window)
+        ld (E_SCR_DRAW),hl
+        ld a,(draw_shift)
+        ld (E_SCR_DRAW+2),a
+        ld a,($ba33)
+        ld (E_SCR_DRAW+3),a
+        ld hl,(draw_window)
+        ld de,-8
+        add hl,de
+        ld de,E_SCR_DRAW+5
+        ld bc,120
+        ldir
+        ld a,($de09)
+        ld (de),a
+        inc de
+        ld a,($ceca)
+        ld (de),a
         ld a,(E_SAMPLE_REQ)
         or a
         call nz,sample

@@ -27,7 +27,7 @@ ZESARUX128 := zesarux --vo null --ao null --machine 128k --enable-remoteprotocol
 # `make play` points at the Homebrew cask in ~/Applications, which is not patched.
 NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
 
-.PHONY: help certs image doctor shell fetch check-data provenance html gfx check-gfx worlds check-worlds check-audit toolchain-diff \
+.PHONY: check-arcade-capture check-art check-levels e7 check-options e6 check-render check-sprites check-scroll e2 e3 e4 arcade-assets nex-arcade oracle-nex-arcade poses check-mapping c2 check-classic-sound check-arcade-sound check-pace-arcade e5 help certs image doctor shell fetch check-data provenance html gfx check-gfx worlds check-worlds check-audit toolchain-diff \
         orig-passes check-hz60 check-pace e1 check-capture capture c1 \
         rzx-end check-orig orig play-orig bank-exec scripts ctl-bootstrap skool ctl \
         check-ctl check-reasm coverage g2 oracle-stream nex oracle-nex check-play \
@@ -67,6 +67,19 @@ help:
 	@echo "make e1             E1: check-play, check-oracle, check-pace"
 	@echo "make check-capture  C1: arcade frames rebuilt from a MAME capture log, pixel for pixel"
 	@echo "make capture        C1: a play-through capture log (CAPTURE_BOT=tools/arcade/bot.lua for the bot)"
+	@echo "make check-render   E2: the play area on Layer 2, pixel for pixel, through the whole recording"
+	@echo "make check-sprites  E3: every sprite on hardware sprites, exactly; the image cache never runs out"
+	@echo "make check-scroll   E4: Layer 2's offset glides, and mid-glide frames are exact"
+	@echo "make arcade-assets  C2/E5: the arcade art and sound from YOUR arcade set (build/assets; never publish)"
+	@echo "make poses          C2: the arcade player's poses on cue (MAME)"
+	@echo "make check-mapping  C2: the mapping covers the art bible and shows in the game, exactly"
+	@echo "make check-classic-sound  E5: classic mode plays the original's sound, note for note"
+	@echo "make check-arcade-capture E5: every cue's capture is the arcade's own, and repeatable"
+	@echo "make check-arcade-sound   E5: the arcade sound plays as converted, loops, at the right moments"
+	@echo "make check-pace-arcade    E5: the arcade build keeps the original's pace"
+	@echo "make check-options  E6: the pad, the options screen, presets, levers, fixes, classic mode, the SD card"
+	@echo "make check-art      H: David's hand-made cells (data/art) against the art bible"
+	@echo "make check-levels   E7: all three build levels build and play"
 	@echo "make play           play build/athena.nex in CSpect"
 	@echo "make toolchain-diff has the shared toolchain drifted from anotherworld-next?"
 
@@ -232,6 +245,93 @@ check-pace: orig-passes check-hz60
 	python3 tools/checkpace.py
 
 e1: check-play check-oracle check-pace
+
+# ---- E2-E4: the play area, the sprites and the scroll on the Next's layers ------
+# Each replays the recording through the 28 MHz oracle build and samples as it goes.
+ORACLE_28 = $(ZESARUX_NEXT) --emulatorspeed $(ORACLE_SPEED) >/tmp/zesarux.log 2>&1 & sleep 3;
+
+check-render: oracle-nex
+	$(RUN) sh -c '$(ORACLE_28) python3 -u tools/checkrender.py'
+
+check-sprites: oracle-nex
+	$(RUN) sh -c '$(ORACLE_28) python3 -u tools/checksprites.py'
+
+check-scroll: oracle-nex
+	$(RUN) sh -c '$(ORACLE_28) python3 -u tools/checkscroll.py'
+
+e2: check-render
+e3: check-sprites
+e4: check-scroll
+
+# ---- C2 and E5 with the arcade set (optional; these need data/arcade/athena.zip) -
+# The arcade art and sound, made from the player's own set; builds with -DARCADE need a
+# 2MB Next.
+arcade-assets: | $(BUILD)
+	$(RUN) sh -c 'python3 tools/arcade/mkmapping.py && python3 tools/arcade/mksound.py'
+
+nex-arcade: arcade-assets
+	$(RUN) sjasmplus --nologo --msg=war -DSPEED=3 -DARCADE src/next/athena.asm
+
+oracle-nex-arcade: arcade-assets
+	$(RUN) sjasmplus --nologo --msg=war -DSPEED=3 -DORACLE -DARCADE src/next/athena.asm
+
+# The arcade player's poses on cue, for the mapping (tools/arcade/poses.lua).
+poses: | $(BUILD)
+	@mkdir -p build/c2/poses
+	$(RUN) sh -c 'CAPTURE_OUT=build/c2/poses/poses.bin CAPTURE_FRAMES=4600 CAPTURE_BOT=tools/arcade/poses.lua \
+		mame athena -rompath data/arcade -homepath /tmp/mame -cfg_directory /tmp/mame/cfg \
+		-nvram_directory /tmp/mame/nvram -video none -sound none -nothrottle -skip_gameinfo \
+		-autoboot_script tools/arcade/capture.lua >/dev/null 2>&1; true'
+
+check-mapping: oracle-nex-arcade
+	$(RUN) sh -c '$(ORACLE_28) python3 -u tools/checkmapping.py'
+
+c2: check-mapping
+
+c3: check-mapping
+
+# Classic sound: the original machine and the port, heard through ZEsarUX's audio file.
+CLASSIC_RECORD = zesarux --vo null --ao null --aofile /work/build/e5/classic/$$m.raw $$args \
+	--enable-remoteprotocol --remoteprotocol-port $(ZRCP_PORT) --nosplash --noconfigfile >/tmp/zesarux.log 2>&1 & sleep 3; \
+	python3 -u tools/checkclassic.py record $$m
+check-classic-sound: nex
+	@mkdir -p build/e5/classic
+	$(RUN) sh -c 'm=128k; args="--machine 128k"; $(CLASSIC_RECORD)'
+	$(RUN) sh -c 'm=128k-b; args="--machine 128k"; $(CLASSIC_RECORD)'
+	$(RUN) sh -c 'm=next; args="--machine tbblue --tbblue-max-turbo-rom 8 --tbblue-max-turbo-everywhere 8"; $(CLASSIC_RECORD)'
+	$(RUN) sh -c 'm=next-b; args="--machine tbblue --tbblue-max-turbo-rom 8 --tbblue-max-turbo-everywhere 8"; $(CLASSIC_RECORD)'
+	python3 tools/checkclassic.py compare
+
+check-arcade-capture: | $(BUILD)
+	$(RUN) python3 -u tools/checksound.py capture
+
+check-arcade-sound: nex-arcade oracle-nex-arcade
+	$(RUN) python3 tools/checksound.py static
+	$(RUN) sh -c '$(ZESARUX_NEXT) --emulatorspeed $(ORACLE_SPEED) >/tmp/zesarux.log 2>&1 & sleep 3; python3 -u tools/checksound.py player'
+	$(RUN) sh -c '$(ORACLE_28) python3 -u tools/checksound.py moments'
+
+# The arcade build's pace: its effects run silent at 28 MHz and are credited as 3.5 MHz.
+check-pace-arcade: oracle-nex-arcade orig-passes
+	$(RUN) sh -c '$(ORACLE_28) python3 -u tools/checknex.py oracle build/g3/athena-oracle-28-arcade.nex 7200'
+	python3 tools/checkpace.py build/e1/pace-28-arcade.json
+
+e5: check-classic-sound check-arcade-capture check-arcade-sound check-pace-arcade
+
+# ---- E6: controls and options (play builds) -------------------------------------
+check-options: nex
+	@mkdir -p build/e6
+	$(RUN) python3 -u tools/checkoptions.py
+
+e6: check-play check-options
+
+# ---- H and E7: David's hand-made art, and the three build levels ----------------
+check-art: | $(BUILD)
+	$(RUN) python3 tools/artimport.py
+
+check-levels: | $(BUILD)
+	$(RUN) python3 -u tools/checklevels.py
+
+e7: check-levels
 
 # ---- C1: the arcade capture (the arcade set is optional; these need it) ---------
 check-capture: | $(BUILD)

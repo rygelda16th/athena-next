@@ -59,7 +59,8 @@ resume:
         ld ($0030),a
         ld hl,svc_entry
         ld ($0031),hl
-        ld hl,engine_image              ; the engine, assembled to run at ENGINE_ORG
+        nextreg $56,ENGINE_PAGE         ; the engine, assembled to run at ENGINE_ORG
+        ld hl,$c000
         ld de,ENGINE_ORG
         ld bc,engine_image_len
         ldir
@@ -93,6 +94,16 @@ resume:
         ld (E_MAGIC+2),hl
         ld a,SPEED
         ld (E_SPEED),a
+        ld a,64                         ; E3: the image cache may use every pattern slot
+        ld (E_SLOT_END),a
+        ld a,$ff                        ; E5: no sound requests
+        ld (E_MUS_REQ),a
+        ld (E_FX_REQ),a
+    IFDEF ARCADE
+        ld a,1                          ; C2: arcade art on (E6's classic mode turns it off)
+        ld (E_ARC_ON),a
+        call snd_arcade_on              ; E5: the arcade sound on, the beeper off
+    ENDIF
         ld bc,$243b                     ; 50 or 60 Hz: NextReg $05 bit 2
         ld a,$05
         out (c),a
@@ -107,8 +118,9 @@ resume:
 .hz:    ld (E_LPF),hl
         ld a,e
         ld (E_HZ),a
-        ; E2: Layer 2 in banks 44-46, clipped to the play area, behind the ULA,
-        ; whose black is transparent; off until the first play-area draw.
+        ; E2/E3: Layer 2 in banks 44-46, clipped to the play area, in front of the
+        ; ULA (so the original's own play-area picture and sprites are hidden),
+        ; with the hardware sprites in front of both; off until the first draw.
         nextreg $12,L2_BANK
         nextreg $16,0
         nextreg $17,0
@@ -119,7 +131,13 @@ resume:
         nextreg $18,127
         nextreg $14,$00                 ; transparent: RGB332 $00, the ULA's black
         nextreg $4a,$00                 ; and what shows through: black
-        nextreg $15,%00001000           ; layers: sprites, ULA, Layer 2
+        nextreg $15,%00000000           ; layers: sprites, Layer 2, ULA; sprites off until play
+        nextreg $1c,%00000010           ; reset the sprite clip index
+        nextreg $19,24                  ; sprites clipped to the play area too
+        nextreg $19,231
+        nextreg $19,0
+        nextreg $19,127
+        nextreg $4b,$e3                 ; the sprites' transparent index
         nextreg $69,%00000000
         ; One interrupt a frame, from line 128 - just below the play area -
         ; instead of the ULA's at the top of the frame.
@@ -177,9 +195,3 @@ final:
         ASSERT $ == $e985               ; next fetch is bank 0's RET at $E985. The
                                         ; game's own paging goes through the engine
                                         ; (service 3), so the 128K latches do not matter.
-engine_image:
-        DISP ENGINE_ORG
-        INCLUDE "src/next/engine.asm"
-        ENT
-engine_image_len EQU $ - engine_image
-        ASSERT ENGINE_ORG + engine_image_len <= HANDLER_ORG

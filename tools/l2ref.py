@@ -84,3 +84,21 @@ def visible(layer2, offset):
 
 def load_sheet(world):
     return open(f"build/assets/cells_bank{BANK_OF_WORLD[world]}.bin", "rb").read()
+
+
+def expected_layer(window, shifts, world, codes, item_block, background_block, sheet):
+    """Layer 2's 256x128 pixels as the engine leaves them after a draw: the 15 map columns
+    from window - 8 at their slots, None where no column of this draw is."""
+    m = {0xDE09: item_block, 0xCECA: background_block}
+    count = len(sheet) // 256
+    layer = [[None] * 256 for _ in range(128)]
+    first = ((window - 8) & 0xFFFF) >> 3
+    for i in range(15):
+        slot = (first + i) & 15
+        for row in range(8):
+            n = cell_index(m, world, codes[8 * i + row], count)
+            cell = sheet[256 * n:256 * n + 256]
+            for y in range(16):
+                for x in range(16):
+                    layer[16 * row + y][16 * slot + x] = cell[16 * y + x]
+    return layer

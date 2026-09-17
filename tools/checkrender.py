@@ -37,6 +37,8 @@ SAMPLE_EVERY = 6
 MIN_SAMPLES = 3
 TIMEOUT = int(os.environ.get("RENDER_TIMEOUT", "7200"))
 FAILS = []
+SMOKE = int(os.environ.get("SMOKE", "0"))     # seconds: a short run for check-levels, which
+                                               # asks only that what it saw matched
 
 
 def check(ok, what, detail=""):
@@ -79,12 +81,12 @@ def main():
     per_world, samples, started = {}, 0, time.time()
     last_done = eng(z, 0x2C, 1)[0]
     last_request = 0
-    while time.time() - started < TIMEOUT:
+    while time.time() - started < (SMOKE or TIMEOUT):
         verdict = checknex.vars_block(z, 5)[4]
         done = eng(z, 0x2C, 1)[0]
         if done != last_done:
             last_done = done
-            s = eng(z, 0x400, 5 + 120 + 2)
+            s = eng(z, 0x1600, 5 + 120 + 2)
             window, shift, world, offset = s[0] | s[1] << 8, s[2], s[3], s[4]
             codes, item, background = list(s[5:125]), s[125], s[126]
             lines = phys(z, 0x40000 + SAMPLE_PAGE0 * 8192, 128 * 256)
@@ -103,6 +105,10 @@ def main():
             if not ok:
                 check(False, f"sample {samples}: world {world} window ${window:04X} shift {shift}",
                       f"{bad} pixels differ, offset {offset} want {want_offset}")
+                os.makedirs("build/e2", exist_ok=True)
+                import pickle
+                pickle.dump({"sample": s, "lines": lines, "got": got, "want": want},
+                            open(f"build/e2/render-fail-{samples}.pkl", "wb"))
                 if len(FAILS) > 5:
                     break
         if verdict:
@@ -112,10 +118,13 @@ def main():
             last_request = time.time()
         time.sleep(1)
     verdict = checknex.vars_block(z, 5)[4]
-    check(verdict == 1, "the oracle reached the end of the recording with the renderer in", f"status {verdict}")
-    for world in range(1, 8):
-        check(per_world.get(world, 0) >= MIN_SAMPLES, f"world {world} sampled",
-              f"{per_world.get(world, 0)} samples")
+    if SMOKE:
+        check(samples >= 3 and not FAILS, f"{samples} samples matched in {SMOKE} seconds")
+    else:
+        check(verdict == 1, "the oracle reached the end of the recording with the renderer in", f"status {verdict}")
+        for world in range(1, 8):
+            check(per_world.get(world, 0) >= MIN_SAMPLES, f"world {world} sampled",
+                  f"{per_world.get(world, 0)} samples")
     bad_cells = eng(z, 0x29, 2)
     check(bad_cells == b"\x00\x00", "no map code pointed past its cell sheet",
           f"{bad_cells[0] | bad_cells[1] << 8}")

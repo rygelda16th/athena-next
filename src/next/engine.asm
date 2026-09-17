@@ -58,7 +58,8 @@ E_LPF           EQU $2017               ; display lines a frame: 312 or 262 (16 
 E_PASSES        EQU $2019               ; passes paced (16 bits)
 E_SPEED         EQU $201B               ; the CPU speed to restore after the beeper (NextReg $07)
 E_WAIT_TICK     EQU $201C               ; scratch: the tick a frame wait started on
-E_HIST          EQU $2100               ; pass-length histogram, world 0-7 x kind 0-3 x length 0-15, 16 bits each
+E_HIST          EQU $2100               ; pass-length histogram, world 0-7 x kind 0-3 x length 0-15,
+                                        ; 16 bits each: $2100-$24FF (1,024 bytes)
 E_ISR_SP        EQU $201E               ; the interrupted code's SP
 E_ISR_STACK     EQU $3000               ; the interrupt routine's own stack (grows down from here)
 
@@ -81,7 +82,12 @@ eng_isr:
         ld (E_ISR_SP),sp
         ld sp,E_ISR_STACK
         push af
-        push hl
+        ld a,(E_SLOW)                   ; E5: inside an original sound player, this part
+        or a                            ; runs at full speed and the game's own handler
+        jr z,.fast                      ; at the player's 3.5 MHz, as on a 128K
+        ld a,(E_SPEED)
+        nextreg $07,a
+.fast:  push hl
         ld hl,(E_FRAMES)
         inc hl
         ld (E_FRAMES),hl
@@ -96,16 +102,27 @@ eng_isr:
         inc hl
         ld (E_TICK),hl
         call l2_visibility
+        call snd_tick                   ; E5: the arcade sound's tick
         pop hl
+        call isr_speed
         pop af
         ld sp,(E_ISR_SP)
         jp $b8b8                        ; the game's interrupt jump
 .drop:  ld (E_ACC),a
         pop hl
+        call isr_speed
         pop af
         ld sp,(E_ISR_SP)
         ei
         reti
+
+; Back to 3.5 MHz if the handler interrupted an original sound player (A lost).
+isr_speed:
+        ld a,(E_SLOW)
+        or a
+        ret z
+        nextreg $07,0
+        ret
 
 ; RST $30 + service byte. Registers are kept; interrupts are left as the
 ; service leaves them.
@@ -130,6 +147,8 @@ svc_entry:
         jp z,svc_wait                   ; 2: a frame wait inside a pass or a screen
         dec a
         jp z,svc_page                   ; 3: OUT (C),A to $7FFD
+        dec a
+        jp z,svc_done                   ; 4: WorldCompleted's flash ($D04D): a frame wait
 svc_return:
         pop hl
         pop de
@@ -217,6 +236,29 @@ t_credit:
         push bc
         push de
         push hl
+        call t_lines
+        jr t_add
+
+; E_CREDIT += the lines since t_start the code between would have taken at 3.5 MHz:
+; the lines times 2^E_SPEED (E5: the arcade build plays the original's effects, silent,
+; at full speed; the pass still lasts as long as the original's).
+t_credit_scaled:
+        push af
+        push bc
+        push de
+        push hl
+        call t_lines
+        ld a,(E_SPEED)
+        or a
+        jr z,t_add
+        ld b,a
+.sh:    add hl,hl
+        jr c,t_sat
+        djnz .sh
+        jr t_add
+
+; HL = display lines since t_start, saturating at $FFFF.
+t_lines:
         call now                        ; HL frames, DE line
         ld bc,(E_T0_FRAMES)
         or a
@@ -243,13 +285,18 @@ t_credit:
         ld bc,(E_T0_LINE)
         or a
         sbc hl,bc
-        jr nc,.add
+        ret nc
         ld hl,0
-.add:   ld bc,(E_CREDIT)
-        add hl,bc
-        jr nc,.store
+        ret
 .sat:   ld hl,$ffff
-.store: ld (E_CREDIT),hl
+        ret
+
+t_add:  ld bc,(E_CREDIT)
+        add hl,bc
+        jr nc,t_store
+t_sat:  ld hl,$ffff
+t_store:
+        ld (E_CREDIT),hl
         pop hl
         pop de
         pop bc
@@ -303,6 +350,9 @@ svc_pace:
         jr nc,.done
         ei
         halt
+        push de
+        call frame_update               ; E3: the sprites glide
+        pop de
         jr .wait
 .done:  ; record the pass: histogram[world][kind][min(length,15)]
         ld a,h
@@ -415,19 +465,35 @@ svc_page:
 
 ; ---- the effect player ($C408), at 3.5 MHz -------------------------------------
 eng_fx:
-        nextreg $07,0
         call t_start
+        push af
+        ld a,(E_SND_ON)                 ; E5: classic sound plays at 3.5 MHz; with the
+        or a                            ; arcade sound the original plays silent at full speed
+        jr nz,.fast
+        nextreg $07,0
+        inc a
+        ld (E_SLOW),a
+.fast:  pop af
         pop hl                          ; $C408 POP HL
         ld a,(hl)                       ; $C409 LD A,(HL)
+        call snd_fx                     ; E5: the arcade effect for it, if any
         inc hl                          ; $C40A INC HL: the real return address
         ld (E_FX_RET),hl
         ld hl,eng_fx_tail               ; $C40B pushes it twice: return here, and
         jp $c40b                        ; HL comes back as this address
 eng_fx_tail:
         push af
+        ld a,(E_SLOW)
+        or a
+        jr z,.fast
+        xor a                           ; not slow before the speed changes: an interrupt
+        ld (E_SLOW),a                   ; between would put 3.5 MHz back
         ld a,(E_SPEED)
         nextreg $07,a
         call t_credit
+        jr .credited
+.fast:  call t_credit_scaled
+.credited:
         ld hl,E_FLAGS
         set 0,(hl)
         pop af
@@ -437,16 +503,23 @@ eng_fx_tail:
 ; ---- the tune player ($DEC6), at 3.5 MHz ---------------------------------------
 eng_tune:
         nextreg $07,0
+        push af
+        ld a,1
+        ld (E_SLOW),a
+        pop af
         call t_start
         ex (sp),hl                      ; the real return address...
         ld (E_TUNE_RET),hl
         ld hl,eng_tune_tail             ; ...becomes the tail
         ex (sp),hl
+        call snd_tune                   ; E5: the arcade cue for this moment, if any
         ld ($decf),sp                   ; $DEC6 LD ($DECF),SP
         jp $deca
 eng_tune_tail:
         push af
         push hl
+        xor a
+        ld (E_SLOW),a
         ld a,(E_SPEED)
         nextreg $07,a
         call t_credit
@@ -460,5 +533,12 @@ eng_tune_tail:
         ret
 
         INCLUDE "src/next/render.asm"
+        INCLUDE "src/next/sprites.asm"
+        INCLUDE "src/next/sound.asm"
+    IFNDEF ORACLE
+        INCLUDE "src/next/options.asm"
+    ENDIF
+
+E_CLASSIC       EQU $20B3               ; E6: classic mode (the original's graphics and sound) in force
 
 engine_end:

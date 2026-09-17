@@ -29,16 +29,16 @@ recording as the oracle that proves the game logic never changed.
 | A | enhancement design and art bible (David decides) | **passed** - David approved `docs/design.md` and `docs/art-bible.md` 2026-09-17 |
 | E1 | pace at 28 MHz (`docs/plan.md` has every step from here) | **passed** (goal: to the end of step 10) |
 | C1 | arcade capture tooling; David's MAME play-through | **passed** (tooling; World of Forest captured by the attract demo and a bot; the other seven worlds wait for David's play-through) |
-| E2 | play area on Layer 2; recolouring rules; `tools/artimport.py` | - |
-| E3 | hardware sprites, image cache, gliding | - |
-| C2 | contact sheets; first mapping (player, weapons, effects) | - |
-| E4 | hardware scrolling | - |
-| E5 | sound: classic, arcade capture, AY conversion | - |
-| C3 | remaining mappings: items, each bank's enemies and guardian | - |
-| E6 | controls and options | - |
-| E7 | integration; the three build levels | - |
+| E2 | play area on Layer 2; recolouring rules | **passed** (goal: to the end of step 10) |
+| E3 | hardware sprites, image cache, gliding | **passed** |
+| C2 | contact sheets; first mapping (player, weapons, effects) | **passed** (provisional mapping, for David to approve) |
+| E4 | hardware scrolling | **passed** |
+| E5 | sound: classic, arcade capture, AY conversion | **passed** (tune names and instruments for David) |
+| C3 | remaining mappings: items, each bank's enemies and guardian | **passed for bank 3**; the rest waits on David's play-through |
+| E6 | controls and options | **passed** (three of the nine bug fixes left) |
+| E7 | integration; the three build levels | **passed** |
 | E8 | the KS3 | - |
-| H | David's hand-made art (any time after E2) | - |
+| H | David's hand-made art (any time after E2) | tools ready (`make check-art`); nothing drawn yet |
 
 The approved plan, with every decision and the reasons, is
 `~/.claude/plans/i-am-thinking-of-resilient-panda.md`.
@@ -847,6 +847,215 @@ which silently stopped logging after 100 frames.
 `make capture` with a window, or MAME on the Deck with `tools/arcade/capture.lua` - reaching
 all eight worlds. Until then only World of Forest's characters and sounds can be mapped;
 everything else uses recoloured Spectrum art, as the design allows.
+
+## E2 - what was built and what it proved
+
+**The play area on Layer 2** (`src/next/render.asm`). Layer 2 (256x192, 256 colours, banks
+44-46) sits in front of the ULA inside the play area's clip window, so the original's own
+drawing is hidden there while the panel and every text screen stay exactly as they were. The
+engine hooks the game's own play-area copy (`$D137`, `CALL eng_copy`) and redraws the window
+from the game's map cells into Layer 2: each map column has a fixed slot, `(address / 8) mod
+16`, and the X offset (NextReg `$16`) is `16 x slot(window - 8) - 8 + 2 x shift`, so a scroll
+step only moves the offset and draws the one new column. A shadow table of what each cell slot
+holds keeps a redraw to the cells that changed.
+
+**The scenery** is the player's own snapshot, recoloured by rule (`tools/mkassets.py`): paper,
+ink, a highlight where paper lies above or left inside the cell, a shadow where it lies below
+or right, in a palette a world. Nothing of Ivan Horn's art is committed; the sheets are made
+at build time into `build/assets/`.
+
+**Proof** (`make check-render`): the oracle build replays the recording; every few seconds the
+engine samples the window, the shift, the world, the 120 map codes and the blocks it drew
+with, and copies the 128 lines of Layer 2 it drew into spare pages. The checker rebuilds the
+208x128 play area from those inputs with the reference renderer (`tools/l2ref.py`) and compares
+pixel for pixel. **174 samples, every one 0 pixels different, all seven worlds, the oracle green
+to the end.**
+
+**Found the hard way:** the game's own copy routine saves SP into its own code, so the engine's
+hook has to run at the original stack depth (a return-address swap); the interrupt handler's
+pushes corrupted `$EF7E-$EF7F` while `$D08C` borrows SP with interrupts on, so the handler now
+runs on its own stack (a latent E1 bug); the renderer's variables had to move out of the
+write-protected ROM into the engine's RAM; and the sample buffers overlapped the pace histogram
+until they were moved.
+
+## E3 - what was built and what it proved
+
+**Every moving thing on the Next's hardware sprites** (`src/next/sprites.asm`). The game still
+draws its sprites into the ULA exactly as it always did - its state, its stack and every operand
+it saves are unchanged for the oracle - but those pixels are never seen. The engine records each
+draw instead: the three masked drawers (`$EB1C` 32 pixels wide, `$EB72` 16, `$EBB0` 24) give the
+graphic, its width and lines, the display address and the call site; the player's build gives its
+pieces. At the head of the next pass (`$C553`) the records become objects: each is cut into 16x16
+images, recoloured (ink, paper inside the mask, transparent where the mask shows the background),
+and the player is composited from its pieces into one 16x32 picture.
+
+**The image cache** holds 64 pattern slots, keyed by the graphic's address, its width and lines,
+the tile, **and a hash of the tile's own bytes** - without the hash the weapon copy at `$EE60`,
+which is mirrored in place, showed a stale picture (2 of 62 samples). A new image takes the
+oldest slot no object uses and no sprite shows; where the arcade art has taken slots and none is
+free, it takes the oldest slot no object uses, and the check counts both.
+
+**Gliding.** Each object is matched with the nearest object from the same call site in the
+previous pass (within 32 pixels), and after every frame interrupt its sprites move from the old
+place to the new by the fraction of the pass that has passed, so motion is smooth at 50 Hz while
+the logic still steps 8 pixels a pass.
+
+**Proof** (`make check-sprites`): at a sampled pass head the engine shows the objects at their
+final places and holds the game there; the checker rebuilds, from the game's own memory, what the
+hardware sprites must be, and compares all five attributes and all 256 bytes of every pattern.
+**136 samples, every sprite and every pattern exact, the cache never out of slots, the oracle
+green.**
+
+## C2 - what was built and what it proved
+
+**The arcade player's poses on cue** (`tools/arcade/poses.lua`, `make poses`): a bot that starts a
+game in World of Forest and runs a fixed list of moves - stand, walk, turn, jump, crouch, attack,
+attack while crouching, walk and attack, climb - writing the frame each move starts. 76 seconds of
+play captured in 3 seconds of wall time. From it, and the attract demo, the arcade Athena is four
+sprites: a head tile, a body tile, a hair piece and the weapon, with the left-facing tile one
+number above the right-facing one.
+
+**The mapping** (`tools/arcade/mapping.json`, committed: tile numbers, colour sets and offsets, no
+pictures) and the tool that builds it into the port (`tools/arcade/mkmapping.py`, `make
+arcade-assets`). Each world bank gets an 8K page: its palette blocks, its keys and its frames. A
+key is a Spectrum picture's address (a mirrored weapon by its own graphic with bit 15 set), or the
+player's pose, weapon kind and facing. A frame is a list of pieces - offset, 4-bit image, palette
+block - and the engine picks the frame from the value the mapping names (a game variable, the pass
+count, or the player's pose value) and the fraction of the pass.
+
+**The arcade's 3-bit pixels become the Next's 4-bit sprites** with 7 and 3 swapped, so
+transparency is index 3 in every block - the low nibble of the transparent index `$E3`, which the
+recoloured Spectrum sprites keep using in palette block 0. Each arcade colour set takes a block of
+its own.
+
+**Proof** (`make check-mapping`): the states of the art bible's tables A-E and the items are all
+either mapped or listed as left on Spectrum art with a reason; every figure names real, non-blank
+arcade tiles; each bank's page decodes back to exactly the mapping, tile for tile and colour for
+colour; and in the 28 MHz arcade oracle build every sampled sprite is either the mapped arcade
+pieces or the recoloured Spectrum tiles, exactly. **The first mapping covers the player (walk,
+jump, fall, crouch, blow, kick), the club and the kick, the explosion and the heart.**
+
+**For David:** `build/c2/mapping/index.html` (local) shows each Spectrum picture beside the arcade
+frames that replace it, with the list of what is still on Spectrum art and why.
+
+## E4 - what was built and what it proved
+
+**Hardware scrolling.** Layer 2's X offset glides from the old scroll position to the new over the
+four ticks of a pass, snapping instead when the position jumps more than 16 pixels (a change of
+map part). The incoming column is drawn in the 48 pixels the clip window hides.
+
+**Proof** (`make check-scroll`): at a mid-glide frame the engine freezes the draw's inputs, the old
+and new offsets, the tick and the offset it set, and copies Layer 2; the checker recomputes the
+expected offset and the expected picture and compares. **185 samples, every one exact, all seven
+worlds, the oracle green.**
+
+## E5 - what was built and what it proved
+
+**Classic sound is the original's own players, on the original's clock** (the decision is in
+`docs/design.md`): `eng_fx` and `eng_tune` drop the CPU to 3.5 MHz while the game's effect and tune
+players run, and the engine's interrupt handler switches to full speed for its own part so a note
+loses no more time than it did on a 128K.
+
+**Proof** (`make check-classic-sound`, `tools/checkclassic.py`): each of the 14 tunes, the 7
+numbered effects and effect 12's 16 heart variants is played from a stub on the original machine
+and on the port, ZEsarUX writes its audio, and the speaker's edges are recovered from both. An
+effect (interrupts off) must have the original's edges, last as long and have the same spread of
+gaps; a tune is compared note by note, since its notes and rests are counted in interrupts whose
+phase is arbitrary. **All 37 sounds pass.** The port's notes measure 1.3-3% flat against a 128K:
+1.34% is the Next's exact 3.5 MHz against a 128K's 3,546,900 Hz, and the rest is the engine's
+interrupt handler inside a note. Each machine is recorded twice and the best pair compared,
+because ZEsarUX's audio file now and then repeats or drops a buffer.
+
+**The arcade sound** (`tools/arcade/mksound.py`, `src/next/sound.asm`). Every cue the table names is
+captured from the player's own arcade set in MAME (`tools/arcade/soundcmd.lua`), converted to AY
+register states a logic tick (`tools/arcade/opl2ay.py`: the YM3526's frequency number and block
+become the note, the carrier's level and envelope the volume), and packed into a stream of one mask
+byte plus two bytes a changed voice. The music plays on AY 2 and AY 3 (six voices) and the effects
+on AY 1, read by the line interrupt on every logic tick - so the music keeps playing while the
+original's players block the game. **24 cues, 70,154 bytes in nine pages.** A cue's loop is the
+shortest repeat of its key-on sequence that holds to the end of the capture, cut to whole ticks.
+
+**A deviation from the design, on purpose.** The design named a capture harness of its own - the
+sound board's Z80 with two ymfm YM3526 cores - whose render would be checked against MAME's. MAME
+itself is that harness here (`tools/arcade/soundcmd.lua` taps the sound CPU's writes to both
+chips), so there is nothing to check it against; `make check-arcade-capture` holds it to what can
+be checked instead: every cue has a capture with writes on its own chip, and MAME run again gives
+the same writes byte for byte.
+
+**Where each cue plays** (`tools/arcade/sound-cues.json`, committed: command numbers only): the tune
+player's call site (the world intro, the start of play, the hi-score tune, the ending, a lost life,
+game over), the effect number, and what the pass head sees - the guardian appearing, a blow
+starting, a jump starting, and the world completed.
+
+**Proof** (`make check-arcade-sound`): the pages decode back to the conversion tick for tick; every
+looping cue repeats note for note in its capture and loops within half a tick; the engine, driven
+cue by cue, holds exactly the model's AY state at every sample and the chips hold what it wrote;
+and over the whole recording the right cue plays at every sample, with every world's theme and a
+guardian's theme heard. **The pace is unchanged** (`make check-pace-arcade`): the silent players run
+at full speed and the pacer credits the time they would have taken at 3.5 MHz.
+
+**For David (provisional, marked in the files):** the tunes are not named yet. World themes,
+guardian themes and effects are guesses from the loops' lengths and from which command the arcade
+sent when the bot jumped, swung or picked something up.
+
+## C3 - what was built and what it proved
+
+Bank 3's enemies (worlds 1 and 2) are mapped to the arcade's World of Forest characters: the
+club-carrying pig man for type 1, the hedgehog for type 2, the slime for type 4 and the
+horse-headed soldier for type 5, each with four frames a direction where the Spectrum has two.
+Types 3 and 6, every other bank, the guardians and the items are listed as left on Spectrum art
+until David's play-through reaches those worlds. The same gate covers it (`make check-mapping`,
+`make c3`).
+
+## E6 - what was built and what it proved
+
+**Controls** (`src/next/options.asm`, play builds only - the oracle builds keep the original's
+controls). The Kempston routine becomes the engine's: a Mega Drive pad in the Next's MD mode gives
+right, left, down, up and fire as before, its second button also jumps, and Start pauses. The
+original's waits read only the keyboard, so the engine's `AnyKeyHeld` answers a pad button too.
+
+**The options screen.** The title's control menu gains a sixth line, OPTIONS, and the screen is
+drawn in the game's own font: a preset (ORIGINAL, EASIER, EASY, or OWN once a lever is moved),
+eleven levers - lives, continues, the time to answer CONTINUE?, energy, whether enemies hurt,
+immunity, minutes a world, guardian strength, keeping items after a lost life, the poison drain and
+the feathered blade's cost - then EVERY ENEMY, BUG FIXES, CLASSIC MODE and SAVE AND GO BACK. Every
+lever is written into the game's own operands (`tools/nexpatches.py`, `OPTION_SITES`), so with
+every option at ORIGINAL the game's bytes are its own.
+
+**The switches.** EVERY ENEMY keeps the ledge step-back inside the bounds the game itself checks,
+so the 721 list starts of the recording that were pushed out of bounds and freed unseen now appear.
+BUG FIXES puts in four of the nine bugs' fixes: world 7's guardian column `$FF`, a full item panel
+overwriting the tenth slot, energy given without redrawing the bar, and a struck heart taken for an
+enemy. Two of the nine need no fix on the Next (the first game's list walk writes into the
+write-protected alternative ROM; the blade's blast above the screen is not drawn and writes into
+ROM space). **Three are not fixed yet:** the world 7 enemy list damaged at the world change, the
+guardian's hit area ignoring its row, and guardian damage carried into the next guardian. CLASSIC
+MODE turns off Layer 2, the sprites and the arcade sound and puts the beeper back.
+
+**Settings on the SD card.** esxDOS pages itself over the bottom 16K during a call, which only works
+with the ROM there - not the alternative ROM holding the engine, nor the engine's RAM at `$2000` -
+so the calls run from a stub in a page of their own that switches both out and back in with
+interrupts off.
+
+**Proof** (`make check-options`): the pad answers the credits' wait; the menu shows the line and key
+6 opens the screen; each preset writes its levers into the game and ORIGINAL puts every byte back;
+each lever changes its own site and makes the preset OWN; the two switches go in and out; SAVE
+writes the settings and a fresh start loads and applies them; a game started with 9 lives, 19 energy
+and 9 minutes has them; and with KEMPSTON chosen the pad's second button sets the jump flag and
+Start the pause flag. **Every check passes.** With every option off the oracle is green, and
+`make check-play` shows the play build differs from the snapshot only at the listed patches.
+
+**For David:** play-test the presets and set their values (`src/next/options.asm`, `presets`), and
+say whether the three fixes left are worth doing.
+
+## E7 - what was built and what it proved
+
+**The three build levels** (`make check-levels`): the Spectrum files alone; with the builder's
+arcade set (`-DARCADE`, which needs a 2MB Next for its pages); and with David's hand-made art on
+top (`data/art`, brought in by `tools/artimport.py` and `make check-art`). For each level the check
+builds the assets and both .nex files, sees that the .nex holds what that level should, runs the
+play check, and runs the play-area, sprite and scroll checks over the first minutes of the
+recording, where every sample must match. The full-length runs are the per-step gates.
 
 ## Method notes that carried over
 

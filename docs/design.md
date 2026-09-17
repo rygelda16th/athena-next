@@ -201,13 +201,26 @@ And recording the beeper at 1 bit a sample would not be clean: the tunes' charac
 is a pulse that narrows in 48-T-state steps (about 13.5 microseconds), far finer than
 a 64-microsecond sample. So the speaker's edges are kept at T-state resolution and
 turned into multi-bit samples by measuring how long the speaker was on in each
-sample period - a band-limited result on the Next's DACs. E5 chooses between:
+sample period - a band-limited result on the Next's DACs. E5 chose between:
 
 - **recorded edges:** the build runs the original's players on SkoolKit's simulator
   against the player's snapshot and stores the edge times (roughly 300 KB to 1 MB,
   measured at E5), or
 - **a re-implemented tone generator** that reads the game's own tune data and effect
   table and produces the same edges at play time (no extra memory; some CPU).
+
+**What E5 settled on (2026-09-17): neither - the original's own players, run on the
+original's clock.** `eng_fx` and `eng_tune` drop the CPU to 3.5 MHz while the game's
+effect and tune players run, so every edge comes from the same instructions at the same
+T-state spacing, and the Next puts those edges on its DACs itself: no recording, no
+sampling, no extra memory, and no re-implementation to keep true. The two options above
+were only needed to keep the display moving while a sound plays; the original stopped
+too, and the pacer credits the time either way. `make check-classic-sound` hears both
+machines through ZEsarUX and compares the edges (tools/checkclassic.py): the port's
+notes measure 1.3-3% flat against a 128K, which is the Next's exact 3.5 MHz against a
+128K's 3,546,900 Hz plus the engine's own interrupt inside a note. **In arcade mode the
+same players still run, silently and at full speed** (their twelve `OUT ($FE),A` become
+`JR $+2`), so the game's pace is the original's while the AY chips play.
 
 What must be covered: all 14 tunes (tunes 0-3 loop until a key; tunes 4-13 are
 one-shot jingles of 1.9-10.4 seconds) and the 8 effects - effect 12, the rising
@@ -352,6 +365,11 @@ in `data/arcade/`.)
   how the larger arcade guardians fit the Spectrum's guardian positions; the shadow
   value per character.
 - A playable release: out of scope without the rights holders.
-- For the stages named: the arcade's command numbers, tempo source, loop behaviour
-  and chip split (E5); the classic sound's storage form (E5); how the pace model
-  handles passes with effects (E1); the KS3's sprite, DAC and copper timing (E8).
+- For the stages named: the KS3's sprite, DAC and copper timing (E8).
+- **Left from E6:** three of the nine bugs (the world 7 enemy list damaged at the world
+  change, the guardian's hit area ignoring its row, guardian damage carried into the next
+  guardian) are not fixed yet; the bug-fix switch covers the other four, and two need no
+  fixing on the Next (`docs/where-things-stand.md`, E6).
+- **Answered since:** the arcade's command numbers, tempo source, loop behaviour and chip
+  split (E5b, `tools/arcade/sound-cues.json`); the classic sound's form (above); how the
+  pace model handles passes with effects (E1, and `make check-pace` at 28 MHz).

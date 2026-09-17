@@ -1,0 +1,43 @@
+{
+  "about": [
+    "E5: where the arcade's music and effects play in the Spectrum game (docs/design.md, Sound).",
+    "Numbers only: the arcade sound program's command numbers. The sound is made at build time",
+    "from the builder's own arcade set (tools/arcade/mksound.py).",
+    "PROVISIONAL (2026-09-17): the music is not yet named by ear; the world and guardian themes",
+    "are guesses from the loops' lengths, and the effects from tools/arcade/poses.lua's capture",
+    "(the command sent on a jump, a bare-handed blow, a club blow, a pickup). David names and",
+    "places them."
+  ],
+  "status": "provisional",
+  "setting_off": 83,
+  "world_theme": {"1": 107, "2": 97, "3": 99, "4": 101, "5": 108, "6": 102, "7": 103},
+  "guardian_theme": {"1": 110, "2": 110, "3": 111, "4": 115, "5": 110, "6": 111, "7": 111},
+  "final_guardian": 116,
+  "tunes": {
+    "about": "The tune player's call sites by return address: intro = the world intro card, theme = the world's theme, 0 = leave what plays.",
+    "0xBDE7": "intro",
+    "0xBEE7": "theme",
+    "0xC012": 81,
+    "0xC3CB": 105,
+    "0xCD0E": 117,
+    "0xD86A": 82,
+    "0xB929": 0
+  },
+  "effects": {
+    "about": "The original's effect numbers (#R$C408's table at $BC90): 0 enemy destroyed, 1 player hurt, 2 block broken or box opened, 4 name letter, 5 item collected, 10 heart released, 11 heart collected, 12 heart rising (every pass: none).",
+    "0": 145, "1": 148, "2": 131, "4": 133, "5": 156, "10": 150, "11": 156, "12": 0
+  },
+  "guardian_hit": 131,
+  "guardian_destroyed": 145,
+  "swing": 178,
+  "jump": 163,
+  "names": {
+    "about": "What each command is thought to be, until David names them by ear.",
+    "83": "Setting Off, into the Forest theme", "107": "World of Forest (thought)", "108": "World of Sea (thought)",
+    "97": "a world theme", "99": "a world theme", "101": "a world theme", "102": "a world theme", "103": "a world theme",
+    "110": "a guardian theme", "111": "a guardian theme", "115": "a guardian theme", "116": "a guardian theme",
+    "81": "a long cue that does not loop", "82": "the ending (thought)", "105": "a short sting (the attract demo's end)",
+    "117": "a death cue", "131": "a hit", "133": "a blip", "145": "an enemy destroyed (thought)",
+    "148": "hurt (thought)", "150": "a chime", "156": "a pickup", "163": "a jump", "178": "a bare-handed blow"
+  }
+}
