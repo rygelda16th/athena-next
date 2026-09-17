@@ -1,32 +1,100 @@
 # The art bible
 
-Written 2026-09-17 for Checkpoint A and checked by an adversarial review against the
-graphics, the snapshot and the disassembly. It says what every new graphic must be:
-its size, how many frames, which colours it may use, what drives its animation, and
-in what order the art is made. The design it serves is **`docs/design.md`**.
+Written 2026-09-17 for Checkpoint A, checked by an adversarial review against the
+graphics, the snapshot and the disassembly, and revised the same day for David's
+option d. It says where every graphic in the play area comes from, what it must
+cover, and in what order the work is done. The design it serves is
+**`docs/design.md`**.
 
-**The new art is the play area only**: the player, weapons, effects, enemies,
-guardians and scenery. Every screen stays intact (section G).
+**Decisions it follows (David, 2026-09-17):** characters from the arcade, scenery
+from the Spectrum (option d); every screen stays intact (section G); the arcade set
+is optional; extra frames about double.
 
-The originals are the reference: `make gfx` writes a sheet of every graphic set to
-`build/gfx/` (open `build/gfx/index.html`). They are your own game's pictures, so
-they stay local. The art track adds a brief sheet per asset (the original enlarged
-on a pixel grid, labelled, both directions shown, with empty slots for the new
-frames) and `tools/artimport.py`, which fits, quantises and checks a drawing against
-this document.
+The Spectrum originals are the reference for what must be covered: `make gfx` writes a
+sheet of every graphic set to `build/gfx/` (open `build/gfx/index.html`). The arcade
+graphics decode into `build/arcade-gfx/`. Both come from your own files, so they stay
+local.
 
-## Style: a faithful remaster
+## Where each graphic comes from
 
-- **Keep** Ivan Horn's silhouettes, poses and proportions. Every picture must still
-  read at its real size on a TV.
-- **Add** colour and shading. Light comes from the top left, for everything.
-- **Sprites** get a one-pixel dark outline, so they read against coloured scenery;
-  the original had black paper behind everything and needed none.
-- **Scenery** is darker and less saturated than the sprites, for the same reason.
-- **Hard edges only:** no anti-aliasing against transparency and no partial
-  transparency.
-- **World colours** follow the world, not the Spectrum's single ink colour (the
-  original's world 1 is bright cyan). A starting point, decided world by world:
+| Graphic | With an arcade set | Without one | David's hand-made override (local, `data/art/`) |
+|---|---|---|---|
+| Player: body, armour, flight | **arcade Athena**, mapped per state | Spectrum art, recoloured | - |
+| Weapons, shots, chain, blast | **arcade** | recoloured | - |
+| Effects: explosion, heart, flame and bomb | **arcade** | recoloured | - |
+| Items and boxes (map cells) | **arcade item pictures**, drawn into the cell | recoloured cells | - |
+| Enemies the arcade has | **arcade** | recoloured | - |
+| Enemies the arcade lacks | recoloured | recoloured | hand-coloured |
+| Guardians | **arcade boss** | recoloured | - |
+| Scenery cells | recoloured | recoloured | **hand-coloured and shaded** |
+| Title, panel, fonts, text screens, ending, advert | the original, untouched | the original | - |
+
+The repository holds rules and mappings only. Pictures are made at build time from
+the builder's files; hand-made art stays in `data/art/`, which git ignores, until David
+decides otherwise.
+
+## Converted arcade art
+
+**What the arcade set holds** (MAME `snk.cpp`, `snk_v.cpp`):
+- **1,024 sprite tiles**, 16x16, 3 bits a pixel: values 0-5 are colours, 6 is a
+  shadow that darkens what is behind, 7 is transparent. Each sprite uses one of 16
+  colour sets. Left- and right-facing art are separate tiles (the hardware cannot
+  mirror).
+- **1,024 background tiles**, 8x8, 4 bits a pixel, 16 palettes.
+- **Colours** from three PROMs, 4 weighted bits per channel, quantised to the Next's 3.
+- The arcade Athena is a 16x16 head over a 16x16 body, the Spectrum player's 16x32.
+
+**How a mapping is made:**
+1. **The capture:** David plays the arcade game through once in MAME on the Steam
+   Deck, with cheats if that helps reach every world. A Lua script logs every frame's
+   sprite table, background tiles and colours, and the sound commands.
+2. **Contact sheets:** every arcade character assembled from the log, with its
+   animations and colour sets, beside the Spectrum graphic it could replace.
+3. **The mapping:** for each Spectrum logic state in the asset tables below, the arcade
+   frames that show it - tile numbers, colour set, offsets, and which display frames
+   of the pass each shows. Where the arcade has more frames than the Spectrum, they
+   are the extra frames; where it has fewer, frames repeat.
+4. **Approval:** David approves each group - player, weapons and effects, items, then
+   each bank's enemies and guardian - on a sheet of the Spectrum original beside the
+   converted result.
+
+**Rules:**
+- **No redrawing.** Choose frames, place them, and crop only where a piece must go.
+- **Placement:** feet on the Spectrum object's line, centred on its box. A converted
+  character may be wider or taller than the Spectrum's box: the game's hits come from
+  map cells (an enemy's from its top-left cell and height, the guardian's from a fixed
+  4x4 block), so play is unchanged.
+- **The shadow value** becomes a fixed dark colour or is dropped (the Next's sprites
+  have no translucency), per character.
+- **Layered player:** the Spectrum builds the player from body, helmet, body armour,
+  hand piece, winged legs and leg piece, with the crescent wing and crouch peak beside
+  it. The arcade draws its own armour and wings; the mapping follows each combination
+  of pose, armour and flight that the capture shows.
+- **No counterpart:** where the arcade has nothing matching, the Spectrum art is used
+  (recoloured, or David's hand-made version).
+
+## Recoloured Spectrum art (automatic)
+
+The fallback for every graphic, and the scenery until David's cells exist. Ivan Horn's
+art is 1 bit a pixel plus, for sprites, a mask, so each picture has three kinds of
+pixel: ink, paper inside the mask, and outside. A committed rule per asset and world
+turns them into colours: an outline and fill from the ink, a lighter fill from the
+paper inside the mask, and for scenery a two-tone ramp in the world's palette (table
+below). The rules hold colour choices only, never pixels.
+
+## Hand-made art (David, local)
+
+For the scenery cells and any enemy the arcade lacks.
+
+**Style:** Ivan Horn's shapes, coloured and shaded to sit with the arcade art:
+- **Palette:** the arcade's tones.
+- **Enemies:** about 7 colours per 16x16, like the arcade sprites.
+- **Light:** from the top left.
+- **Edges:** hard only, with no anti-aliasing and no partial transparency.
+- **Scenery:** darker and less saturated than the characters, so they read against it.
+
+**World colours** follow the world, not the Spectrum's single ink colour. A starting
+point, decided world by world:
 
 | World | Name | Original ink | Suggested mood |
 |---|---|---|---|
@@ -38,18 +106,18 @@ this document.
 | 6 | Hell | magenta | reds, black rock, lava orange |
 | 7 | The Last World | white | pale ice blue and grey (the arcade's Ice music plays here) |
 
-## Hard limits
+**Hard limits:**
 
 | What | Limit |
 |---|---|
 | Every colour | one of the Next's 512: 3 bits each of red, green and blue |
-| **Size** | inside the original's width and height (below), so what the player sees matches 1987. (The logic's hits do not come from the picture: an enemy's hit cells come from its top-left cell and its height, and the guardian's from a fixed 4x4 block of cells.) A 24-pixel-wide graphic sits in a 32-pixel sprite box; the spare 8 pixels stay transparent |
-| Scenery cells | Layer 2, from the world's **256-colour palette**, opaque - and never the transparency colour (the 8-bit value in NextReg `$14`, default `$E3`: two of the 512 colours) |
-| Sprites | built from 16x16 images; one index of the sprite palette is transparent. The palette is shared: about half for the player, armour, weapons and effects (every world), about half for the world's enemies and guardian |
+| Size | inside the original's width and height (the asset tables), so it lines up with the Spectrum's scenery and positions |
+| Scenery cells | Layer 2, from the world's 256-colour palette, opaque, never the transparency colour (the 8-bit value in NextReg `$14`, default `$E3`: two of the 512 colours); cells tile seamlessly edge to edge |
+| Hand-made sprites | 16x16 images with one transparent index, using the sprite palette's entries not taken by the arcade's colour sets |
 
 Two worlds that share a bank (1 and 2, 3 and 4, 5 and 6) **share the same cell and
-enemy pictures**. Each world has its own palette, so the same drawing can be coloured
-twice: the picture is drawn once with palette indices, and each world gets its colours.
+enemy pictures**: draw once with palette indices; each world gets its colours.
+`tools/artimport.py` fits, quantises and checks hand-made art against these limits.
 
 ## How animation is keyed
 
@@ -57,8 +125,10 @@ A pass of the game's logic lasts a little over 4 display frames at 50 Hz: usuall
 sometimes 5 (the feathered blade's passes, some passes in world 7), and about 5 on a
 60 Hz display. New pictures are placed by **fraction of the pass**, from the logic's
 state - never from a clock of their own - and a long pass holds its last picture.
-The ceiling is one picture per display frame. The counts below are about double the
-original's (David's decision 7).
+The ceiling is one picture per display frame. For hand-made art the counts below are
+about double the original's (decision 7); converted arcade art uses the arcade's own
+frames, repeated where it has fewer, to at least the same counts. The rules below say
+when each picture shows, whatever its source.
 
 - **Walkers** (every enemy type but 6 and 7) step 8 pixels every second pass and glide
   about 1 pixel a display frame. A gait cycle of 4 frames covers those 8 pixels: the
@@ -86,9 +156,12 @@ original's (David's decision 7).
 
 ## The assets
 
-"Mirror" means the other direction comes from the hardware's mirror flag, so it is
-not drawn. "Both" means the original has separately drawn art for each direction,
-and so does the new art.
+These tables are **what every source must cover**: each row is a state the logic can
+be in, with the Spectrum's size and frame counts. For converted arcade art, the "New
+frames" column is the minimum the mapping provides. "Mirror" and "Both" apply to
+recoloured and hand-made art: "mirror" means the other direction comes from the
+hardware's mirror flag; "both" means the original drew each direction, and so does the
+new art. Converted arcade art always uses the arcade's own left- and right-facing tiles.
 
 ### A. The player (every world; drawn facing right, left is mirrored)
 
@@ -227,32 +300,35 @@ the new presentation shows that drawing unchanged:
 - the ending (credits) picture;
 - the Combat School advert.
 
-## Totals
+## What must be covered
 
-| Set | Original pictures | New (about) |
+| Set | Spectrum pictures | Source with an arcade set |
 |---|---|---|
-| Player body poses | 6 | 24 |
-| Armour, flight, wing and peak layers | 26 | 70, more where new poses move the head or hand |
-| Weapons, shots, chain, blast | 29 | 48 |
-| Effects | 9 | 20 |
-| Enemies (directions drawn) | 83 | 168, plus 5 fall poses |
-| Guardians | 9 | 18 |
-| Scenery cells | 479 | 479, plus plant pictures |
+| Player body poses | 6 (24 with extra frames) | arcade |
+| Armour, flight, wing and peak layers | 26 (about 70) | arcade, per combination the capture shows |
+| Weapons, shots, chain, blast | 29 (about 48) | arcade |
+| Effects | 9 (20) | arcade |
+| Enemies (directions drawn) | 83 (168, plus 5 fall poses) | arcade where it has them; the rest recoloured or hand-made |
+| Guardians | 9 (18) | arcade |
+| Scenery cells | 479, plus plant pictures | recoloured; hand-made by David |
+
+How many enemies and cells have arcade counterparts is known only after the capture.
 
 ## Order of work
 
-1. **The player, weapons and effects**, which every world uses and E3 needs first.
-2. **Bank 3** (worlds 1 and 2): cells, enemies, guardian.
-3. **Bank 4**, then **bank 6**, then **bank 7**.
+1. **The arcade capture:** set up MAME on the Deck with the logging script; David plays
+   through.
+2. **Contact sheets and mappings:** player, weapons and effects first (E3 needs them),
+   then items, then each bank's enemies and guardian. David approves each group.
+3. **The recolouring rules** for every graphic, so a build without an arcade set, or
+   before a mapping exists, always has art.
+4. **David's hand-made art:** scenery cells bank by bank (3, 4, 6, 7), then any enemy
+   the arcade lacks.
 
-For each: a brief sheet goes out; you generate drafts; `tools/artimport.py` scales
-them to the grid, quantises them to the palette and checks the limits above; the
-result is hand-cleaned; you approve the sheet, shown beside the original. The
-technical phases never wait: until a set is approved they use the original,
-recoloured automatically.
+The technical phases never wait: until a mapping or hand-made set is approved they use
+the recoloured Spectrum art.
 
-## Decided at the first delivery
+## Decided later
 
-Whether generated art of SNK's and Imagine's characters goes in the public repository,
-and under what terms. Until then
-new art stays local.
+Whether David's hand-made art goes in the public repository, and under what terms, is
+decided at its first delivery. Converted arcade art is never committed.

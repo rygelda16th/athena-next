@@ -13,19 +13,41 @@ presented feeds back. **Every gameplay option** (difficulty, bug fixes, invisibl
 enemies) **defaults to the original**, and the oracle runs with them off - in both
 presentations. The **presentation** defaults to the new graphics and the arcade
 sound; **classic mode** switches to the original graphics and the original sound.
+**Nothing copyrighted is committed**: the Spectrum game, the arcade game's files and
+anything converted from them are read from the builder's own copies at build time.
 
 ## David's decisions (2026-09-17)
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Art style | **Faithful remaster** of the play area: Ivan Horn's poses and outlines, coloured and shaded. **Every screen stays intact**: the title, the panel and its font, the text screens, the ending (credits) picture and the Combat School advert are the original's own, in both presentations |
+| 1, d | Art | **Characters from the arcade, scenery from the Spectrum** (option d, replacing the first answer's faithful remaster of Ivan Horn's art): the player, armour, weapons, items, effects, enemies and guardians are SNK's arcade art, converted at build time wherever the arcade has them; the scenery cells, and any enemy the arcade lacks, are Ivan Horn's shapes coloured to sit with it. **Every screen stays intact**: the title, the panel and its font, the text screens, the ending (credits) picture and the Combat School advert are the original's own, in both presentations |
 | 2 | Motion | **Smooth scrolling, sprites glide** between the positions the logic computes |
-| 7 | Extra animation frames | **About double the original counts** (the art bible lists each) |
-| 3, 8, 9 | Sound | **Classic**: the original beeper sound, played cleanly. **Arcade**: the arcade game's music and effects, captured at build time from David's own copy of the arcade game (the Steam SNK 40th Anniversary Collection) and **converted onto the Next's three AY chips** |
+| 7 | Extra animation frames | **About double the original counts**: from the arcade's own animation for converted characters, drawn for hand-made art (the art bible lists each) |
+| 3, 8, 9 | Sound | **Classic**: the original beeper sound, played cleanly. **Arcade**: the arcade game's music and effects, captured at build time from the builder's own copy of the arcade game (David's: the Steam SNK 40th Anniversary Collection) and **converted onto the Next's three AY chips** |
+| - | The arcade set | **Optional**: without it the build still makes the enhanced port, with classic sound and recoloured Spectrum art |
 | 10 | Where the arcade sound plays | **The proposed mapping** (below); final choices made by ear at E5 |
 | 4 | Options menu | **Presets that set the individual settings**, adjustable; one switch for the nine bug fixes; the invisible enemies as their own switch |
 | 5 | Pad controls | **Up still jumps, a second button also jumps, Start pauses**; keyboard, Kempston, cursor and Sinclair stay |
 | 6 | Classic mode | **Yes**: one switch between the new graphics and sound and the original ones |
+
+## What a build needs, and what it makes
+
+| The builder has | Characters | Scenery | Sound |
+|---|---|---|---|
+| **The Spectrum files** (`make fetch`) | Spectrum art, recoloured automatically | Spectrum cells, recoloured automatically | classic |
+| **+ an arcade set** in `data/arcade/` | **converted arcade art** | Spectrum cells, recoloured automatically | **arcade**, converted to AY |
+| **+ hand-made art** in `data/art/` (David's, local) | converted arcade art; hand-coloured art for enemies the arcade lacks | **hand-coloured and shaded cells** | arcade |
+
+Every level has classic mode. The repository holds only rules and mappings: colour
+rules for the recolouring, tile numbers, colour sets and offsets for the arcade art,
+command numbers and conversion rules for the arcade sound.
+
+**The arcade set:** the build uses 9 of its files - the sound program (`p5.6g`,
+`p6.6k`), the sprite and background graphics (`p7.2p`, `p8.2s`, `p9.2t`, `p10.2b`) and
+the three colour PROMs (`3.2c`, `2.1b`, `1.1c`) - under MAME's current names or the
+older board-location names David's copy uses. They are identical in all three MAME
+versions of the game (`athena`, `athenab`, `sathena`), so any of them works; the build
+checks those 9 checksums. The main program files are not needed to build.
 
 ## Display
 
@@ -59,8 +81,10 @@ sound; **classic mode** switches to the original graphics and the original sound
 - **Colour:** every colour is one of the Next's 512 (3 bits each of red, green,
   blue). Layer 2 has a **256-colour palette per world**, loaded at the world change,
   so the two worlds that share a bank's cells can have different colours. The
-  **sprite palette** has a shared part (player, armour, weapons, effects, hearts, the
-  flame and bomb) and a part per world (enemies, guardian). The panel and screens
+  **sprite palette** holds the arcade's 16 colour sets in the first 8 entries of each
+  16-entry block (where 4-bit images with a palette offset look), and the recoloured
+  and hand-made Spectrum art in the other 128 entries: a shared part for the player,
+  weapons and effects, and a part per world for enemies and guardians. The panel and screens
   keep the Spectrum's colours. Transparency costs one sprite index and one Layer 2
   colour value (NextReg `$14`).
 
@@ -89,6 +113,9 @@ sound; **classic mode** switches to the original graphics and the original sound
   POW flash's read of the HIT bar's colour** (`$CB32`: the panel stays the original's
   on the ULA, so the read works unchanged) and **the AttackState reset in the weapon setup**
   (`$CF73`). The oracle hashes all of them and catches any slip.
+- **Converted arcade characters animate with the arcade's own frames**, chosen per
+  logic state by the mapping (below); the Spectrum's timing still decides when each
+  shows.
 - **Extra animation frames are pure presentation:** the only logic that reads an
   animation frame number is the walkers' step timing (slot byte 9 bit 1, `$CC36`, also
   loaded at `$CBFE` and `$CC11`), and it stays inside the unchanged logic. Art is keyed
@@ -101,6 +128,12 @@ sound; **classic mode** switches to the original graphics and the original sound
   when a slot fills, the guardian when it starts) and streamed as pictures change.
   The worst case is 38 images in one display frame, about 204,000 T-states, 36% of a
   28 MHz frame at 50 Hz.
+- **Arcade tiles are Next sprite images as they stand.** An arcade sprite tile is
+  16x16 with 8 colour values, and the arcade picks one of 16 colour sets per sprite;
+  a Next 4-bit sprite image is 16x16 with 16 colour values and a 4-bit palette offset
+  per sprite. So each arcade tile uploads once as a 4-bit image and its colour set
+  becomes the sprite's palette offset: 128 slots instead of 64, at half the upload
+  cost. Recoloured and hand-made Spectrum art stays 8-bit; E3 settles the mix.
 - **When uploads happen:** only while the beam is below the play area. The play area
   is at the top of the screen, so that is one stretch of about 184 lines at 50 Hz
   (fewer at 60 Hz) - but the frame interrupt falls near its end, leaving about 63
@@ -114,6 +147,44 @@ sound; **classic mode** switches to the original graphics and the original sound
   each is a sprite image of its own. The composite is rebuilt and uploaded whenever
   the player's picture changes, at most once a display frame: about 11,000 T-states
   for two images, 16,000 with the wing or peak (2-3% of a frame).
+
+## The arcade art (option d)
+
+**What the arcade set holds** (MAME `snk.cpp` and `snk_v.cpp`, decoded from David's
+set into local preview sheets in `build/arcade-gfx/`):
+
+- **Sprites:** 1,024 16x16 tiles, 3 bits a pixel. Values 0-5 are colours, 6 is a
+  shadow (it darkens what is behind) and 7 is transparent. Up to 50 sprites at once,
+  each with one of 16 colour sets. Athena's hardware has no mirror flag (those
+  attribute bits are tile banks), so left- and right-facing art are stored separately.
+- **Background:** 1,024 8x8 tiles, 4 bits a pixel, 16 palettes, in a scrolling map of
+  64x64 tiles.
+- **Colours:** three PROMs give 4 weighted bits per channel; the conversion quantises
+  them to the Next's 3 bits.
+- The arcade Athena is a 16x16 head over a 16x16 body - the Spectrum player's 16x32.
+
+**What the graphics files do not hold:** which tiles make up each character, which
+colour set each uses, and which frames animate together. The arcade's code decides
+that while it runs. So **the arcade capture comes first**: David plays the arcade game
+through once in MAME (on the Steam Deck; the managed Mac takes no personal installs),
+and a Lua script logs, every frame, the sprite table, the background tiles and their
+colours, and the sound commands. From that log `tools/` build contact sheets of every
+arcade character and animation, and the **mapping** is authored: for each Spectrum
+logic state (the art bible's asset tables), the arcade frames that show it - tiles,
+colour sets, offsets and timing. David approves each group against the original.
+Only the mapping is committed; the builder's own graphics files supply the pixels.
+
+**Rules for converted art:**
+- No redrawing: choose frames, place them, and crop only where a piece must go.
+- Place each character at the Spectrum object's position (feet on the same line,
+  centred on its box). It may be wider or taller than the Spectrum's box; the game's
+  hits come from map cells, not pictures, so play is unchanged.
+- The shadow value becomes a fixed dark colour or is dropped (the Next's sprites
+  have no translucency); decided per character at mapping.
+- Items and boxes are map cells on the Spectrum: their arcade pictures are drawn
+  into the cell over its background at build time.
+- Where the arcade has no counterpart, the Spectrum art is used: recoloured, or hand-
+  coloured by David.
 
 ## Sound
 
@@ -145,7 +216,7 @@ the heart rises). E5 also settles the output route: the copper (as anotherworld-
 does, whose rate follows the display's line rate, so 60 Hz needs care, and which
 uses 936 of the copper's 1,024 instructions) or the DMA.
 
-### Arcade: captured from David's arcade copy, converted to AY
+### Arcade: captured from the builder's arcade copy, converted to AY
 
 **The arcade hardware** (MAME `snk.cpp`, checked by a verifier): a 4 MHz sound Z80
 with 48 KB of program (`p5.6g`, `p6.6k`), two YM3526 FM chips at 4 MHz, no samples.
@@ -155,13 +226,11 @@ The arcade's main CPU writes one byte per command to its own `$C400`; whether an
 cue takes more than one command is for the survey to find. On a real board one chip
 plays the music and the other the effects.
 
-**Where the files come from:** David's own copy - the Steam SNK 40th Anniversary
-Collection, which holds the same program files as MAME's `athena` set, extracted
-with community scripts (lawfulness depends on the country; David has accepted the
-step). The whole set is needed: the sound files for the capture, and the main
-program files for the MAME play-through that identifies the effects. The files go
-in `data/arcade/`, checked against MAME's published checksums, and are **never
-committed** (`docs/licence.md`). SNK Corporation owns the arcade music.
+**Where the files come from:** the builder's own copy (David's is the Steam SNK 40th
+Anniversary Collection, extracted with community scripts; lawfulness depends on the
+country, and David has accepted the step). They go in `data/arcade/`, are checked
+against MAME's published checksums, and are **never committed** (`docs/licence.md`).
+Without them the build plays classic sound. SNK Corporation owns the arcade music.
 
 **The build-time pipeline (E5):**
 
@@ -179,10 +248,10 @@ committed** (`docs/licence.md`). SNK Corporation owns the arcade music.
    same command. The log also shows which chip carries music and which effects.
 3. **Command survey:** every command value tried, plus the sound program's command
    handler read; David names the music by ear against SNK's album titles.
-4. **Play-through log:** MAME taps the arcade main CPU's writes to its `$C400` while
-   the arcade game is played through once. This is **the only way to tie the
-   unnamed effect commands to events** (jump, swing, hit, pickup), and it shows
-   where each cue starts, stops and loops.
+4. **Play-through log:** the arcade capture (above) also logs the arcade main CPU's
+   writes to its `$C400`. This is **the only way to tie the unnamed effect commands
+   to events** (jump, swing, hit, pickup), and it shows where each cue starts, stops
+   and loops. It is David's one-off run; builders need only the resulting mapping.
 5. **AY conversion** (wolf3d-next's `music.inc` method): each FM channel's frequency
    number and block become an AY note (the 4 MHz clock changes the pitch constant),
    the carrier's level becomes AY volume, decay and sustain shape the notes, and the
@@ -246,7 +315,8 @@ by changing it.
 
 The target is the Next's **2 MB profile** (1,792 KB usable; the KS3 and expanded
 Nexts). Rough budget: the original game 144 KB; Layer 2's picture 48 KB; new code
-about 64 KB; sprite art about 300-380 KB for every world at the extra frame counts;
+about 64 KB; sprite art under about 380 KB for every world (the arcade's 1,024 tiles
+are 131 KB as 4-bit images, plus the Spectrum art the arcade lacks);
 scenery cells about 125 KB; arcade AY music about 100 KB; classic sound 0-1 MB
 depending on E5's choice - about 0.8-1.8 MB (the screens are the original's, so
 they cost nothing). **If recorded edges come out large, E5 takes the
@@ -257,25 +327,30 @@ from the SD card at the world change; that is not planned.
 
 | Phase | What | Gate |
 |---|---|---|
-| Art track | briefs from `docs/art-bible.md`; David generates; `tools/artimport.py` fits, quantises and checks; hand-cleaning | David approves each world's sheet |
+| Art track | the arcade capture (MAME play-through on the Deck); contact sheets and the mapping, group by group; the recolouring rules; David's hand-made cells and Spectrum-only enemies, checked by `tools/artimport.py` | David approves each group's mapping and each world's sheet |
 | E1 | pacing at 28 MHz: the original's measured pace, the 50 Hz logic timer on 60 Hz displays, the line-interrupt start of each pass | oracle green; pass length within the measured range |
 | E2 | Layer 2 play area, palettes, the original panel and screens on the ULA, the draw-path logic kept | pixel-exact against a Python reference render (placeholder art: the originals recoloured); oracle green |
 | E3 | hardware sprites, the image cache, player compositing, gliding, extra frames | pixel-exact against the reference; no flicker |
 | E4 | hardware scrolling | pixel-exact against the reference |
-| E5 | classic sound; arcade capture harness, proof against MAME, command survey, play-through log, AY conversion, loops, placement | capture matches MAME; David signs off by ear |
+| E5 | classic sound; arcade sound harness, proof against MAME, command survey, AY conversion, loops, placement (from the capture's log) | capture matches MAME; David signs off by ear |
 | E6 | controls and options | oracle green with options off; a check per option |
-| E7 | approved art, world by world | David's per-world sign-off |
+| E7 | approved mappings and hand-made art, world by world; the build's three levels checked | David's per-world sign-off; a build with no arcade set still passes every gate |
 | E8 | the KS3: timing, sound, colour, the upload window | on the hardware |
 
-**What David does along the way:** buy the Steam SNK 40th Anniversary Collection and
-extract the arcade set before E5; play the arcade game through once in MAME for the
-play-through log; name the arcade tunes and tune the AY instruments by ear; generate
-and approve the art; play-test the presets.
+**What David does along the way:** play the arcade game through once in MAME on the
+Deck for the capture (early, before the art mapping); approve the arcade mappings;
+colour and shade the scenery cells and any Spectrum-only enemies; name the arcade tunes
+and tune the AY instruments by ear; play-test the presets. (The arcade set is already
+in `data/arcade/`.)
 
 ## Still open
 
-- Whether generated art of SNK's and Imagine's characters goes in the public
-  repository, and under what terms (at the first art delivery).
+- Whether David's hand-made art (coloured Spectrum shapes) goes in the public
+  repository, and under what terms (at its first delivery). Converted arcade art is
+  never committed.
+- From the capture: how many Spectrum enemies and cells have arcade counterparts;
+  how the larger arcade guardians fit the Spectrum's guardian positions; the shadow
+  value per character.
 - A playable release: out of scope without the rights holders.
 - For the stages named: the arcade's command numbers, tempo source, loop behaviour
   and chip split (E5); the classic sound's storage form (E5); how the pace model

@@ -659,6 +659,8 @@ and his answers:
 | 8 | Arcade sound from the player's own copy | **a) yes**: David buys the Steam SNK 40th Anniversary Collection and accepts the extraction step; nothing of SNK's is committed |
 | 9 | How the arcade sound plays | **b) converted onto the AY chips only** (no DAC samples, no Pi) |
 | 10 | Where the arcade sound plays | **a) the proposed mapping**: world themes through play, boss themes at the guardian, the arcade's ending, name entry and game over; effects on the original's moments plus new ones; final choices by ear at E5 |
+| d | Art sources (David, later the same day) | **d) characters from the arcade** (player, armour, weapons, items, effects, enemies, guardians converted at build time from the arcade set, via a mapping made from a MAME play-through capture), **scenery from the Spectrum** (Ivan Horn's cells recoloured automatically, or hand-coloured by David). This replaces answer 1's faithful remaster for the characters |
+| - | The arcade set | **optional**: without it the build still makes the enhanced port with classic sound and recoloured Spectrum art. The build needs 9 of the set's files, identical in `athena`, `athenab` and `sathena` |
 
 **Calls made from the measurements, unless David objects:** scenery on Layer 2
 (256x192, 256 colours, hardware scroll clipped to the 208x128 play area; the Tilemap
