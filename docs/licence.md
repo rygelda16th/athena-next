@@ -21,8 +21,15 @@ gitignored.
 
 What the repository does contain is what a published POKE list contains:
 addresses, what the instruction at an address does, the value a check expects to
-find there. The annotations (`src/*.ctl`) and the checks under `tools/` are made
-of that - they name and describe the game, and are useless without it.
+find there. The annotations (`src/*.ctl`), the checks under `tools/` and the
+enhanced port's own code (`src/next/`) are made of that - they name and describe the
+game, and are useless without it. The port's hooks list the bytes each patched site
+holds before it is patched (`tools/nexpatches.py`, and the bug fixes' three-byte
+sites in `src/next/options.asm`), exactly as a POKE list does, so a check can prove
+the running game differs from the player's own file at those addresses and nowhere
+else. The arcade mapping and the sound cues (`tools/arcade/*.json`) are numbers in
+the same sense: tile numbers, colour sets, offsets and the sound program's command
+numbers, with no picture or sound of SNK's.
 
 This is the same discipline wolf3d-next and anotherworld-next follow: those
 repositories contain no id Software or Delphine data, and the player's own game
