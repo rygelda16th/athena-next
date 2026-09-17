@@ -22,6 +22,8 @@ ENGINE_PATCHES = [
     (0xC408, bytes.fromhex("e17e23")),       # the effect player -> JP eng_fx
     (0xCEFA, bytes.fromhex("fb76")),         # the pass's frame wait -> RST $30, 1
     (0xD04D, bytes.fromhex("fb76")),         # WorldCompleted's flash -> RST $30, 2
+    (0xD06F, bytes.fromhex("ccedc2")),       # the pause's key wait -> CALL Z,eng_pause (E2)
+    (0xD137, bytes.fromhex("cdfaeb")),       # the play area's copy -> CALL eng_copy (E2)
     (0xD991, bytes.fromhex("fb76")),         # the feathered blade's wait -> RST $30, 2
     (0xDEC6, bytes.fromhex("ed73cfde")),     # the tune player -> JP eng_tune; NOP
 ]

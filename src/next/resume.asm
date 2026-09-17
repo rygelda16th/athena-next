@@ -107,6 +107,20 @@ resume:
 .hz:    ld (E_LPF),hl
         ld a,e
         ld (E_HZ),a
+        ; E2: Layer 2 in banks 44-46, clipped to the play area, behind the ULA,
+        ; whose black is transparent; off until the first play-area draw.
+        nextreg $12,L2_BANK
+        nextreg $16,0
+        nextreg $17,0
+        nextreg $1c,%00000001           ; reset the Layer 2 clip index
+        nextreg $18,24
+        nextreg $18,231
+        nextreg $18,0
+        nextreg $18,127
+        nextreg $14,$00                 ; transparent: RGB332 $00, the ULA's black
+        nextreg $4a,$00                 ; and what shows through: black
+        nextreg $15,%00001000           ; layers: sprites, ULA, Layer 2
+        nextreg $69,%00000000
         ; One interrupt a frame, from line 128 - just below the play area -
         ; instead of the ULA's at the top of the frame.
         nextreg $23,INT_LINE

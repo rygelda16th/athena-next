@@ -28,6 +28,8 @@ engine_patches MACRO
         ORG $c408 : jp eng_fx           ; the effect player: POP HL; LD A,(HL); INC HL
         ORG $cefa : rst $30 : db 1      ; the pass's frame wait: EI; HALT
         ORG $d04d : rst $30 : db 2      ; WorldCompleted's flash: EI; HALT
+        ORG $d06f : call z,eng_pause    ; the pause's key wait: CALL Z,$C2ED (E2)
+        ORG $d137 : call eng_copy       ; the play area's copy: CALL $EBFA (E2)
         ORG $d991 : rst $30 : db 2      ; the feathered blade's extra wait: EI; HALT
         ORG $dec6 : jp eng_tune : nop   ; the tune player: LD ($DECF),SP
         ENDM

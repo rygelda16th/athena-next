@@ -24,7 +24,7 @@ from specfile import Z80Snapshot    # noqa: E402
 from zrcp import Zrcp               # noqa: E402
 import nexpatches                   # noqa: E402
 
-ENGINE_RAM_PAGE = 80                # src/next/athena.asm
+ENGINE_RAM_PAGE = 94                # src/next/athena.asm
 
 PORT = int(os.environ.get("ZRCP_PORT", "10010"))
 FAILS = []

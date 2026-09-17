@@ -13,9 +13,10 @@
 
         DEVICE ZXSPECTRUMNEXT
 
-ENGINE_RAM_PAGE EQU 80                  ; bank 40: the engine's variables, at $2000 in play
+ENGINE_RAM_PAGE EQU 94                  ; bank 47: the engine's variables, at $2000 in play
 HANDLER_ORG     EQU $1000               ; the oracle handler, in the alternative ROM
 
+        INCLUDE "build/assets/assets.asm"   ; tools/mkassets.py: the recoloured scenery
     IFDEF ORACLE
         INCLUDE "build/g3/oracle_gen.asm"
 VARS_PAGE    EQU 18
@@ -48,6 +49,19 @@ HANDLER_PAGE EQU 19
     IFDEF ORACLE
         oracle_pokes
     ENDIF
+
+        ; banks 32-40: the recoloured cell sheets and the world palettes
+        MMU 7 n, CELLS_BANK3_PAGE, $e000
+        INCBIN "build/assets/cells_bank3.bin"
+        MMU 7 n, CELLS_BANK4_PAGE, $e000
+        INCBIN "build/assets/cells_bank4.bin"
+        MMU 7 n, CELLS_BANK6_PAGE, $e000
+        INCBIN "build/assets/cells_bank6.bin"
+        MMU 7 n, CELLS_BANK7_PAGE, $e000
+        INCBIN "build/assets/cells_bank7.bin"
+        MMU 6, PAL_PAGE, $c000
+        INCBIN "build/assets/palettes.bin"
+        MMU 6 7, 0, $c000
 
         ; bank 8: page 16 = $5B00-$5CFF as the snapshot has it, page 17 = the stub
         MMU 6, 16, $c000
@@ -100,10 +114,12 @@ v_treg:   ds 18
         SAVENEX CFG 0,0,0,0
         SAVENEX BANK 5,2,0,1,3,4,6,7,8,9
         nex_stream_banks
+        SAVENEX BANK 32,33,34,35,36,37,38,39,40
     ELSE
         SAVENEX OPEN "build/athena.nex", resume, $fff0, 8
         SAVENEX CORE 3,0,0
         SAVENEX CFG 0,0,0,0
         SAVENEX BANK 5,2,0,1,3,4,6,7,8
+        SAVENEX BANK 32,33,34,35,36,37,38,39,40
     ENDIF
         SAVENEX CLOSE

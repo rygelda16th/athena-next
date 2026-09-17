@@ -59,6 +59,8 @@ E_PASSES        EQU $2019               ; passes paced (16 bits)
 E_SPEED         EQU $201B               ; the CPU speed to restore after the beeper (NextReg $07)
 E_WAIT_TICK     EQU $201C               ; scratch: the tick a frame wait started on
 E_HIST          EQU $2100               ; pass-length histogram, world 0-7 x kind 0-3 x length 0-15, 16 bits each
+E_ISR_SP        EQU $201E               ; the interrupted code's SP
+E_ISR_STACK     EQU $3000               ; the interrupt routine's own stack (grows down from here)
 
 INT_LINE        EQU 128                 ; the line interrupt: just below the 128-line play area
 PACE_TICKS      EQU 4
@@ -68,7 +70,16 @@ PACE_SLACK_Q    EQU 1                   ; the slack the original's own work leav
 ; ---- the engine ------------------------------------------------------------
 
 ; Every interrupt. At 50 Hz each is a logic tick; at 60 Hz, five in six.
+;
+; It must push nothing on the game's stack beyond the return address the interrupt
+; itself pushed, exactly as the original's EI; RETI: the game borrows SP as a data
+; pointer with interrupts on (#R$D08C clears the enemy position map by pushing zeros
+; down to $EF80), and anything pushed below it lands in game data - found by the
+; oracle at E2, where an interrupt's PUSH AF wrote over the weapon graphic at $EF7E.
+; So it works on its own stack in the engine's RAM.
 eng_isr:
+        ld (E_ISR_SP),sp
+        ld sp,E_ISR_STACK
         push af
         push hl
         ld hl,(E_FRAMES)
@@ -84,12 +95,15 @@ eng_isr:
         ld hl,(E_TICK)
         inc hl
         ld (E_TICK),hl
+        call l2_visibility
         pop hl
         pop af
+        ld sp,(E_ISR_SP)
         jp $b8b8                        ; the game's interrupt jump
 .drop:  ld (E_ACC),a
         pop hl
         pop af
+        ld sp,(E_ISR_SP)
         ei
         reti
 
@@ -133,18 +147,12 @@ now:
         push af
         push bc
 .again: ld hl,(E_FRAMES)
-        ld bc,$243b
         ld a,$1e
-        out (c),a
-        inc b
-        in a,(c)
+        call rdreg
         and 1
         ld d,a
-        dec b
         ld a,$1f
-        out (c),a
-        inc b
-        in a,(c)
+        call rdreg
         ld e,a                          ; DE = the video line
         push hl
         ld hl,(E_FRAMES)
@@ -170,6 +178,27 @@ now:
 .pos:   ex de,hl
         pop bc
         pop af
+        ret
+
+; A = a NextReg to read -> A = its value. Selecting and reading are one step as far
+; as the interrupt routine is concerned: interrupts are off between them, and put
+; back as they were.
+rdreg:
+        push bc
+        ld c,a
+        ld a,i                          ; P/V = IFF2
+        di
+        push af
+        ld a,c
+        ld bc,$243b
+        out (c),a
+        inc b
+        in c,(c)
+        pop af
+        ld a,c
+        pop bc
+        ret po
+        ei
         ret
 
 t_start:
@@ -429,5 +458,7 @@ eng_tune_tail:
         ld hl,(E_TUNE_RET)
         ex (sp),hl
         ret
+
+        INCLUDE "src/next/render.asm"
 
 engine_end:
