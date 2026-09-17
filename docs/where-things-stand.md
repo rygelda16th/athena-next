@@ -27,7 +27,7 @@ recording as the oracle that proves the game logic never changed.
 | D6 | disassembly: sound, the front end, every block titled | **passed** (goal: finish the disassembly) |
 | D7 | completeness gate (`make check-audit`), Bugs/Pokes/Trivia pages, pass costs | **passed** - David moved on to Checkpoint A 2026-09-17 |
 | A | enhancement design and art bible (David decides) | **passed** - David approved `docs/design.md` and `docs/art-bible.md` 2026-09-17 |
-| **E1** | pace at 28 MHz (`docs/plan.md` has every step from here) | **next** |
+| E1 | pace at 28 MHz (`docs/plan.md` has every step from here) | **passed** (goal: to the end of step 10) |
 | C1 | arcade capture tooling; David's MAME play-through | - |
 | E2 | play area on Layer 2; recolouring rules; `tools/artimport.py` | - |
 | E3 | hardware sprites, image cache, gliding | - |
@@ -753,6 +753,61 @@ the play area; at 60 Hz the logic keeps a 50 Hz timer; new poses need their own 
 Approving those closes Checkpoint A. Not decided now: whether generated character art
 goes in the public repository (at the first art delivery); a playable release (out of
 scope without the rights holders).
+
+## E1 - what was built and what it proved
+
+David set the goal "go to end of step 10" on 2026-09-17: E1, C1, E2, E3, C2, E4, E5, C3, E6 and E7
+run on without stopping at their checkpoints; where a step needs David's judgement, a provisional
+choice is made and marked for him.
+
+**The engine** (`src/next/engine.asm`) lives in the Next's alternative ROM, write-protected like
+the real ROM (the game's stray writes into `$0000-$3FFF` still vanish), with its RAM paged at
+`$2000`. The game reaches it through 16 patched sites, listed with the bytes they replace in
+`tools/nexpatches.py` (`src/next/patches.asm`):
+
+- every IM 2 vector points at three unused bytes holding `JP eng_isr`, which counts and passes
+  on to the game's own interrupt jump;
+- the pass's frame wait, the frame waits inside passes and screens, and the world loader's seven
+  `OUT (C),A` become `RST $30` services; `WaitFrames`, the effect player and the tune player
+  jump to wrappers.
+
+**Time.** One interrupt a frame, from a line interrupt at line 128, just below the play area.
+The game's logic runs on 50 Hz logic ticks: every interrupt at 50 Hz, five in six at 60 Hz, so
+frame-counted waits and tune lengths keep their speed on a 60 Hz display.
+
+**The pace.** Measured over the whole recording (`tools/origpasses.py`): a pass without a
+blocking sound takes exactly 4 frames (99.8% of 20,000 passes), and a pass that plays a beeper
+effect takes 5-12 (mean 5.95). So the pacer holds each pass to 4 ticks plus the time its
+blocking parts took (measured from the video line), less a quarter of a tick. The first try
+allowed 3.25 ticks of slack and left effect passes at 4 ticks: the slack in the original's
+passes is a fraction of a frame, not most of one. Until E5 the beeper routines drop the CPU to
+3.5 MHz while they play.
+
+**Proof** (`make e1`):
+- `make check-play`: the play build at 28 MHz, the engine in place, every patch applied and
+  nothing else changed, the title pixel for pixel.
+- `make check-oracle`: the recording through the port, at 3.5 and 28 MHz, all 914,021 events
+  and 893 checkpoints. The engine's patch sites are left out of the state hashes.
+- `make check-pace` (`tools/checkpace.py`), for both runs:
+
+| World | Recording (frames a pass) | Port 28 MHz | Port 3.5 MHz |
+|---|---|---|---|
+| 1 | 4.190 | 4.192 | 4.192 |
+| 2 | 4.165 | 4.166 | 4.188 |
+| 3 | 4.190 | 4.188 | 4.193 |
+| 4 | 4.144 | 4.138 | 4.145 |
+| 5 | 4.117 | 4.103 | 4.107 |
+| 6 | 4.145 | 4.151 | 4.155 |
+| 7 | 4.166 | 4.172 | 4.171 |
+
+  Plain passes are 4 ticks in 99.7-100% of cases; passes with an effect or a wait are within
+  0.13 frames of the recording's mean in every world; 60 Hz gives 135 ticks in 162 interrupts.
+
+**Found the hard way:** the paced 28 MHz oracle takes 21 minutes (it now runs at the game's own
+pace instead of flat out); the 3.5 MHz one 18.
+
+**For David (provisional, goal running):** play `build/athena.nex` in CSpect and say whether the
+speed feels like the original.
 
 ## Method notes that carried over
 
