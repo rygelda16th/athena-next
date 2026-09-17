@@ -1,7 +1,7 @@
 # The disassembly - how it is annotated, and what is still open
 
 Chunks D1-D7 (David's decision: the disassembly is complete before any enhancement).
-D1-D3 established 2026-09-16, D4 and D5 2026-09-17.
+D1-D3 established 2026-09-16, D4-D6 2026-09-17.
 
 ## Where it lives
 
@@ -188,32 +188,53 @@ in the EnemySlots description.
 - **Slot byte 0 is not always a template high byte** - for a type 4 start it is the
   start column until the first mover pass.
 
+## D6 - sound, the front end, and everything left
+
+Three analysts (tunes, sound effects and front end, workspace) and two reviewers (152
+items: 112 confirmed, 32 partly right, 6 refuted, 2 unverified); merge in
+`build/d6/merge.py` with `build/d6/corrections.py`, 23 corrections to earlier text.
+**After D6 every one of the 355 blocks in the six ctl files has a real title.**
+
+**Annotated:** the tone generator `$DF5A`, the tune and effect-list commands, the pitch,
+tune and dispatch tables and the player's workspace, and every tune and effect list
+laid out in `$E16A`-`$E976`; the sound effect player `$C408` and its table; the hi-score
+code `$C015`/`$C074` and table; define keys `$F355` and its texts; the panel graphics; and
+the workspace areas (`$EE03`-`$EFFF`: the weapon graphics copy and the enemy position map;
+`$F4C6`-`$FFFF`: the loaded copies start-up moves, the title graphics, and the copy of the
+tape loader's stack that start-up puts over them).
+
+**Proof:** a tune decoder (`build/d6/tunes`, and the reviewer's independent one) turns
+all 14 tunes into notes - pitch 3,546,900 / (48 x BC + 92) Hz, lengths in interrupts -
+and matches all 23 tune calls in the recording frame by frame.
+
+**Found the hard way (D6):**
+- **`tools/annotate.py` threw away published sub-block comments and labels** when it laid
+  out new variables in a block that already had some (D1's three tune effect variables).
+  The tool now keeps them; re-applied from the saved ctl, nothing was lost.
+- **The tunes analyst's model counted looping tunes twice**; the reviewer's decoder fixed
+  the intro tune lengths (tune 0: 1,792 interrupts a pass, not about 3,500).
+- **D2's weapon graphics were named from the pictures alone** (club, sword, mace, axe);
+  they are now named from the items that give them (broad sword, dagger, club, war
+  hammer, kick, feathered blade, flail), which D4 established and the weapon table and
+  pictures agree with.
+
 ## Open questions carried forward
 
-Answered by D5: **the writers into `$0000`-`$3FFF`** (`$C169` at the first game after
-loading, and the feathered blade's blast drawn above the screen; 1,768 writes in the
-recording); **no game logic reads the screen** (the only non-drawing read, at `$CB32`,
-checks the HIT bar's colour before flashing the POW label, and never ran); every
-collision is a lookup in the enemy position map or the world map, never pixels; enemy
-types 1-9 (types 6 and 7 fly, 4 falls, the rest are identical walkers); every slot byte;
-the draw order; world 7's spawn code `$FF` can never match; the guardian's row quirk
-(`$D53F`) does cost and give hits in play (worlds 3-7); a struck heart would free a
-"slot" at MapWindow or Score (shown in a controlled run, never in the recording).
+Answered by D6: tune 11 can be cut short by a key; `IN A,($9F)` is the Multiface One's
+page-in port (and answered by partially decoded Kempston interfaces), unused by the game;
+the `$FF` written to `$BDB3` at a game ending in world 3 or later is a mark that worlds 1
+and 2 are gone, never read; the 800 bytes at `$FCE0` are a copy of the tape loader's stack
+area that nothing reads; `$6CA0` is never read.
 
-- **D6 (sound and front end):** why `$ED4E` runs with interrupts off; the 800 bytes
-  copied to `$FCE0`-`$FFFF` at start-up; whether tune 11 can be cut short by a key;
-  `IN A,($9F)` at `$F240`; why `$C3C0` writes `$FF` to `$BDB3`; define keys at `$F355`;
-  the 192 unused bytes at `$6CA0`; the sound effects (`$C408`, the table at `$BC90`)
-  and the tune player and data (`$DEC6`-`$E878`); the hi-score table code (`$C015`).
 - **Checkpoint A / E6:** whether a fall through an open bottom cell of a lower part, or a
-  part change in world 7, can happen (the move at `$D42B` tests only the row); whether
-  the wrong-cell wall test after a rise off the top ever mattered in play; the high
-  jump's hang and the fall lookahead - design or accident; walking back over a destroyed
-  world 7 guardian's start position.
-- **Not decidable from the code:** why bank 7's unused second header holds bank 3's
-  values; whether the differing second-half enemy frames are retouched art or errors;
-  why the box pictures `$C7`/`$C8` are equal in banks 3 and 6 but not 4 and 7; what
+  part change in world 7, can happen; whether the wrong-cell wall test after a rise off
+  the top ever mattered; the high jump's hang and the fall lookahead - design or accident;
+  walking back over a destroyed world 7 guardian's start position.
+- **Not decidable from the code:** why the game reads the Multiface port; why bank 7's
+  unused second header holds bank 3's values; whether the differing enemy frames are
+  retouched art or errors; why the box pictures `$C7`/`$C8` differ between banks; what
   `$C0F1`'s handling of `$00` and `$D4` was for; what ArmourA's piece and item `$77`'s
-  picture show; the creatures' names (the game gives none).
+  picture show; the creatures' names; why pitch table entry 40 is off the scale; why
+  `$ED4E` runs with interrupts off.
 - **E8 (hardware):** the flicker rates and the lost interrupt were measured in a replay
   model with estimated contention; the KS3 is the check.

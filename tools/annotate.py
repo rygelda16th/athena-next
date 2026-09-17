@@ -125,6 +125,21 @@ def step_ctl(ann, path="src/athena.ctl"):
             by_block.setdefault(found[2], []).append(v)
     for start, vs in sorted(by_block.items()):
         i, kind, start, end = find_block(lines, start)
+        # Sub-blocks already published with a comment (and their labels) stay as they are: treat
+        # them as variables too, unless a new variable covers the same bytes.
+        lo, hi = block_body(lines, i)
+        body = lines[lo:hi]
+        taken = [(addr(v["address"]), addr(v["address"]) + int(v["length"])) for v in vs]
+        for ln in body:
+            m = re.match(r"^([BTWS]) \$([0-9A-F]{4}),(\d+)(?:,\S+)? (\S.*)$", ln)
+            if not m:
+                continue
+            a0, n0 = int(m.group(2), 16), int(m.group(3))
+            if any(a0 < e and s0 < a0 + n0 for s0, e in taken):
+                continue
+            lab = next((l.split("label=", 1)[1] for l in body if l.startswith(f"@ ${a0:04X} label=")), None)
+            vs = vs + [{"address": f"${a0:04X}", "length": n0, "label": lab, "meaning": m.group(4), "sub": ln[:ln.index(m.group(4))].rstrip()}]
+            taken.append((a0, a0 + n0))
         subs, pos = [], start
         for v in sorted(vs, key=lambda v: addr(v["address"])):
             a, n = addr(v["address"]), int(v["length"])
@@ -133,7 +148,8 @@ def step_ctl(ann, path="src/athena.ctl"):
             if a > pos:
                 subs.append(f"B ${pos:04X},{a - pos},8")
             sub = v.get("sub") or (f"W ${a:04X},2" if n == 2 else f"B ${a:04X},{n},{min(n, 16 if n >= 64 else 8)}")
-            subs.append(f"@ ${a:04X} label={v['label']}")
+            if v.get("label"):
+                subs.append(f"@ ${a:04X} label={v['label']}")
             subs.append(f"{sub} {' '.join(v['meaning'].split())}")
             pos = a + n
             n_vars += 1

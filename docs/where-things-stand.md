@@ -23,8 +23,9 @@ recording as the oracle that proves the game logic never changed.
 | D2 | disassembly: the renderer; every graphic exported (`make gfx`) | **passed** - David said go 2026-09-16 |
 | D3 | disassembly: level data; every world's map drawn (`make worlds`) | **passed** - David said go 2026-09-16 |
 | D4 | disassembly: the player; difficulty controls for E6 (`docs/difficulty.md`) | **passed** - David said go 2026-09-17 |
-| **D5** | disassembly: the enemies, collision, the stray writes | **annotated, checks green - waiting at checkpoint D5** |
-| D6-D7 | the rest of the complete annotated disassembly | not started |
+| D5 | disassembly: the enemies, collision, the stray writes | **passed** - David set the goal "finish the disassembly" 2026-09-17 |
+| **D6** | disassembly: sound, the front end, every block titled | **annotated, checks green** |
+| D7 | completeness gate (`make check-audit`), Bugs/Pokes/Facts pages, pass costs | in progress |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
 
@@ -580,17 +581,34 @@ frames):
 - **The review caught what both analysts missed** (the invisible list starts), which
   changed several of their counts.
 
-## Checkpoint D5 - for David
+## Checkpoint D5 - closed
 
-1. Read the two closed risks above: the renderer can be replaced outright, and
-   `$0000-$3FFF` stays protected in the port.
-2. `make html` and browse the enemy mover in **Main game loop** (`C553`, from `CB02`),
-   **Pick the topmost enemy not yet listed** (`C51F`), and the **Game variables** entry
-   for EnemySlots (`B9C2`).
-3. Look at the new bug-fix options in `docs/difficulty.md`.
+David set the goal "finish the disassembly" on 2026-09-17, so D6 and D7 run on without
+stopping at their checkpoints; D7 ends with one checkpoint for the finished disassembly.
 
-**Next, if you say go - D6:** sound and the front end - the tune player and tune data,
-the sound effects, the hi-score table, define keys and the remaining messages.
+## D6 - what was built and what it proved
+
+Method and what went wrong: **`docs/disassembly.md`**.
+
+**Every block is titled.** The tone generator, the tune and effect-list commands and
+tables, all 14 tunes and their effect lists, the sound effects, the hi-score code, define
+keys, the panel graphics and the workspace areas. Across all six ctl files: 355 of 355
+blocks titled, 455 labels, 1,624 instruction comments. Every gate passes.
+
+**The tunes are decoded and proven**: all 14 decode into notes (pitch 3,546,900 /
+(48 x BC + 92) Hz, lengths in interrupts), and an independent decoder matches all 23 tune
+calls in the recording frame by frame. The sound is two out-of-step square-wave
+oscillators on the beeper, which narrows each note's pulse as it sounds - the basis for
+E5's "better sound".
+
+### Findings that change later work
+
+- **E5 (sound):** the tunes are Martin Galway's (credits picture), one voice of two
+  detuned oscillators with effect lists (sweeps) laid over; tune data is compact and
+  fully decodable, so re-voicing them for the Next's AY chips can work from the decoded
+  notes. Sound effects are 13 table entries, 8 of them used.
+- **The game reads the Multiface One's page-in port** in the title colour cycler; nothing
+  uses the value.
 
 ## Method notes that carried over
 

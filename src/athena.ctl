@@ -39,42 +39,42 @@ b $6120 Player graphics: armour A pieces
 D $6120 Two 16x8 pieces, 32 bytes each, drawn by #R$EDD5 from $CDF6 into lines 16-23 of the player buffer before the body's middle lines go over them: the first when ArmourA ($BA24) is 1, the second when it is 2; not drawn while climbing. Each pixel line is 4 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom; the drawing routines keep the background where the mask bit is 1 and then set the graphic's bits.
 @ $6120 label=ArmourAGfx
 B $6120,64,4
-b $6160 Weapon kind 1 graphics: club
-D $6160 Three 24x16 frames, 96 bytes each, of a short club or stick (two level, one raised). Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
+b $6160 Weapon kind 1 graphics: broad sword
+D $6160 Three 24x16 frames, 96 bytes each, of a short, broad blade (two level, one raised): the broad sword, the weapon item $68 gives. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
 D $6160 The weapon table at $BCCE points here for weapon kind 1. #R$EBB0 draws the frames straight from here facing right (from $D18B); when the weapon changes, $DCBC copies 288 bytes to $EE60, where #R$ECE9 mirrors them for facing left.
 @ $6160 label=WeaponKind1Gfx
 B $6160,288,6
-b $6280 Weapon kind 2 graphics: sword
-D $6280 Three 24x16 frames, 96 bytes each, of a sword drawn in outline (two level, one raised). Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
+b $6280 Weapon kind 2 graphics: dagger
+D $6280 Three 24x16 frames, 96 bytes each, of a thin blade drawn in outline (two level, one raised): the dagger, the weapon item $78 gives. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
 D $6280 The weapon table at $BCCE points here for weapon kind 2. #R$EBB0 draws the frames straight from here facing right (from $D18B); when the weapon changes, $DCBC copies 288 bytes to $EE60, where #R$ECE9 mirrors them for facing left.
 @ $6280 label=WeaponKind2Gfx
 B $6280,288,6
-b $63A0 Weapon kind 3 graphics: mace
-D $63A0 Three 24x16 frames, 96 bytes each, of a round-headed mace or hammer (two level, one raised). Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
+b $63A0 Weapon kind 3 graphics: club
+D $63A0 Three 24x16 frames, 96 bytes each, of a round-headed club (two level, one raised): the club, the weapon item $77 gives. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
 D $63A0 The weapon table at $BCCE points here for weapon kind 3. #R$EBB0 draws the frames straight from here facing right (from $D18B); when the weapon changes, $DCBC copies 288 bytes to $EE60, where #R$ECE9 mirrors them for facing left.
 @ $63A0 label=WeaponKind3Gfx
 B $63A0,288,6
-b $64C0 Weapon kind 4 graphics: axe
-D $64C0 Three 24x16 frames, 96 bytes each, of a double-bladed axe (two level, one raised). Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
+b $64C0 Weapon kind 4 graphics: war hammer
+D $64C0 Three 24x16 frames, 96 bytes each, of a double-headed hammer (two level, one raised): the war hammer, the weapon item $67 gives. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
 D $64C0 The weapon table at $BCCE points here for weapon kind 4. #R$EBB0 draws the frames straight from here facing right (from $D18B); when the weapon changes, $DCBC copies 288 bytes to $EE60, where #R$ECE9 mirrors them for facing left.
 @ $64C0 label=WeaponKind4Gfx
 B $64C0,288,6
-b $65E0 Weapon kind 5 graphics
-D $65E0 Two 24x16 frames, 96 bytes each, of a curved segmented weapon like a flail or whip: the weapon at level 0. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
+b $65E0 Weapon kind 5 graphics: kick
+D $65E0 Two 24x16 frames, 96 bytes each, of the player's legs kicking: the kick, the unarmed attack at weapon level 0. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
 D $65E0 The weapon table at $BCCE points here for weapon kind 5. #R$EBB0 draws the frames straight from here facing right (from $D18B); when the weapon changes, $DCBC copies 288 bytes to $EE60, where #R$ECE9 mirrors them for facing left. This set is only 192 bytes, so that copy also takes in the first 96 bytes of kind 6 (#R$66A0), after its own two frames.
 @ $65E0 label=WeaponKind5Gfx
 B $65E0,192,6
-b $66A0 Weapon kind 6 graphics
-D $66A0 Two 24x24 frames, 144 bytes each, of a large feathered or flame-like shape. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
+b $66A0 Weapon kind 6 graphics: feathered blade
+D $66A0 Two 24x24 frames, 144 bytes each, of a large feathered or flame-like shape: the feathered blade, the weapon item $66 gives. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
 D $66A0 The weapon table at $BCCE points here for weapon kind 6. #R$EBB0 draws the frames straight from here facing right (from $D18B); when the weapon changes, $DCBC copies 288 bytes to $EE60, where #R$ECE9 mirrors them for facing left.
 @ $66A0 label=WeaponKind6Gfx
 B $66A0,288,6
-b $67C0 Weapon kind 7 graphics: ball and chain
-D $67C0 Two 24x24 frames, 144 bytes each, of a ball on a chain. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
+b $67C0 Weapon kind 7 graphics: flail
+D $67C0 Two 24x24 frames, 144 bytes each, of a ball on a chain: the flail, the weapon item $65 gives. Each pixel line is 6 bytes: a mask byte then a graphic byte for each 8 pixels from the left, bit 7 leftmost, lines top to bottom.
 D $67C0 The weapon table at $BCCE points here for weapon kind 7. #R$EBB0 draws the frames straight from here facing right (from $D18B); when the weapon changes, $DCBC copies 288 bytes to $EE60, where #R$ECE9 mirrors them for facing left.
 @ $67C0 label=WeaponKind7Gfx
 B $67C0,288,6
-b $68E0 Ball and chain pieces
+b $68E0 Flail chain pieces
 D $68E0 Three masked graphics that the routine at $D923 draws in a row with #R$EB72: $68E0, a 16x8 end piece; $6900, a 16x8 chain link, drawn once per link; and $6920, a 16x16 ball. Each pixel line is 4 bytes: mask then graphic for the left 8 pixels, then for the right 8; bit 7 leftmost, lines top to bottom. Facing left, the end and the ball come from the mirrored copies at #R$7220; the link is used both ways.
 @ $68E0 label=ChainGfx
 B $68E0,128,4
@@ -96,7 +96,7 @@ D $6BA0 They are drawn by #R$EB72 in three places: in order as the counter at $B
 @ $6BA0 label=ExplosionFrames
 B $6BA0,256,4
 b $6CA0 Unused
-D $6CA0 192 bytes for which no reader was seen in a trace of every fourth frame of the recording, and to which no instruction operand points. They do not decode cleanly as masked graphics of any of the game's widths.
+D $6CA0 192 bytes that nothing reads. The start-up code at #R$F0C0 writes them when it moves the graphics used in play from $9FFA to $5DA0 (they are $AEFA-$AFB9 on the tape-loaded machine), and after that no instruction reads or writes them: not in any frame of the recording, nor from start-up through the title, DEFINE KEYS, play, game over, the hi-score table and the next game. No instruction operand points at them, and the world banks hold no copy of them. They do not decode cleanly as masked graphics of any of the game's widths.
 @ $6CA0 label=UnusedGfx6CA0
 B $6CA0,192,16
 b $6D60 Player graphics: climbing
@@ -158,7 +158,7 @@ D $B660 For world 7 (bank 7) they carry the rest of the congratulations message 
 @ $B660 label=WorldTail
 B $B660,85,16*5,5 The 85 bytes of world data that continue past $B65F: the end of world 4's list of three-byte entries, or the end of world 7's congratulations message. Zero for the other worlds.
 b $B6B5 Unused leftover of the graphics block
-D $B6B5 75 bytes the game never reads or writes. The tape loads the graphics used in play at $9FFA-$B8B9, and the start-up code at #R$F0C0 moves them to $5DA0-$765F. Most of the old copy is later overwritten: the IM 2 vector table and the stack by the start-up code and play, and $9FFA-$B6B4 by every world load (#R$B8C3 fills $7660-$B6B4). These 75 bytes survive every world load, so they are a copy of $745B-$74A5. (So does the part of the stack area at $B801-$B898 that the stack never reaches, a copy of $75A7-$763E.)
+D $B6B5 75 bytes that nothing uses: the start-up move reads them once as part of its source, and nothing reads or writes them after that. The tape loads the graphics used in play at $9FFA-$B8B9, and the start-up code at #R$F0C0 moves them to $5DA0-$765F. Most of the old copy is later overwritten: the IM 2 vector table and the stack by the start-up code and play, and $9FFA-$B6B4 by every world load (#R$B8C3 fills $7660-$B6B4). These 75 bytes survive every world load, so they are a copy of $745B-$74A5. (So does the part of the stack area at $B801-$B898 that the stack never reaches, a copy of $75A7-$763E.)
 @ $B6B5 label=LoaderLeftover
 B $B6B5,75,8*9,3
 b $B700 IM 2 vector table
@@ -384,11 +384,17 @@ B $BAB5,1,1 Up: 0 while held
 B $BAB6,1,1 Fire: 0 while held
 @ $BAB7 label=InputPause
 B $BAB7,1,1 Pause: 0 while held with Kempston)
-b $BAB8 Data block at BAB8
+b $BAB8 Graphic: the fallen figure
+D $BAB8 A plain 32-by-16-pixel bitmap with no mask (four bytes a pixel line, 16 lines, top to bottom, bit 7 leftmost): a figure lying on the ground. #R$C3A5 draws it with #R$ED4E in white (B=4 character cells wide, C=2 rows) at row 12, column 9 of the blanked play area, under the message that says why play stopped (OUT OF TIME, OUT OF LIFE, LIFE LOST or ABORT PRESSED).
+@ $BAB8 label=FallenFigureGfx
 B $BAB8,64,4
-b $BAF8 Data block at BAF8
+b $BAF8 Graphic: a unit of a panel bar
+D $BAF8 A 16x8-pixel picture, 2 bytes a pixel line: two thick horizontal stripes, each with a blank line above it, filling one character cell of a two-column bar. #R$BEEA draws it once for each unit of the energy bar (#R$BF15, coloured by the caller: energy, lost energy) and for the 18 cells of the right-hand bar that NewGame draws in columns 30-31 ($BD4D-$BD52).
+@ $BAF8 label=BarUnitGfx
 B $BAF8,16,2
-b $BB08 Data block at BB08
+b $BB08 Graphic: the end of the energy bar
+D $BB08 A 16x8-pixel picture, 2 bytes a pixel line: a rounded cap, hatched in its upper half, drawn in bright yellow below the last unit of the energy bar by #R$BF15 ($BF30).
+@ $BB08 label=BarEndGfx
 B $BB08,16,2
 t $BB18 Messages
 D $BB18 Messages for the panel, the world start screen, CONTINUE? and the hi-score entry, one after another, each ending with '#'. They are in the game's font, where '<' is drawn as a full stop, '=' as a slash, '>' and ';' as brackets and '[' as a hyphen. #R$C292 prints them in the small font and understands the control codes $FF (new row) and $FC n (skip n columns); #R$C4ED prints them twice the size.
@@ -407,19 +413,22 @@ N $BBBF CONTINUE? at row 4, column 12 ($CCCE), then the countdown digit, which $
 T $BBBF,12,10,2
 N $BBCB CONGRATULATIONS, above the hi-score table when a score gets in ($BFAE).
 T $BBCB,16,16
-b $BBDB Message at BBDB
-T $BBDB,10,10
-W $BBE5,2,2
-T $BBE7,10,10
-W $BBF1,2,2
-T $BBF3,10,10
-W $BBFD,2,2
-T $BBFF,10,10
-W $BC09,2,2
-T $BC0B,10,10
-W $BC15,2,2
-T $BC17,10,10
-W $BC21,2,2
+b $BBDB Hi-score table
+D $BBDB The six entries of the hi-score table, best first, 12 bytes each: the rank digit, a full stop ('<' in the game's font), a space and a seven-character name padded with full stops, then the score as a word. A score is stored as the game counts it and shown ten times larger: #R$C015 prints the word in five digits and a '0' after it, and the panel's HI-SCORE ($BD7A) shows the first entry's word the same way. The loaded table's scores run from 10000 down to 1000 (shown as 100000 down to 10000).
+D $BBDB The table lives for as long as the machine is on: a new game (#R$BCE6) does not touch it. When a game ends, #R$BF6A places the score above the first entry it beats: it copies bytes 1-11 of each entry below that one into the next entry down (the sixth entry is lost, and the rank digits stay where they are), stores the score in the freed entry, fills its name with full stops and lets the player type up to seven characters over them.
+@ $BBDB label=HiScoreEntries
+T $BBDB,10,10 Entry 1: rank, full stop, space and name
+W $BBE5,2,2 Entry 1: score (shown ten times larger)
+T $BBE7,10,10 Entry 2: rank, full stop, space and name
+W $BBF1,2,2 Entry 2: score (shown ten times larger)
+T $BBF3,10,10 Entry 3: rank, full stop, space and name
+W $BBFD,2,2 Entry 3: score (shown ten times larger)
+T $BBFF,10,10 Entry 4: rank, full stop, space and name
+W $BC09,2,2 Entry 4: score (shown ten times larger)
+T $BC0B,10,10 Entry 5: rank, full stop, space and name
+W $BC15,2,2 Entry 5: score (shown ten times larger)
+T $BC17,10,10 Entry 6: rank, full stop, space and name
+W $BC21,2,2 Entry 6: score (shown ten times larger)
 t $BC23 More messages
 D $BC23 The rest of the messages, after the hi-score table: the table's heading, the four ways play can stop, and the two words that open the world intro card. Same form as #R$BB18.
 @ $BC23 label=MoreMessages
@@ -428,12 +437,42 @@ N $BC4E OUT OF TIME ($DB13), OUT OF LIFE ($CCF2), LIFE LOST ($CD00) and ABORT PR
 T $BC4E,48,12*2,10,14
 N $BC7E WORLD OF for worlds 1-6 and THE LAST for world 7, printed large at the top of the world intro card ($BE84).
 T $BC7E,18,9
-b $BC90 Data block at BC90
-B $BC90,44,8*5,4
-t $BCBC Message at BCBC
-T $BCBC,3,3
-b $BCBF Data block at BCBF
-B $BCBF,39,8*4,7
+b $BC90 Sound effect table
+D $BC90 Thirteen 5-byte entries, one for each sound effect number that #R$C408 plays: byte 0 the start value of the sweep, byte 1 its end value (the sweep moves one at a time from the start towards the end, up or down), byte 2 the step that sets how many speaker flips each value of the sweep gets (the value divided by the step, plus one), byte 3 the mask XORed into each flip's delay, and byte 4 the flags (bits 0-4 the number of repeats, 1 in every entry; bit 6 changes the step by the repeats still to go, bit 5 making that a subtraction; bit 7 halves each delay, subtracts the current sweep value and keeps the low six bits). #R$C408 describes how the bytes become sound.
+D $BC90 Effects 0, 1, 2, 4, 5, 10, 11 and 12 are used; 3, 6, 7, 8 and 9 are never called, among them the two longest sweeps (6, whose sweep value falls while its pitch rises, and 7, the other way round), which may be left from an earlier version. Effect 12's mask byte ($BCCF) is rewritten before every call by the rising heart ($D222), so its value in the loaded file is never heard.
+D $BC90 The table overlaps the weapon table: that is addressed from $BCCE by the weapon kind times 3, and kinds start at 1 (#R$BCD1), so the three bytes that would be kind 0's entry are the end of effect 12.
+@ $BC90 label=SoundEffects
+B $BC90,5,5 Effect 0, an enemy destroyed (after its points are added, $D8D1) or a blow on the guardian that does not destroy it (JP $D8D1 at $D871): a 39 ms buzz of about 1.5-1.9 kHz with a crackle
+B $BC95,5,5 Effect 1, the player touched by an enemy or the guardian while not immune ($D4F5): a 29 ms irregular rasp falling below 1 kHz
+B $BC9A,5,5 Effect 2, a blow that changes a map cell, breaking a block or opening a box ($D75B): a 15 ms buzz of about 1 kHz
+B $BC9F,5,5 Effect 3, never used: a 22 ms chirp falling from about 2.4 kHz to 0.6 kHz
+B $BCA4,5,5 Effect 4, each letter of the hi-score name ($BFF1): a quarter-second buzz falling from about 1.6 kHz to 1.1 kHz, with crackles
+B $BCA9,5,5 Effect 5, an item collected ($DBC7): a 78 ms whine of about 3.3 kHz
+B $BCAE,5,5 Effect 6, never used: a rough 143 ms sweep rising from about 600 Hz to 1 kHz
+B $BCB3,5,5 Effect 7, never used: a rough 188 ms sweep falling from about 950 Hz to 450 Hz
+B $BCB8,5,5 Effect 8, never used: a 10 ms low blip
+B $BCBD,5,5 Effect 9, never used: a 13 ms low blip of about 600 Hz
+B $BCC2,5,5 Effect 10, a heart released from a stepped-on cell ($D904): a 23 ms chirp rising from about 1.8 kHz to 2.5 kHz
+B $BCC7,5,5 Effect 11, a heart collected ($D4CE, $D4E7): a 19 ms chirp of about 3-4 kHz
+B $BCCC,5,5 Effect 12, the rising heart, every main-loop pass ($D225): a 16-23 ms falling chirp; the mask byte at $BCCF steps from $1F down to $10 as the heart rises, which shortens the chirp and ends it higher (about 4.7-2.2 kHz with $1F, 5.3-3.7 kHz with $10), though not evenly
+b $BCD1 Weapon table
+D $BCD1 One 3-byte entry for each weapon kind 1-7 (broad sword, dagger, club, war hammer, kick, feathered blade, flail): the number of blows the weapon strikes on the map cells beside the player when a blow starts, and the address of its 288 bytes of graphics (WeaponKind1Gfx-WeaponKind7Gfx, in kind order). #R$C141's entry WeaponForLevel reads it for #R$DCAC, which installs a weapon.
+D $BCD1 The code addresses the table as $BCCE plus the kind times 3. There is no kind 0, so the table proper starts here, and the three bytes where kind 0's entry would be are the end of sound effect 12 in #R$BC90.
+@ $BCD1 label=WeaponTable
+B $BCD1,1,1 Kind 1, broad sword: blows on the cells beside the player
+W $BCD2,2,2 Kind 1: graphics (#R$6160)
+B $BCD4,1,1 Kind 2, dagger: blows
+W $BCD5,2,2 Kind 2: graphics (#R$6280)
+B $BCD7,1,1 Kind 3, club: blows
+W $BCD8,2,2 Kind 3: graphics (#R$63A0)
+B $BCDA,1,1 Kind 4, war hammer: blows
+W $BCDB,2,2 Kind 4: graphics (#R$64C0)
+B $BCDD,1,1 Kind 5, kick (the starting weapon): blows
+W $BCDE,2,2 Kind 5: graphics (#R$65E0)
+B $BCE0,1,1 Kind 6, feathered blade: blows
+W $BCE1,2,2 Kind 6: graphics (#R$66A0)
+B $BCE3,1,1 Kind 7, flail: blows
+W $BCE4,2,2 Kind 7: graphics (#R$67C0)
 c $BCE6 Start a new game after the hi-score table
 D $BCE6 Reached only by the JP at $C012, after a game has ended and the hi-score table (#R$BF6A) has been shown. There is no way back to the control menu: the next game starts at $BD01 with the control method chosen at the title still in force.
 D $BCE6 First it processes the maps of the world that was being played. #R$C190, called with C=0, walks the ten 9-byte records at $B95E and, for each one whose first byte is not zero, writes the record's fourth byte to the address held in its second and third bytes. Then #R$C0F1 is applied to every byte of both maps in the bank's world data: the first map starts at the address in the header word at $7661 and is ($7663) bytes long, and the second follows it directly, ($767A) bytes long. #R$C0F1 changes certain byte values into others (for example $C6 is added to $00-$02 and $07-$09, and $CD to $03-$06).
@@ -567,18 +606,69 @@ R $BF5E O:A Lost count less one ($FF if none were lost)
 c $BF6A Show the hi-score table and enter a name
 D $BF6A Shows the six best scores and, if the score is higher than one of them, moves the lower entries down, prints CONGRATULATIONS and lets the player type a name of up to seven characters (ENTER ends it early) into the new entry; then heads the table THE BEST SIX RANKING, plays tune 11 and starts a new game at #R$BCE6. #R$C3C0 enters at $BF6A, which first saves the panel pieces from the screen to $F000-$F0BF (#R$C1BF), because play overwrites that buffer and NewGame ($BD01) redraws the panel from it; the end of world 7 enters at $BF6D ($B946), after #R$B908 has already saved them before showing the ending pictures. The table itself is the six 12-byte entries at $BBDB (a rank and name in ten characters, then the score as a word).
 @ $BF6A label=HiScoreTable
+C $BF6A,3 Save the panel pieces from the screen before it is cleared
 N $BF6D This entry point is used by the routine at #R$B908.
 @ $BF6D label=HiScoreTableNoSave
+C $BF6D,3 Clear the screen
+C $BF70,3 No place in the table yet (the operand of LD HL,$0000 at $BF7C)
+C $BF76,3 Print the copyright line on the bottom row
+C $BF79,3 Print the table and find the highest entry the score beats (#R$C015 sets the operands at $BF7D and $BF86)
+C $BF7C,3 HL=the address of that entry's score word, or 0
+C $BF7F,1 Not in the table: go straight to the heading
+C $BF83,2 A=6 less the entry's number (the operand of SUB $00): the number of entries below it
+C $BF87,2 None if the new score takes the sixth place
+C $BF8A,3 Start with byte 1 of the fifth entry
+C $BF8D,1 Copy bytes 1-11 of an entry (name and score; the rank digit stays) over those of the entry below
+C $BF97,3 HL=byte 1 of the entry above
+C $BF9D,1 Until the entry that was beaten has been copied down
+C $BFA1,4 Put the player's score (Score, $BA15) in the freed entry
+C $BFA8,3 Print CONGRATULATIONS at row 1, column 8
+C $BFB1,3 Print seven full stops ('<') at row 6, column 12, where the name is typed
+C $BFC3,1 Back to column 12
+C $BFC7,3 HL=the entry's name, seven bytes before its score
+C $BFD0,1 Fill the name with full stops
+C $BFD9,2 Up to seven characters
+C $BFDD,3 Wait for a fresh key press and get its character (#R$C332)
+C $BFE4,2 ENTER ends the name
+C $BFEB,1 Store the character and print it
+C $BFF0,1 Keep HL, which #R$C408 does not preserve
+C $BFF1,3 Sound effect 4
 B $BFF4,1,1 Sound effect number, read by #R$C408 (which returns past it)
+C $BFF9,3 Print the table again, with the new entry
 N $BFFC The table is complete. Retitle it, play tune 11 and start the next game. The control menu is not shown again: play has overwritten the title and menu code.
 C $BFFC,3 Blank the attributes of row 1 from column 4, hiding CONGRATULATIONS if it was printed
 C $C004,3 Print THE BEST SIX RANKING in its place
 C $C00D,2 Play tune 11
 C $C012,3 Start a new game with the same controls
-c $C015 Routine at C015
-D $C015 Used by the routine at #R$BF6A.
-c $C074 Routine at C074
-D $C074 Used by the routine at #R$C015.
+c $C015 Print the hi-score table and find the score's place
+D $C015 Prints the six entries of the hi-score table (#R$BBDB), the sixth on row 19 and each one above it two rows higher, so the best is on row 9, all from column 6. For each entry it prints the first ten characters (the rank, a full stop, a space and the seven-character name), skipping spaces rather than drawing them, leaves four columns, then prints the score word as five digits (#R$C203) followed by a '0', so every score is shown ten times its stored value, as on the panel.
+D $C015 While it prints, it compares each entry's score with the player's score (Score, $BA15). Working from the sixth entry up, every entry whose score is lower than the player's (a tie does not count) overwrites two operands in #R$BF6A: the address of its score word goes to $BF7D (LD HL,$0000 at $BF7C) and its number, 1-6, to $BF86 (SUB $00 at $BF85). The last entry to do so is the highest one beaten, which is where the new score belongs; if none does, $BF7D keeps the 0 that #R$BF6A put there, and no name is asked for.
+D $C015 #R$BF6A calls it twice: before the name entry, to show the old table and find the place, and after it, to show the new table. The second call compares again and overwrites the operands, but nothing reads them afterwards. Because spaces are skipped, a space typed into a name leaves the character that was printed in that cell by the first call on the screen.
+R $C015 O:HL Address of the entry before the first ($BBCF)
+R $C015 O:DE Text position of that entry (row 7, column 6)
+@ $C015 label=PrintHiScores
+C $C015,3 Start with the sixth entry, at row 19, column 6
+C $C01B,2 Six entries; the count is kept in the operand at $C06F
+C $C022,4 Set the text position
+C $C026,2 Ten characters: rank, full stop, space and name
+C $C029,2 A space moves one column right without drawing
+C $C034,1 Anything else is printed
+C $C03C,2 Leave four columns before the score
+C $C041,1 DE=the entry's score
+C $C046,4 Is it lower than the player's score?
+C $C052,3 If so, this is the best place so far: keep the address of the score word in the operand of LD HL,$0000 at $BF7C
+C $C055,3 and the entry's number, 1-6, in the operand of SUB $00 at $BF85
+C $C05B,1 Print the score in five digits
+C $C05F,2 and a '0', showing it ten times larger
+C $C064,1 HL=the entry above
+C $C06B,1 Two rows up
+C $C06E,2 Count the entries (the operand here is set at $C01D)
+c $C074 Move the text position right
+D $C074 Adds A to the column of the text position, the operand at $C23F in the character printer #R$C237, so that the next character is printed A columns further right with nothing drawn in between. Used only by the hi-score table printer #R$C015: one column for a space in an entry, four between the name and the score.
+R $C074 A Number of columns
+R $C074 O:A The new column
+@ $C074 label=SkipColumns
+C $C074,1 Add A to the column byte of the text position (the operand at $C23F)
 c $C07C Colour the play area
 D $C07C Fills the attributes of the play area, character rows 0-15 and columns 3-28, with the attribute in A, through the attribute-filling end of #R$ED4E (entry $ED86) with its row width set to 26. The play area has no attributes of its own: #R$EBFA copies only pixels, so the whole area is this one colour.
 D $C07C World set-up uses it for the world's colour, byte 19 of the world header ($BED3, after the world name is printed); it also blanks the area to black with A=0 (#R$C511, $BE4E), colours the PRESS ANY KEY card bright yellow ($BDD5), and is called in the 256-frame loop at the end of a world ($D050) and after the last guardian ($D84B). It returns with interrupts enabled.
@@ -881,7 +971,7 @@ C $C3AF,2 Draw the fallen figure in white, 4 bytes by 2 rows, at row 12, column 
 c $C3C0 End the game
 D $C3C0 Every game ends here, by a JP from one of three places, each passing the message in HL and its screen position (row, column) in DE: OUT OF LIFE when the last life is lost and no continue is taken ($CCF8), ABORT PRESSED when Q, W, E, R and T are held together ($D068), and OUT OF TIME when the clock runs out ($DB19).
 D $C3C0 #R$C3A5 blanks the play area, prints the message and draws the 4x2-character graphic at $BAB8 below it (a fallen figure, in the render). The routine then waits until no key is held, plays tune 13 (the same tune as for a lost life at $CD0B), and goes to the hi-score table at #R$BF6A.
-D $C3C0 On the way, if the game ended in world 3 or later ($BA33 >= 3; during play $BA33 holds the current world), it writes $FF into the loader's bank index at $BDB3. No run has executed that write, and $BD85 rewrites $BDB3 before the next load in any case, so it has no known effect (see build/d1/paging.json).
+D $C3C0 On the way, if the game ended in world 3 or later ($BA33 >= 3; during play $BA33 holds the current world), it writes $FF into the loader's bank index at $BDB3. The condition is exactly the one under which the world area no longer holds worlds 1 and 2: world W is loaded with the index (W-1)/2, which is 0 (bank 3) only for worlds 1 and 2. So the $FF reads as a mark that world 1 must be loaded again for the next game. Nothing in this version reads the mark: the only reads of $BDB3 are in the loader #R$B8C3 ($B8C4, $B8E6), the only way into the loader is the JP at $BDBD, and the instruction before it ($BDBA) writes the index afresh, on the path every new game takes (#R$BCE6 runs on into NewGame and NewWorld at $BD85). Every new game therefore reloads world 1 whatever the mark says. Like the map repairs at #R$BCE6, which are also undone by that reload, it looks like a survivor of a version that kept worlds 1 and 2 in memory from one game to the next and reloaded them only when needed.
 R $C3C0 HL Address of the message (OUT OF LIFE, ABORT PRESSED or OUT OF TIME)
 R $C3C0 DE Screen position of the message: row in D, column in E
 @ $C3C0 label=GameOver
@@ -889,7 +979,7 @@ C $C3C0,3 Blank the play area, print the message and the fallen figure
 C $C3C3,3 Wait until no key is held
 C $C3C6,2 Play tune 13
 C $C3CB,3 Did the game end in world 3 or later?
-C $C3D2,2 Then put $FF in the loader's bank index (no known effect)
+C $C3D2,2 Then put $FF in the loader's bank index, marking worlds 1 and 2 as gone from memory (nothing reads it: $BDBA writes the index again before every load)
 C $C3D7,3 Show the hi-score table
 c $C3DA Convert a display address to a row and column
 D $C3DA Returns the character row and column of the display address in HL, ignoring which pixel line of the cell it is on. The reverse of #R$E977.
@@ -913,8 +1003,34 @@ R $C400 HL Number of frames to wait
 R $C400 O:HL 0
 R $C400 O:A 0
 @ $C400 label=WaitFrames
-c $C408 Routine at C408
-D $C408 Used by the routines at #R$BF6A, #R$D08C, #R$D38B, #R$D65E, #R$D77A, #R$D8D6 and #R$DBAB.
+c $C408 Play a sound effect
+D $C408 Plays sound effect number n, where n is the byte after the CALL: the routine takes its return address off the stack, reads n there and returns to the instruction after that byte. The effect is played on the beeper alone (port $FE bit 4, with the border held black), while the game waits: nothing else runs until it ends, so every effect is short (10-250 ms at 3.5 MHz, measured; about 1.3% shorter on a 128K).
+D $C408 Each effect is a 5-byte entry in #R$BC90, found at $BC90 plus 5n: a start value and an end value for H, a step L, a mask and a flags byte (bits 0-4 a repeat count, 0 meaning 256; bit 6 adds the repeats still to go to the step, or subtracts them if bit 5 is set; bit 7 turns the delay into ((delay/2) - H) AND $3F). Each repeat sweeps H one at a time from the start value to the end value. At each value of H the routine counts B down from H in steps of L, flipping the speaker once per step, so it makes H/L+1 half-cycles; each half-cycle waits (H AND B) XOR mask loops of PUSH IX/POP IX (45 T-states each, 0 meaning 256). Because B changes within a note, the half-cycles of most effects are uneven, which gives a buzz rather than a clean tone (the half-cycles of effects 9, 12 and 10 vary least); a delay that comes out as 0 gives a long gap and a crackle.
+D $C408 Every entry the game has repeats once, so bit 6 only moves the step by one. Effects 0, 1, 2, 4, 5, 10, 11 and 12 are used (the entry list in #R$BC90 names the call sites); 3, 6, 7, 8 and 9 are never called. HL is not preserved: the routine pushes the return address where it means to save HL, so it returns with HL pointing past the effect number (the name entry at $BFF0 pushes HL around the call for this reason). A and IX are changed too.
+R $C408 O:HL Address after the effect number
+R $C408 O:IX Address of the effect's entry
+@ $C408 label=PlaySoundEffect
+C $C408,1 A=the effect number, the byte after the CALL
+C $C40A,1 Return past it
+C $C40C,1 This was meant to save HL, but HL now holds the return address, so that is what comes back
+C $C40F,2 IX=$BC90 plus the effect number times 5: the effect's entry
+C $C41D,3 A=the repeat count (bits 0-4 of byte 4)
+C $C422,1 H=the start value (byte 0), L=the step (byte 2)
+C $C429,4 Bit 6 of byte 4 set?
+C $C42F,1 If so, change the step by the repeats still to go: down if bit 5 is set, up if not
+C $C43B,1 A step of 0 becomes 1
+C $C440,2 C=the speaker bit, starting low
+C $C442,1 B counts down from H: one half-cycle per step of L
+C $C443,1 Set the speaker (and a black border), then flip the bit for next time
+C $C449,1 D=(H AND B) XOR the mask (byte 3): this half-cycle's delay
+C $C44F,4 Bit 7 of byte 4 set?
+C $C455,1 If so, D=((D/2)-H) AND $3F
+C $C45C,2 Wait D loops of 45 T-states (256 if D is 0)
+C $C463,1 B=B-L; another half-cycle unless it went below 0
+C $C46A,1 Has H reached the end value (byte 1)?
+C $C470,2 If not, move H one towards it and play the next note
+C $C478,1 Next repeat, if any
+C $C47C,1 Restore BC and DE; HL gets the return address
 c $C480 Find an enemy slot by its first byte
 D $C480 Searches the five 13-byte enemy slots at $B9C2 for the first one whose first byte equals A. Called with A=0 it finds a free slot, which is how #R$C553 checks that a random enemy can be started before choosing where.
 R $C480 A Value to look for (0 for a free slot)
@@ -1756,7 +1872,7 @@ C $D8B6,2 Level 1?
 C $D8B8,2 If so, try for an upgrade
 C $D8BA,2 Level 4?
 C $D8BC,2 If so, try for an upgrade
-C $D8BE,3 Points = the width (byte 4) times the height in character rows (bits 3-5 of byte 5, lines / 8): the enemy's size in character cells, 4, 6, 12 or 16
+C $D8BE,3 Points = the width (byte 4) times the height in character rows (bits 3-5 of byte 5, lines / 8): the enemy's size in character cells, 4, 6, 12 or 16. After an upgrade at $D8B1, #R$ECE9 has left IX=$EF80, so these read the enemy position map at $EF84-$EF85 instead and the sum is almost always 0: a kill that raises the weapon scores nothing
 C $D8CE,3 Add them to the score
 C $D8D1,3 Sound effect 0
 B $D8D4,1,1 Sound effect number, read by #R$C408 (which returns past it)
@@ -2331,21 +2447,44 @@ c $DED9 Tune interpreter
 D $DED9 Play tune A: look it up in the table at $E254, install the tune interrupt routine and interpret the tune's bytes. This description covers only the use of interrupts; the tune format, the commands through the table at $E27E and the tone generator #R$DF5A belong with the sound routines. The tune's first table byte is written over the instruction at $DF54 in the rest loop #R$DF4E: INC A lets a key press end the tune, XOR A makes it ignore keys. Interrupts are disabled while #R$DF90 is installed at $DEEF, together with I=$B7 and interrupt mode 2, which are set again for every tune. They stay disabled while tune bytes are interpreted. They are enabled only once L holds a length in interrupts, just before calling the tone generator (EI at $DF3B) or the rest loop. Neither call returns by itself: #R$DF90 counts L down and, when it reaches zero, discards the interrupted address so that its RETI returns to $DF3F or $DF4A. A note of length n sounds for n-1 interrupts and is followed by a rest of one interrupt. An $FF byte makes the RET Z at $DF13 return, at the top level to $DECD in #R$DEC6.
 R $DED9 A Number of the tune
 @ $DED9 label=RunTune
+C $DED9,1 L = 3 * tune number + $54: the tune's entry in the table at $E254
+C $DEE1,1 First byte: the key op for the rest loop
 C $DEE2,3 Set the rest loop's key check for this tune (INC A: a key ends the tune; XOR A: keys are ignored)
+C $DEE5,1 HL = address of the tune's first byte
 C $DEEA,1 Interrupts off while the tune interrupt routine is installed
+C $DEEB,1 Save the tune pointer
 C $DEEC,3 Install the tune interrupt routine
 C $DEF2,2 Make sure interrupt mode 2 is on with the vector table at $B700
+C $DEF8,3 Reset the four tune player stack pointers at $E2A2 from $E2AA
+C $DF03,1 Restore the tune pointer
 C $DF05,3 No tune effects yet
+C $DF08,3 No transposition (operand of the ADD A,n at $DF2A)
 C $DF0C,3 Reset the effect countdown
 N $DF0F This entry point is used by the routine at #R$E09E.
 @ $DF0F label=TuneLoop
+C $DF0F,1 Read the next tune byte
+C $DF11,2 $FF: the end of the tune or sub-sequence, return (to #R$DEC6, or to the command that played it)
+C $DF14,2 Below $28: a note or a rest
+C $DF16,1 Switch register sets, keeping the tune pointer in HL'
+C $DF1B,2 A command ($28-$36): look its routine up in the table at $E27E
+C $DF22,3 Run it; it returns with the tune pointer in HL
+C $DF25,2 Read on
+C $DF27,1 0: a rest
+C $DF2A,2 Add the transposition (always 0 in these tunes)
+C $DF2C,1 BC = the note's count from the pitch table at $E200
+C $DF31,4 Keep it for the glide command
+C $DF35,1 Read the note's length
+C $DF39,1 Less one
 C $DF3A,1 L = length of the note in interrupts, less the one-interrupt rest that follows it
 C $DF3B,1 Let the tune interrupt routine time the note
 C $DF3C,3 Sound the note until the tune interrupt routine ends it
 C $DF3F,1 Then rest for one interrupt
+C $DF40,2 Go and rest
+C $DF42,1 Read the rest's length
 C $DF46,1 L = length of the rest in interrupts
 C $DF47,3 Wait out the rest (a key may end the tune)
 C $DF4A,1 Interrupts off while the next tune byte is interpreted
+C $DF4B,1 Tune pointer back in HL; read on
 c $DF4E Rest during a tune
 D $DF4E Called from the tune interpreter with L holding the length of a rest in interrupts. It loops, reading the keyboard, until #R$DF90 counts L to zero and returns past it to the caller. The instruction at $DF54 is set for each tune at $DEE2. With INC A, any key pressed makes A non-zero and the tune is abandoned through $DECD in #R$DEC6, which also resets the stack. With XOR A, A is always zero and the keyboard is ignored.
 R $DF4E L Length of the rest, in interrupts
@@ -2356,8 +2495,30 @@ C $DF52,2 Set the bits that are not keys
 C $DF54,1 INC A: zero only if no key is pressed; XOR A (set per tune): always zero
 C $DF55,2 Keep resting until the tune interrupt routine ends the rest
 C $DF57,3 A key was pressed: abandon the tune
-c $DF5A Routine at DF5A
-D $DF5A Used by the routines at #R$DED9 and #R$E114.
+c $DF5A Sound a note until the tune interrupt routine ends it
+D $DF5A Sounds the note whose pitch count is in BC for as long as the tune interrupt routine #R$DF90 lets it. The routine loops for ever, and only the interrupt that counts L down to zero ends it, by discarding the return address so that its RETI returns to the caller ($DF3F in the interpreter #R$DED9, $E154 in the glide command #R$E114).
+D $DF5A It is two oscillators driving the one beeper bit. Two 16-bit counters are counted down together in one loop of 48 T-states: the first starts at BC and is reloaded with BC, the second starts at (BC-1)/2 and is reloaded with BC-1 (the reload values are written into the LD BC and LD DE instructions at $DF72 and $DF84). Whenever either counter reaches zero it is reloaded and the speaker is toggled, which takes 46 T-states more. Each OUT writes the value kept in A', which goes up by $10 every time: bit 4 (the speaker) toggles, the carries go into bits 5-7, which the ULA ignores, and the border (bits 0-2) stays black.
+D $DF5A So the first oscillator toggles the speaker every 48*BC+92 T-states (one reload of each counter per cycle) and the second 48 T-states sooner, except in the one cycle out of about BC-1 in which the second counter reloads twice, which is 46 T-states longer. Because the second starts half a cycle behind, the two sets of toggles interleave and the speaker makes a square wave with one full period per cycle: on a 128K (3,546,900 T-states a second) the pitch is 3546900/(48*BC+92) Hz. The second oscillator gains 48 T-states a cycle, so its toggles creep up on the first one's and the square wave's pulse width shrinks from 50% towards nothing after about BC/2 cycles, then grows back to 50% after BC cycles. On short notes that thins the tone as it sounds; the full sweep takes about five seconds for the lowest note and about a fifteenth of a second for the highest one the tunes use.
+D $DF5A The counts in the pitch table at $E200 make a chromatic scale from note 1 (count $0279, about 116 Hz, the B flat an octave below the one under middle C) to note 39 (about 1,030 Hz, a C), drifting flat towards the top because the reload time is not allowed for. Interrupts are enabled on entry, and A' holds the speaker state, starting with the speaker off.
+R $DF5A BC Pitch count (loops of 48 T-states per cycle of the note)
+R $DF5A L Interrupts left before #R$DF90 ends the note
+@ $DF5A label=ToneGenerator
+C $DF5A,1 Let the tune interrupt routine time the note
+C $DF5B,1 A' holds the speaker output, starting with the speaker off
+C $DF5D,1 DE = BC-1, the second oscillator's count
+C $DF60,4 Set the reload value of the first oscillator (operand of the LD BC at $DF72)
+C $DF64,4 and of the second (operand of the LD DE at $DF84)
+C $DF68,2 Start the second oscillator halfway through its count, so its toggles fall between the first one's
+C $DF6C,1 Count down the first oscillator
+C $DF6F,3 Not yet zero: go on to the second (JP takes the same time either way)
+C $DF72,3 Zero: reload the count (operand written at $DF60)
+C $DF75,1 and toggle the speaker: adding $10 flips bit 4, the carries go into the unused bits 5-7 and the border stays black
+C $DF7B,3 A jump that takes as long as the one not taken at $DF6F
+C $DF7E,1 Count down the second oscillator
+C $DF81,3 Not yet zero: back to the first; one pass of the loop takes 48 T-states
+C $DF84,3 Zero: reload the count (operand written at $DF64)
+C $DF87,1 and toggle the speaker
+C $DF8D,3 Loop until the tune interrupt routine ends the note
 c $DF90 Tune interrupt routine
 D $DF90 Installed by the tune interpreter #R$DED9 while a tune plays. It interrupts the tone generator #R$DF5A, the rest loop #R$DF4E, or the same tone generator #R$DF5A called from the tune command at #R$E114 ($E151, with L=1, returning to $E154), and it works on the interrupted code's registers: L holds the number of interrupts left in the current note or rest. Normally it decrements L and returns. When L reaches zero it restores AF and then pops the interrupted address as well, so that the RETI returns to the address that called the endless tone or rest loop ($DF3F or $DF4A in the interpreter, $E154 in #R$E114). That is the only way those loops finish, and A and F then hold the discarded address. When tune effects are on ($E2B2 non-zero) it also counts down $E2B3. When that reaches zero it leaves L alone, restores AF, pushes the address of #R$DFB2 on top of the interrupted address and returns there with RETI. The effect code then runs with interrupts enabled, as a continuation of this interrupt. This corrupts IX. #R$DFEF re-enters at $DFAA to count the interrupt that ends the effect.
 R $DF90 L Interrupts left in the current note or rest (in the interrupted code's register set)
@@ -2369,6 +2530,7 @@ C $DF97,3 Count down to the next effect
 C $DF9E,2 Not yet: just count the note
 C $DFA0,1 Time for an effect: restore the interrupted AF
 C $DFA1,4 Push the effect starter's address on top of the interrupted address
+N $DFA7 This entry point is used by the routine at #R$E171.
 C $DFA7,1 Re-enable interrupts
 C $DFA8,2 and 'return' to the effect starter
 N $DFAA This entry point is used by the routine at #R$DFEF. Count one interrupt off the current note or rest (also entered from #R$DFEF).
@@ -2397,6 +2559,8 @@ C $DFD4,1 The low five bits, less one, are the countdown to the next effect
 C $DFDB,1 Bits 5 and 6 choose the effect routine
 C $DFE2,3 Save the list pointer
 C $DFE5,2 Look the routine up in the table at $E29A
+N $DFE7 This entry point is used by the routine at #R$DFB2 ($DFCF) to run an effect list command through the table at $E28E.
+C $DFE7,1 Look up the routine in the table entry at $E200+A and jump to it
 N $DFEE This entry point is used by the routine at #R$DED9.
 C $DFEE,1 Jump to it (an effect routine loops until the next interrupt)
 c $DFEF End a tune effect
@@ -2407,115 +2571,564 @@ C $DFEF,3 Put the tune interrupt routine back
 C $DFF5,2 Discard the address the effect routine was interrupted at
 C $DFF7,1 Restore the registers saved by #R$DFB2
 C $DFFA,3 Count this interrupt and return to the note or rest
-c $DFFD Routine at DFFD
-c $E010 Routine at E010
-c $E024 Routine at E024
-c $E038 Routine at E038
-c $E04D Routine at E04D
-c $E055 Routine at E055
-c $E05B Routine at E05B
-c $E069 Routine at E069
-N $E07F This entry point is used by the routines at #R$E04D and #R$E05B.
-c $E08C Routine at E08C
-D $E08C Used by the routine at #R$E069.
-b $E098 Data block at E098
-B $E098,6,6
-c $E09E Routine at E09E
-c $E0AA Routine at E0AA
-b $E0B0 Data block at E0B0
-B $E0B0,17,8*2,1
-c $E0C1 Routine at E0C1
-N $E0D0 This entry point is used by the routine at #R$E0E9.
-c $E0DD Routine at E0DD
-D $E0DD Used by the routine at #R$E0E9.
-c $E0E9 Routine at E0E9
-c $E100 Routine at E100
-c $E114 Routine at E114
-b $E16A Data block at E16A
-B $E16A,328,8
+c $DFFD Tune effect 0: a falling sweep
+D $DFFD Effect routine 0, chosen by an effect byte with bits 5 and 6 reset (#R$DFB2). Like every effect routine it loops for ever, driving the speaker directly with OUT values $10 (on) and 0 (off) while the note it interrupted is suspended; the next interrupt (#R$DFEF) ends it, so it lasts the rest of one frame.
+D $DFFD The two halves of each square-wave cycle are timed by DJNZ delays of C passes, and C goes up by 2 every cycle, starting with a delay of 256 passes (C=0) before the first toggle. The cycles therefore get steadily longer: within one frame the half-cycles grow from 48 T-states to about 1,300, a sweep from far above hearing down to about 1,360 Hz: a short falling 'zap'. In the recording it is used as a drum over the notes.
+@ $DFFD label=EffectFallingSweep
+C $DFFD,2 The first delay is 256 passes (B=0)
+C $DFFF,1 Wait C passes with the speaker off
+C $E002,2 Speaker on
+C $E006,1 Lengthen the cycle: C goes up by 2
+C $E008,1 Wait C passes with the speaker on
+C $E00B,1 Speaker off
+C $E00E,2 Loop until the next interrupt ends the effect
+c $E010 Tune effect 2: a rough buzz
+D $E010 Effect routine 2, chosen by an effect byte with bit 6 set and bit 5 reset (#R$DFB2). It loops for ever until the next interrupt (#R$DFEF) ends it, so it lasts the rest of one frame.
+D $E010 The speaker is toggled after DJNZ delays of C passes, and C is rotated right one bit every cycle, starting from $3F. The rotation walks through a fixed cycle of eight delay values, each used for two half-cycles in a row, and the whole pattern repeats about every 40,000 T-states, about 88 times a second. The result is a low buzz with an uneven, fixed waveform rather than a pitch sweep.
+@ $E010 label=EffectBuzz
+C $E010,2 Starting delay count
+C $E012,1 Wait C passes with the speaker off
+C $E015,2 Speaker on
+C $E019,1 Rotate the delay count right one bit
+C $E01C,1 Wait that many passes with the speaker on
+C $E01F,1 Speaker off
+C $E022,2 Loop until the next interrupt ends the effect
+c $E024 Tune effect 1: noise
+D $E024 Effect routine 1, chosen by an effect byte with bit 5 set and bit 6 reset (#R$DFB2). It loops for ever until the next interrupt (#R$DFEF) ends it, so it lasts the rest of one frame.
+D $E024 Each half-cycle of the speaker is a DJNZ delay whose count is the next byte of the ROM, read from $0F18 onwards. The ROM paged in is the 48K BASIC one (port $7FFD bit 4 was set when the effect played in the recording), and its bytes there are code, not a pattern, so the delays are irregular and the sound is noise. HL is corrupted, but #R$DFB2 saved it.
+@ $E024 label=EffectNoise
+C $E024,3 Take the delays from the ROM bytes at $0F18
+C $E027,1 Wait (next byte) passes with the speaker off
+C $E02A,2 Speaker on
+C $E02E,1 Next byte
+C $E02F,1 Wait that many passes with the speaker on
+C $E032,1 Speaker off
+C $E035,1 Next byte, and loop until the next interrupt ends the effect
+c $E038 Tune effect 3: a steeper falling sweep
+D $E038 Effect routine 3, chosen by an effect byte with bits 5 and 6 both set (#R$DFB2). It is the same as effect 0 (#R$DFFD) except that the delay count C goes up by 4 a cycle instead of 2, so the sound falls twice as fast and ends lower, at about 960 Hz, when the next interrupt (#R$DFEF) ends it. Only the effect lists of tunes 1 and 2 use it.
+@ $E038 label=EffectSteepSweep
+C $E038,2 The first delay is 256 passes (B=0)
+C $E03A,1 Wait C passes with the speaker off
+C $E03D,2 Speaker on
+C $E041,1 Lengthen the cycle: C goes up by 4
+C $E045,1 Wait C passes with the speaker on
+C $E048,1 Speaker off
+C $E04B,2 Loop until the next interrupt ends the effect
+c $E04D Effect list command $80: call a sub-list
+D $E04D Effect list command $80, followed by the address of a sub-list. It pushes the address of the byte after the operand onto the effect list address stack (#R$E07F) and continues reading at the sub-list, which ends with command $88 (#R$E08C). Like every effect list command it is run from #R$DFB2 (CALL $DFE7 at $DFCF, through the table at $E28E indexed by the command byte less $80, halved) with DE pointing just past the command byte, and returns with HL pointing at the next byte to read.
+D $E04D The effect lists of tunes 0 and 11 (#R$E42E), 2 (#R$E795) and 3 (#R$E84E) use it to play bars of effects kept in sub-lists (#R$E420, #R$E760, #R$E840) more than once.
+R $E04D DE Address of the byte after the command
+@ $E04D label=EffectListCall
+C $E04D,1 Point HL at the operand
+C $E04E,1 DE = address of the sub-list
+C $E051,1 HL past the operand: the address to return to
+C $E052,1 HL = sub-list address, DE = return address
+C $E053,2 Push the return address and continue at the sub-list
+c $E055 Effect list command $82: jump
+D $E055 Effect list command $82, followed by an address: reading continues there. Every effect list in the game ends with this command, jumping back to its own start, so the effects repeat for as long as the tune lasts. Like every effect list command it is run from #R$DFB2 (CALL $DFE7 at $DFCF, through the table at $E28E indexed by the command byte less $80, halved) with DE pointing just past the command byte, and returns with HL pointing at the next byte to read.
+R $E055 DE Address of the byte after the command
+@ $E055 label=EffectListJump
+C $E055,1 Point HL at the operand
+C $E056,1 HL = address to read from next
+c $E05B Effect list command $84: start a repeat
+D $E05B Effect list command $84, followed by a count. The count goes onto the effect repeat count stack (pointer $E2A8, counts from $E30A) and the address of the byte after it onto the effect list address stack (#R$E07F, pointer $E2A6, addresses from $E2EA), so that command $86 (#R$E069) can come back to it. The stacks hold 16 entries each and nothing checks them. Like every effect list command it is run from #R$DFB2 (CALL $DFE7 at $DFCF, through the table at $E28E indexed by the command byte less $80, halved) with DE pointing just past the command byte, and returns with HL pointing at the next byte to read.
+R $E05B DE Address of the byte after the command
+@ $E05B label=EffectListRepeat
+C $E05B,1 Pick up the repeat count
+C $E05D,3 Push it onto the effect repeat count stack
+C $E065,1 HL = DE = the start of the repeated part
+C $E067,2 Push that address too, and read on from it
+c $E069 Effect list command $86: end a repeat
+D $E069 Effect list command $86. It counts down the count at the top of the effect repeat count stack. If that is not yet zero, reading goes back to the address at the top of the effect list address stack, which stays there. When it reaches zero both entries are dropped and reading goes on after this command. A count of n therefore plays the repeated part n times. Like every effect list command it is run from #R$DFB2 (CALL $DFE7 at $DFCF, through the table at $E28E indexed by the command byte less $80, halved) with DE pointing just past the command byte, and returns with HL pointing at the next byte to read.
+D $E069 The entry point at $E07F pushes DE onto the effect list address stack (pointer $E2A6) and returns HL unchanged.
+R $E069 DE Address of the byte after the command
+@ $E069 label=EffectListEndRepeat
+C $E069,3 Point at the count at the top of the effect repeat count stack
+C $E06D,1 Count down; not finished yet?
+C $E070,3 Finished: drop the count
+C $E073,1 and the loop address (popped into HL and thrown away)
+C $E077,1 then read on after this command
+C $E079,1 Not finished: pop the loop address into HL
+C $E07D,1 and push it back again
+N $E07F This entry point is used by the routines at #R$E04D and #R$E05B. This entry point is used by the routines at #R$E04D and #R$E05B.
+@ $E07F label=PushEffectListAddress
+C $E07F,1 Push DE onto the effect list address stack
+C $E08A,1 Return with HL unchanged
+c $E08C Effect list command $88: return from a sub-list
+D $E08C Effect list command $88, which ends a sub-list called by command $80 (#R$E04D): reading continues at the address popped off the effect list address stack (pointer $E2A6). #R$E069 also calls it to pop a loop address. Like every effect list command it is run from #R$DFB2 (CALL $DFE7 at $DFCF, through the table at $E28E indexed by the command byte less $80, halved) with DE pointing just past the command byte, and returns with HL pointing at the next byte to read.
+R $E08C DE Address of the byte after the command
+@ $E08C label=EffectListReturn
+C $E08C,3 Pop an address off the effect list address stack
+C $E096,1 HL = that address; DE = stack pointer
+c $E098 Effect list command $8A: turn the effects off (unused)
+D $E098 Effect list command $8A. It clears $E2B2, so #R$DF90 stops counting down to further effects; reading of this list still goes on to the next effect byte. No effect list in the game uses it, it never ran in the recording or the scripted runs (build/g2/map-all.txt), and its only reference is the table at $E28E, so SkoolKit took it for data. Like every effect list command it is run from #R$DFB2 (CALL $DFE7 at $DFCF, through the table at $E28E indexed by the command byte less $80, halved) with DE pointing just past the command byte, and returns with HL pointing at the next byte to read.
+R $E098 DE Address of the byte after the command
+@ $E098 label=EffectsOff
+B $E098,6,6 No more effects after this one
+c $E09E Tune command $28: play a sub-sequence
+D $E09E Tune command $28, followed by the address of a sequence of tune bytes. The sequence is played by calling the interpreter's loop at $DF0F recursively, so it is a subroutine on the Z80 stack: its $FF end marker returns here and the tune carries on after the operand. Like every tune command it is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, so it starts with EXX; it returns with the tune pointer in HL for $DF0F to read on.
+D $E09E Tunes 0, 1 and 2 use it for phrases they play more than once. The phrase can be another tune's data: tune 0 plays all of tune 4 this way, and tune 2 plays all of tune 9.
+R $E09E HL' Tune pointer, past the command byte
+@ $E09E label=TuneCall
+C $E09E,1 HL = tune pointer (at the operand)
+C $E09F,1 Pick up the address of the sequence
+C $E0A1,1 Save the pointer to the operand's high byte
+C $E0A4,3 Play the sequence up to its end marker
+C $E0A7,1 Restore the pointer and step past the operand
+c $E0AA Tune command $2A: jump
+D $E0AA Tune command $2A, followed by an address: the tune carries on from there. The four world intro tunes (0-3) end with a jump back to near their start, so they play until a key is pressed; tune 4 ends with a jump into the middle of the sequence at $E31A, reusing its last four notes and its end marker. Like every tune command it is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, so it starts with EXX; it returns with the tune pointer in HL for $DF0F to read on.
+R $E0AA HL' Tune pointer, past the command byte
+@ $E0AA label=TuneJump
+C $E0AA,1 HL = tune pointer (at the operand)
+C $E0AB,1 Carry on from the address given
+c $E0B0 Tune command $2C: play a list of sequences (unused)
+D $E0B0 Tune command $2C, followed by a list of sequence addresses ended by an $FF byte. Each sequence is played in turn as by command $28 (#R$E09E), and the tune carries on after the $FF. A sequence address whose low byte is $FF would be taken for the end of the list. No tune uses this command, it never ran in the recording or the scripted runs (build/g2/map-all.txt), and its only reference is the command table at $E27E, so SkoolKit took it for data. Like every tune command it is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, so it starts with EXX; it returns with the tune pointer in HL for $DF0F to read on.
+R $E0B0 HL' Tune pointer, past the command byte
+@ $E0B0 label=TuneCallList
+B $E0B0,8,8 HL = tune pointer (at the list)
+B $E0B8,8,8 Save the pointer to the next list entry
+B $E0C0,1,1
+c $E0C1 Tune command $2E: start a repeat
+D $E0C1 Tune command $2E, followed by a count. The count goes onto the tune repeat count stack (pointer $E2A4, counts from $E2DA) and the address of the next tune byte onto the tune repeat address stack (pointer $E2A2, addresses from $E2BA), so that command $30 (#R$E0E9) can come back to it. Both stacks have room for 16 entries and are reset at the start of every tune ($DEF8); nothing checks them. It is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, and returns with the tune pointer in HL for $DF0F to read on.
+D $E0C1 The entry point at $E0D0 pushes DE onto the repeat address stack and returns with HL unchanged.
+R $E0C1 HL' Tune pointer, past the command byte
+@ $E0C1 label=TuneRepeat
+C $E0C1,1 HL = tune pointer (at the count)
+C $E0C2,1 Pick up the count
+C $E0C4,1 Push it onto the tune repeat count stack
+C $E0CD,1 DE = tune pointer: the start of the repeated part
+N $E0D0 This entry point is used by the routine at #R$E0E9. This entry point is used by the routine at #R$E0E9.
+@ $E0D0 label=PushTuneAddress
+C $E0D0,1 Push DE onto the tune repeat address stack
+C $E0DB,1 Return with HL unchanged
+c $E0DD Pop an address off the tune repeat address stack
+D $E0DD Used by the repeat end command #R$E0E9. Takes the address at the top of the tune repeat address stack (pointer $E2A2) off the stack.
+R $E0DD O:HL The address popped
+R $E0DD O:DE The new stack pointer
+@ $E0DD label=PopTuneAddress
+C $E0DD,3 Point at the top of the stack
+C $E0E4,3 Save the lowered stack pointer
+C $E0E7,1 HL = the address; DE = stack pointer
+c $E0E9 Tune command $30: end a repeat
+D $E0E9 Tune command $30. It counts down the count at the top of the tune repeat count stack (pointer $E2A4). If that is not yet zero the tune goes back to the address at the top of the tune repeat address stack, which stays there. When it reaches zero both entries are dropped and the tune carries on after this command, so a count of n plays the repeated part n times (a count of 0 would mean 256). It is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, and returns with the tune pointer in HL for $DF0F to read on.
+R $E0E9 HL' Tune pointer, past the command byte
+@ $E0E9 label=TuneEndRepeat
+C $E0E9,3 Point at the count at the top of the tune repeat count stack
+C $E0ED,1 Count down; finished?
+C $E0F0,1 Not yet: pop the loop start into the tune pointer
+C $E0F4,1 and push it back onto the stack
+C $E0F6,2 Return with the tune pointer at the loop start
+C $E0F8,3 Finished: drop the count
+C $E0FB,3 and the loop start
+C $E0FE,1 Return with the tune pointer after this command
+c $E100 Tune command $32: start the effects
+D $E100 Tune command $32, followed by a countdown byte and the address of an effect list. It sets the countdown at $E2B3 and the list pointer at $E2B4 and turns the effects on at $E2B2. From then on the tune interrupt routine #R$DF90 counts the countdown down at every interrupt, and when it reaches zero #R$DFB2 plays the next effect from the list over the note that is sounding. The first effect comes after that many interrupts; every later gap is set by the effect bytes. Nothing turns the effects off again except the unused effect list command $8A (#R$E098); the next tune starts with them off ($DF05).
+D $E100 Tunes 0 to 3 and 11 start with this command, tune 11 sharing tune 0's effect list at $E42E. It is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, and returns with the tune pointer in HL for $DF0F to read on.
+R $E100 HL' Tune pointer, past the command byte
+@ $E100 label=TuneStartEffects
+C $E100,1 HL = tune pointer (at the countdown)
+C $E101,1 Interrupts until the first effect
+C $E106,1 Address of the effect list
+C $E10E,2 Effects on
+c $E114 Tune command $34: glide to a note
+D $E114 Tune command $34, followed by a note number, a signed step and a number of steps. The pitch count of the note sounding last ($E2B6) is changed by the step, one step per interrupt, towards the count of the target note from the pitch table at $E200, which is kept at $E2B8. Each step sounds through the tone generator #R$DF5A with L=1, so it lasts until the next interrupt (or one more if an effect is due), and the speaker is turned off after it. A negative step lowers the count, raising the pitch. The count stops at the target once it would pass it, but the command still takes all its steps. No rest follows the glide.
+D $E114 The target note is not transposed. The direction of the comparison with the target is set by writing CCF (positive step) or NOP (negative step) at $E144.
+D $E114 Tunes 1, 6 and 13 use it; tune 13 (life lost and game over) is almost all glides. It is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, and returns with the tune pointer in HL for $DF0F to read on.
+R $E114 HL' Tune pointer, past the command byte
+@ $E114 label=TuneGlide
+C $E114,1 HL = tune pointer (at the operands)
+C $E115,1 A = target note
+C $E117,1 C = step (signed)
+C $E119,1 B = number of steps
+C $E11B,1 Pass BC to the other register set
+C $E11E,1 Look the target note up in the pitch table at $E200
+C $E125,4 and keep its count
+C $E129,1 Save the step counter
+C $E12A,3 HL = pitch count now sounding
+C $E12F,3 Is the step positive?
+C $E132,1 Negative: add it as a signed number (the high byte gains $FF plus the carry)
+C $E139,1 Write NOP at $E144: stop once the count is not above the target
+C $E13D,1 BC = the new count
+C $E13F,3 Compare it with the target (carry is clear here)
+C $E144,1 CCF or NOP, as set for the step's direction
+C $E145,2 Not past the target: keep the new count
+C $E147,4 Past it (or on it): use the target
+C $E14B,4 Make it the pitch now sounding
+C $E14F,2 Sound it until the next interrupt
+C $E154,1 Speaker off
+C $E157,1 Interrupts off while the command goes on
+C $E158,1 Next step
+C $E15B,1 Return with the tune pointer after the operands
+C $E15D,1 Positive: add the step
+C $E163,2 Write CCF at $E144: stop once the count is above the target
+C $E168,2 Go and compare
+c $E16A Tune command $36: transpose (unused)
+D $E16A Tune command $36, followed by a number that is added to every later note number of the tune: it is written into the ADD A,n instruction at $DF2A, which is reset to 0 at the start of every tune ($DF08). No tune uses this command, it never ran in the recording or the scripted runs (build/g2/map-all.txt), and its only reference is the command table at $E27E, so SkoolKit took it for data. It is run from the interpreter (#R$DED9, CALL $DFEE at $DF22, through the table at $E27E indexed by the command byte less $28, halved) with the tune pointer, past the command byte, in the alternate HL, and returns with the tune pointer in HL for $DF0F to read on.
+R $E16A HL' Tune pointer, past the command byte
+@ $E16A label=TuneTranspose
+B $E16A,7,7 HL = tune pointer (at the operand)
+c $E171 Unused jump
+D $E171 A jump to the EI; RETI at the end of the tune interrupt routine #R$DF90. Nothing refers to $E171 (no address bytes for it anywhere in memory), it never ran in the recording or the scripted runs (build/g2/map-all.txt), and it is the same in every snapshot, so it is left over from something else.
+u $E174 Unused
+D $E174 Eight single-bit masks ($80 down to $01), two more bytes and then zeros up to $E1FF. Nothing in the game refers to any address in this range (no address bytes for it in the 64K view, no LD H,$E1), nothing writes to it (it is the same in every snapshot of build/g1 and build/g2), and nothing runs here, so it is left over, like the jump at #R$E171 just before it.
+B $E174,8,8 Single-bit masks
+B $E17C,8,8 Two more bytes
+B $E184,124,8*15,4
+w $E200 Pitch table
+D $E200 The pitch count of each note, used by the tone generator #R$DF5A: the note sounds at 3546900/(48*count+92) Hz on a 128K. The interpreter looks note n up at $E200+2n ($DF2A-$DF30, after adding the transposition, always 0 in these tunes), and the glide command #R$E114 looks up its target note the same way.
+D $E200 Entry 0 is never used, as a note byte of 0 is a rest. Notes 1 to 39 make a chromatic scale over a little more than three octaves, from about 116 Hz (a B flat) to about 1,030 Hz (a C). Each step is a semitone give or take an eighth of one (88 to 116 cents), and the whole range comes out about 30 cents short of 38 semitones, going flat towards the top because the counts do not allow for the tone generator's reload time. Entry 40 is only three quarters of a semitone above note 39. No tune can reach entries 40 and 41: note bytes stop at $27, nothing transposes, and no glide aims higher than note 39.
+@ $E200 label=PitchTable
+W $E200,2,2 Entry 0 (unused: note 0 is a rest)
+W $E202,2,2 Notes 1-41
+W $E204,80,2
+b $E254 Tune table
+D $E254 One three-byte entry per tune, for tunes 0 to 13, looked up by #R$DED9 at $E254+3n. The first byte of each entry is an instruction written into the rest loop at $DF54: INC A (tunes 0-3 and 11) lets a key press during a rest end the tune, XOR A (tunes 4-10, 12 and 13) makes the tune play to the end. The other two bytes are the address of the tune's first byte.
+D $E254 A tune is a sequence of bytes read by the interpreter: a byte from 1 to $27 is a note, followed by its length in interrupts (the note sounds for one interrupt less and is followed by a one-interrupt rest); 0 is a rest, followed by its length; $FF ends the tune (or a sub-sequence); and the even bytes $28 to $36 are commands, dispatched through the table at $E27E, with their operands after them. The tune numbers are used as follows: 0-3 introduce a world, 4-10 start play in worlds 1-7, 11 follows the hi-score table, 12 is played when world 7 is completed and 13 when a life is lost and when the game ends.
+@ $E254 label=TuneTable
+B $E254,8,8 Tune 0 (world intro and ending): key op
+B $E25C,8,8
+B $E264,8,8 Address of tune 5
+B $E26C,8,8 Tune 8 (start of play in world 5): key op
+B $E274,8,8
+B $E27C,2,2 Address of tune 13
+w $E27E Tune command routines
+D $E27E Addresses of the routines for tune commands $28 to $36 (the even codes), in order: #R$E09E (play a sub-sequence), #R$E0AA (jump), #R$E0B0 (play a list of sequences, unused), #R$E0C1 (start a repeat), #R$E0E9 (end a repeat), #R$E100 (start the effects), #R$E114 (glide) and #R$E16A (transpose, unused). The interpreter indexes it by adding $56 to the command byte ($DF1B), so only even command bytes land on an entry.
+@ $E27E label=TuneCommandTable
+W $E27E,16,2
+w $E28E Effect list command routines
+D $E28E Addresses of the routines for effect list commands $80 to $8A (the even codes), in order: #R$E04D (call a sub-list), #R$E055 (jump), #R$E05B (start a repeat), #R$E069 (end a repeat), #R$E08C (return from a sub-list) and #R$E098 (effects off, unused). #R$DFB2 indexes it by adding $8E to the command byte with bit 7 reset ($DFCA-$DFCF), so only even command bytes land on an entry.
+@ $E28E label=EffectCommandTable
+W $E28E,12,2
+w $E29A Effect routines
+D $E29A Addresses of the four sounds an effect byte can choose with its bits 5 and 6 (#R$DFB2 at $DFDB-$DFEE): 0 #R$DFFD (a falling sweep), 1 #R$E024 (noise), 2 #R$E010 (a buzz) and 3 #R$E038 (a steeper falling sweep).
+D $E29A An effect list is a sequence of effect bytes and commands. An effect byte (bit 7 reset) plays its sound for one interrupt in place of the note that is sounding, and its low five bits give the number of interrupts from this effect to the next (a value n above 1 means n; 1 would mean 257). A byte with bit 7 set is a command, dispatched through the table at $E28E. Every effect list in the game ends by jumping back to its start.
+@ $E29A label=EffectRoutineTable
+W $E29A,8,2
+b $E2A2 Tune player workspace
+D $E2A2 Stack pointers, state and stacks for the tune player. The four stacks, each with room for 16 entries and never checked, are the tune repeat addresses (from $E2BA) and counts (from $E2DA), used by the tune commands $2E and $30, and the effect list return and repeat addresses (from $E2EA) and repeat counts (from $E30A), used by the effect list commands. Their pointers are reset from $E2AA at the start of every tune ($DF01). In the game's tunes at most one tune repeat and three effect list levels (sub-list calls and repeats together) are ever in use at once.
+D $E2A2 The tune data follows directly, from $E31A to $E976.
+W $E2A2,2,2 Tune repeat address stack pointer the tune repeat address stack (from $E2BA).
+@ $E2A4 label=TuneRepeatCountSP
+W $E2A4,2,2 Tune repeat count stack pointer the tune repeat count stack (from $E2DA).
+@ $E2A6 label=EffectListAddressSP
+W $E2A6,2,2 Effect list address stack pointer the effect list address stack (from $E2EA), which holds both sub-list return addresses and repeat start addresses.
+@ $E2A8 label=EffectRepeatCountSP
+W $E2A8,2,2 Effect repeat count stack pointer the effect repeat count stack (from $E30A).
+@ $E2AA label=TuneStackResetValues
+B $E2AA,8,8 Starting values of the four stack pointers pointers at $E2A2-$E2A9, copied there at the start of every tune by the LDIR at $DF01. Constant.
 @ $E2B2 label=TuneEffectsOn
 B $E2B2,1,1 Non-zero while the current tune's effect list is active.
 @ $E2B3 label=TuneEffectCountdown
 B $E2B3,1,1 Interrupts until the next tune effect starts.
 @ $E2B4 label=TuneEffectList
 W $E2B4,2,2 Address of the next byte of the tune's effect list.
-B $E2B6,400,8
-t $E446 Message at E446
-T $E446,4,4
-b $E44A Data block at E44A
-B $E44A,2,2
-t $E44C Message at E44C
-T $E44C,5,5
-b $E451 Data block at E451
-B $E451,1,1
-t $E452 Message at E452
-T $E452,4,4
-b $E456 Data block at E456
-B $E456,7,7
-t $E45D Message at E45D
-T $E45D,8,8
-b $E465 Data block at E465
-B $E465,1,1
-t $E466 Message at E466
-T $E466,7,7
-b $E46D Data block at E46D
-B $E46D,335,8*41,7
-t $E5BC Message at E5BC
-T $E5BC,3,3
-b $E5BF Data block at E5BF
-B $E5BF,1,1
-t $E5C0 Message at E5C0
-T $E5C0,4,4
-b $E5C4 Data block at E5C4
-B $E5C4,3,3
-t $E5C7 Message at E5C7
-T $E5C7,3,3
-b $E5CA Data block at E5CA
-B $E5CA,1,1
-t $E5CB Message at E5CB
-T $E5CB,29,29
-b $E5E8 Data block at E5E8
-B $E5E8,3,3
-t $E5EB Message at E5EB
-T $E5EB,4,4
-b $E5EF Data block at E5EF
-B $E5EF,372,8*46,4
-t $E763 Message at E763
-T $E763,7,7
-b $E76A Data block at E76A
-B $E76A,9,8,1
-t $E773 Message at E773
-T $E773,7,7
-b $E77A Data block at E77A
-B $E77A,4,4
-t $E77E Message at E77E
-T $E77E,3,3
-b $E781 Data block at E781
-B $E781,4,4
-t $E785 Message at E785
-T $E785,15,15
-b $E794 Data block at E794
-B $E794,177,8*22,1
-t $E845 Message at E845
-T $E845,3,3
-b $E848 Data block at E848
-B $E848,15,8,7
-t $E857 Message at E857
-T $E857,4,4
-b $E85B Data block at E85B
-B $E85B,9,8,1
-t $E864 Message at E864
-T $E864,4,4
-b $E868 Data block at E868
-B $E868,1,1
-t $E869 Message at E869
-T $E869,4,4
-b $E86D Data block at E86D
-B $E86D,1,1
-t $E86E Message at E86E
-T $E86E,10,10
-b $E878 Data block at E878
-B $E878,255,8*31,7
+@ $E2B6 label=TunePitch
+W $E2B6,2,2 Pitch count now sounding now (or last): set for every note at $DF31 and changed by every glide step at $E14B; the glide command #R$E114 starts from it. Not reset between tunes.
+@ $E2B8 label=GlideTarget
+W $E2B8,2,2 Glide target pitch count note, from the pitch table.
+@ $E2BA label=TuneRepeatAddresses
+B $E2BA,8,8 Tune repeat address stack
+B $E2C2,8,8 address of the first byte of each
+B $E2CA,8,8 repeat that is under way, 16
+B $E2D2,8,8 entries.}
+@ $E2DA label=TuneRepeatCounts
+B $E2DA,8,8 Tune repeat count stack
+B $E2E2,8,8 plays left of each repeat that is under way, 16 entries.}
+@ $E2EA label=EffectListAddresses
+B $E2EA,8,8 Effect list address stack
+B $E2F2,8,8 return addresses of sub-lists and
+B $E2FA,8,8 start addresses of repeats that
+B $E302,8,8 are under way, 16 entries.}
+@ $E30A label=EffectRepeatCounts
+B $E30A,8,8 Effect repeat count stack
+B $E312,8,8 plays left of each effect list repeat that is under way, 16 entries.}
+b $E31A Phrase of tunes 0 and 4
+D $E31A A sequence of eight notes of 8 interrupts ending with $FF, played as a phrase by two $28 commands in the part that tune 0 (#R$E32B) repeats twice, so four times a pass. Tune 4 (#R$E470) jumps into it at $E322 to finish with its last four notes and its end marker.
+@ $E31A label=TunePhraseA
+B $E31A,2,2 Notes and rests (note or 0, then length)
+B $E31C,14,2
+B $E32A,1,1 End marker
+b $E32B Tune 0: world intro and ending
+D $E32B The first world intro tune, played under PRESS ANY KEY TO PLAY and again for the ending credits picture ($B926). The world intro tunes are chosen in turn by a counter that is never reset ($BDE3), so in the first game this one introduces worlds 1 and 5. Its table entry lets a key end it.
+D $E32B It starts the effects with the list at #R$E42E from the first interrupt (command $32), then repeats twice a part made of the phrase at #R$E31A, notes, the phrase again, notes, and the whole of tune 4 (#R$E470) as a phrase, then plays its main run of notes (mostly 8 interrupts long, some 4 and 16) and a 16-interrupt rest, and jumps back to the repeat, just after the effects command. One pass lasts 1,792 interrupts (about 36 seconds) and it goes round until a key is pressed.
+@ $E32B label=Tune0
+B $E32B,2,2 Command $32: start the effects from the list at #R$E42E, the first after one interrupt
+W $E32D,2,2
+B $E32F,2,2 Command $2E: play the part up to the next command $30 twice
+B $E331,1,1 Command $28: play the sequence at #R$E31A
+W $E332,2,2
+B $E334,16,2
+B $E344,1,1 Command $28: play the sequence at #R$E31A
+W $E345,2,2
+B $E347,48,2
+B $E377,1,1 Command $28: play the sequence at #R$E470
+W $E378,2,2
+B $E37A,1,1 Command $30: end of the repeated part
+B $E37B,162,2
+B $E41D,1,1 Command $2A: carry on from #R$E32F
+W $E41E,2,2
+b $E420 Effect sub-list of tunes 0 and 11
+D $E420 Thirteen effect bytes (noise, falling sweeps and buzzes, each 8 interrupts apart) ending with command $88, called from the opening repeats of the effect list at #R$E42E: three times and once more in each of their two passes.
+@ $E420 label=EffectsTune0Bar
+B $E420,8,8 Effect bytes (sound in bits 5-6, gap to the next in bits 0-4)
+B $E428,5,5
+B $E42D,1,1 Command $88: return
+b $E42E Effect list of tunes 0 and 11
+D $E42E The effect list started by tune 0 (#R$E32B) and by tune 11 (#R$E89C). It nests repeats of the sub-list at #R$E420 with bars of its own effect bytes and further repeats (up to three levels deep), with gaps of 2, 4, 6, 8, 14 and 16 interrupts, and ends by jumping back to its start (command $82).
+@ $E42E label=EffectsTune0
+B $E42E,2,2 Command $84: play the part up to the matching command $86 at $E441 twice (it holds the next repeat)
+B $E430,2,2 Command $84: play the part up to the next command $86 three times
+B $E432,1,1 Command $80: play the bar at #R$E420
+W $E433,2,2
+B $E435,3,3
+B $E438,1,1 Command $86: end of the repeated part
+B $E439,1,1 Command $80: play the bar at #R$E420
+W $E43A,2,2
+B $E43C,5,5
+B $E441,1,1 Command $86: end of the repeated part
+B $E442,2,2 Command $84: play the part up to the next command $86 14 times
+B $E444,1,1
+B $E445,1,1 Command $86: end of the repeated part
+B $E446,4,4
+B $E44A,2,2 Command $84: play the part up to the next command $86 three times
+B $E44C,5,5
+B $E451,1,1 Command $86: end of the repeated part
+B $E452,4,4
+B $E456,2,2 Command $84: play the part up to the next command $86 three times
+B $E458,2,2
+B $E45A,1,1 Command $86: end of the repeated part
+B $E45B,2,2 Command $84: play the part up to the next command $86 three times
+B $E45D,8,8
+B $E465,1,1 Command $86: end of the repeated part
+B $E466,7,7
+B $E46D,1,1 Command $82: back to #R$E42E
+W $E46E,2,2
+b $E470 Tune 4: start of play in world 1
+D $E470 Played when play starts in world 1, and again after every life lost there ($BEDF-$BEE4). Keys are ignored. Twelve notes of 8 interrupts, then a jump (command $2A) to $E322 in the phrase at #R$E31A for four more notes and the end marker: 128 interrupts in all (about 2.6 seconds). Tune 0 (#R$E32B) also plays all of it as a phrase.
+@ $E470 label=Tune4
+B $E470,2,2 Notes and rests (note or 0, then length)
+B $E472,22,2
+B $E488,1,1 Command $2A: carry on from #R$E322
+W $E489,2,2
+b $E48B Tune 5: start of play in world 2
+D $E48B Played when play starts in world 2 and after every life lost there. Keys are ignored. Fourteen notes (all 8 interrupts but one of 24) and the end marker: 128 interrupts (about 2.6 seconds).
+@ $E48B label=Tune5
+B $E48B,2,2 Notes and rests (note or 0, then length)
+B $E48D,26,2
+B $E4A7,1,1 End marker
+b $E4A8 Phrases of tune 1
+D $E4A8 Four sequences, each ending with $FF, played as phrases by tune 1 (#R$E51E) through command $28: at $E4A8 ten notes of 6 interrupts with two rests; at $E4C1 ten notes of 6, 12 and 24 with a rest; at $E4D8 five notes and a rest; at $E4E5 twenty-eight notes of 6 and 12.
+@ $E4A8 label=Tune1Phrases
+B $E4A8,2,2 Notes and rests (note or 0, then length)
+B $E4AA,22,2
+B $E4C0,1,1 End marker
+B $E4C1,22,2
+B $E4D7,1,1 End marker
+B $E4D8,12,2
+B $E4E4,1,1 End marker
+B $E4E5,56,2
+B $E51D,1,1 End marker
+b $E51E Tune 1: world intro
+D $E51E The second world intro tune, played under PRESS ANY KEY TO PLAY. The world intro tunes are chosen in turn by a counter that is never reset ($BDE3), so in the first game this one introduces worlds 2 and 6. Its table entry lets a key end it.
+D $E51E It starts the effects with the list at #R$E5B8 after 2 interrupts, then plays notes (mostly 6 and 12 interrupts long) interleaved with the phrases at #R$E4A8 (the first three, then the first two again, then the last one twice), rests of 12 and one glide (command $34), and jumps back to just after the effects command. One pass lasts 1,440 interrupts (about 29 seconds).
+@ $E51E label=Tune1
+B $E51E,2,2 Command $32: start the effects from the list at #R$E5B8, the first after 2 interrupts
+W $E520,2,2
+B $E522,10,2
+B $E52C,1,1 Command $28: play the sequence at #R$E4A8
+W $E52D,2,2
+B $E52F,1,1 Command $28: play the sequence at #R$E4C1
+W $E530,2,2
+B $E532,1,1 Command $28: play the sequence at #R$E4D8
+W $E533,2,2
+B $E535,12,2
+B $E541,1,1 Command $28: play the sequence at #R$E4A8
+W $E542,2,2
+B $E544,1,1 Command $28: play the sequence at #R$E4C1
+W $E545,2,2
+B $E547,56,2
+B $E57F,4,4 Command $34: glide towards note 21 in 10 steps, raising the count (lowering the pitch) by 9 a step
+B $E583,2,2
+B $E585,1,1 Command $28: play the sequence at #R$E4E5
+W $E586,2,2
+B $E588,20,2
+B $E59C,1,1 Command $28: play the sequence at #R$E4E5
+W $E59D,2,2
+B $E59F,22,2
+B $E5B5,1,1 Command $2A: carry on from #R$E522
+W $E5B6,2,2
+b $E5B8 Effect list of tune 1
+D $E5B8 The effect list of tune 1 (#R$E51E): mostly a long run of effect bytes using all four sounds, with a few repeats (one nested), at gaps of 3, 6, 12, 18 and 24 interrupts, in step with the tune's notes of 6 and 12. It ends by jumping back to its start.
+@ $E5B8 label=EffectsTune1
+B $E5B8,2,2 Command $84: play the part up to the matching command $86 at $E5C4 three times (it holds the next repeat)
+B $E5BA,2,2 Command $84: play the part up to the next command $86 three times
+B $E5BC,3,3
+B $E5BF,1,1 Command $86: end of the repeated part
+B $E5C0,4,4
+B $E5C4,1,1 Command $86: end of the repeated part
+B $E5C5,2,2 Command $84: play the part up to the next command $86 twice
+B $E5C7,3,3
+B $E5CA,1,1 Command $86: end of the repeated part
+B $E5CB,36,8*4,4
+B $E5EF,2,2 Command $84: play the part up to the next command $86 twice
+B $E5F1,20,8*2,4
+B $E605,1,1 Command $86: end of the repeated part
+B $E606,37,8*4,5
+B $E62B,2,2 Command $84: play the part up to the next command $86 three times
+B $E62D,2,2
+B $E62F,1,1 Command $86: end of the repeated part
+B $E630,1,1 Command $82: back to #R$E5B8
+W $E631,2,2
+b $E633 Tune 6: start of play in world 3
+D $E633 Played when play starts in world 3 and after every life lost there. Keys are ignored. Eleven notes of 2 to 24 interrupts and a rest, then a rising glide of ten steps (command $34) and the end marker: 120 interrupts (about 2.4 seconds).
+@ $E633 label=Tune6
+B $E633,2,2 Notes and rests (note or 0, then length)
+B $E635,22,2
+B $E64B,4,4 Command $34: glide towards note 35 in 10 steps, lowering the count (raising the pitch) by 9 a step
+B $E64F,1,1 End marker
+b $E650 Tune 7: start of play in world 4
+D $E650 Played when play starts in world 4 and after every life lost there. Keys are ignored. Sixteen notes of 6 interrupts repeated twice (commands $2E and $30) and the end marker: 192 interrupts (about 3.8 seconds).
+@ $E650 label=Tune7
+B $E650,2,2 Command $2E: play the part up to the next command $30 twice
+B $E652,32,2
+B $E672,1,1 Command $30: end of the repeated part
+B $E673,1,1 End marker
+b $E674 Tune 2: world intro
+D $E674 The third world intro tune, played under PRESS ANY KEY TO PLAY. The world intro tunes are chosen in turn by a counter that is never reset ($BDE3), so in the first game this one introduces worlds 3 and 7. Its table entry lets a key end it.
+D $E674 It starts the effects with the list at #R$E795 from the first interrupt, plays a run of notes, the whole of tune 9 (#R$E7B0) as a phrase, and a long run of notes (mostly 4, 8 and 16 interrupts long), and jumps back to just after the effects command. One pass lasts 1,340 interrupts (about 27 seconds).
+@ $E674 label=Tune2
+B $E674,2,2 Command $32: start the effects from the list at #R$E795, the first after one interrupt
+W $E676,2,2
+B $E678,58,2
+B $E6B2,1,1 Command $28: play the sequence at #R$E7B0
+W $E6B3,2,2
+B $E6B5,168,2
+B $E75D,1,1 Command $2A: carry on from #R$E678
+W $E75E,2,2
+b $E760 Effect sub-lists of tune 2
+D $E760 Three bars of effect bytes, each ending with command $88, called by the effect list at #R$E795: at $E760 fifteen bytes, at $E770 seventeen and at $E782 eighteen, using all four sounds at gaps of 2, 4, 6 and 8 interrupts.
+@ $E760 label=EffectsTune2Bars
+B $E760,8,8 Effect bytes (sound in bits 5-6, gap to the next in bits 0-4)
+B $E768,7,7
+B $E76F,1,1 Command $88: return
+B $E770,17,8*2,1
+B $E781,1,1 Command $88: return
+B $E782,18,8*2,2
+B $E794,1,1 Command $88: return
+b $E795 Effect list of tune 2
+D $E795 The effect list of tune 2 (#R$E674): eight calls (command $80) to the bars at #R$E760, the first bar three times, the second once, the first three times again and the third once, then a jump back to its start.
+@ $E795 label=EffectsTune2
+B $E795,1,1 Command $80: play the bar at #R$E760
+W $E796,2,2
+B $E798,1,1 Command $80: play the bar at #R$E760
+W $E799,2,2
+B $E79B,1,1 Command $80: play the bar at #R$E760
+W $E79C,2,2
+B $E79E,1,1 Command $80: play the bar at #R$E770
+W $E79F,2,2
+B $E7A1,1,1 Command $80: play the bar at #R$E760
+W $E7A2,2,2
+B $E7A4,1,1 Command $80: play the bar at #R$E760
+W $E7A5,2,2
+B $E7A7,1,1 Command $80: play the bar at #R$E760
+W $E7A8,2,2
+B $E7AA,1,1 Command $80: play the bar at #R$E782
+W $E7AB,2,2
+B $E7AD,1,1 Command $82: back to #R$E795
+W $E7AE,2,2
+b $E7B0 Tune 9: start of play in world 6
+D $E7B0 Played when play starts in world 6 and after every life lost there. Keys are ignored. Nine notes of 4, 16 and 32 interrupts and the end marker: 112 interrupts (about 2.2 seconds). Tune 2 (#R$E674) also plays all of it as a phrase.
+@ $E7B0 label=Tune9
+B $E7B0,2,2 Notes and rests (note or 0, then length)
+B $E7B2,16,2
+B $E7C2,1,1 End marker
+b $E7C3 Tune 8: start of play in world 5
+D $E7C3 Played when play starts in world 5 and after every life lost there. Keys are ignored. Twenty-five notes, all of 4 interrupts but the last of 8, and the end marker: 104 interrupts (about 2.1 seconds).
+@ $E7C3 label=Tune8
+B $E7C3,2,2 Notes and rests (note or 0, then length)
+B $E7C5,48,2
+B $E7F5,1,1 End marker
+b $E7F6 Tune 3: world intro
+D $E7F6 The fourth world intro tune, played under PRESS ANY KEY TO PLAY. The world intro tunes are chosen in turn by a counter that is never reset ($BDE3), so in the first game this one introduces world 4. Its table entry lets a key end it.
+D $E7F6 It starts the effects with the list at #R$E84E from the first interrupt, then plays short groups of notes of 8 interrupts, each repeated (commands $2E and $30: nine, three, four, three and two times) with a run of notes after the first, and jumps back to just after the effects command. One pass lasts 576 interrupts (about 11.5 seconds).
+@ $E7F6 label=Tune3
+B $E7F6,2,2 Command $32: start the effects from the list at #R$E84E, the first after one interrupt
+W $E7F8,2,2
+B $E7FA,2,2 Command $2E: play the part up to the next command $30 9 times
+B $E7FC,6,2
+B $E802,1,1 Command $30: end of the repeated part
+B $E803,24,2
+B $E81B,2,2 Command $2E: play the part up to the next command $30 three times
+B $E81D,6,2
+B $E823,1,1 Command $30: end of the repeated part
+B $E824,2,2 Command $2E: play the part up to the next command $30 4 times
+B $E826,6,2
+B $E82C,1,1 Command $30: end of the repeated part
+B $E82D,2,2 Command $2E: play the part up to the next command $30 three times
+B $E82F,4,2
+B $E833,1,1 Command $30: end of the repeated part
+B $E834,2,2 Command $2E: play the part up to the next command $30 twice
+B $E836,6,2
+B $E83C,1,1 Command $30: end of the repeated part
+B $E83D,1,1 Command $2A: carry on from #R$E7FA
+W $E83E,2,2
+b $E840 Effect sub-list of tune 3
+D $E840 Thirteen effect bytes (falling sweeps, noise and buzzes at gaps of 2, 6 and 8 interrupts) ending with command $88, called three times by the effect list at #R$E84E.
+@ $E840 label=EffectsTune3Bar
+B $E840,8,8 Effect bytes (sound in bits 5-6, gap to the next in bits 0-4)
+B $E848,5,5
+B $E84D,1,1 Command $88: return
+b $E84E Effect list of tune 3
+D $E84E The effect list of tune 3 (#R$E7F6): twice the bar at #R$E840 followed by thirteen effect bytes, then the bar once more followed by twenty effect bytes, then a jump back to its start.
+@ $E84E label=EffectsTune3
+B $E84E,2,2 Command $84: play the part up to the next command $86 twice
+B $E850,1,1 Command $80: play the bar at #R$E840
+W $E851,2,2
+B $E853,13,8,5
+B $E860,1,1 Command $86: end of the repeated part
+B $E861,1,1 Command $80: play the bar at #R$E840
+W $E862,2,2
+B $E864,20,8*2,4
+B $E878,1,1 Command $82: back to #R$E84E
+W $E879,2,2
+b $E87B Tune 10: start of play in world 7
+D $E87B Played when play starts in world 7 and after every life lost there. Keys are ignored. Sixteen notes of 6 interrupts and the end marker: 96 interrupts (about 1.9 seconds). They are the same sixteen notes that tune 7 (#R$E650) plays twice.
+@ $E87B label=Tune10
+B $E87B,2,2 Notes and rests (note or 0, then length)
+B $E87D,30,2
+B $E89B,1,1 End marker
+b $E89C Tune 11: after the hi-score table
+D $E89C Played at $C00F after the hi-score table, just before the next game starts. Its table entry starts with INC A, so a key held down as a note ends ends the tune (every note is followed by a one-interrupt rest, and only the rest loop checks the keyboard); without a key it lasts 522 interrupts (about 10.4 seconds).
+D $E89C It starts the effects after 8 interrupts with tune 0's effect list at #R$E42E, then plays forty-two notes (mostly 8 and 16 interrupts, one of 32 and a final one of 64) and the end marker.
+@ $E89C label=Tune11
+B $E89C,2,2 Command $32: start the effects from the list at #R$E42E, the first after 8 interrupts
+W $E89E,2,2
+B $E8A0,84,2
+B $E8F4,1,1 End marker
+b $E8F5 Tune 12: world 7 completed
+D $E8F5 Played when the guardian of world 7 is killed ($D867), before the ending. Keys are ignored. Forty-three notes of 4 to 24 interrupts and the end marker: 366 interrupts (about 7.3 seconds).
+@ $E8F5 label=Tune12
+B $E8F5,2,2 Notes and rests (note or 0, then length)
+B $E8F7,84,2
+B $E94B,1,1 End marker
+b $E94C Tune 13: life lost and game over
+D $E94C Played with LIFE LOST ($CD0B) and at the end of a game ($C3C8). Keys are ignored. Seven notes of 2 interrupts, each followed by a glide (command $34): six rising glides of ten steps aiming at ever lower target notes, then a falling glide of twenty-five steps, and the end marker. It lasts 99 interrupts (about 2 seconds), almost all of it glide steps, one interrupt each.
+@ $E94C label=Tune13
+B $E94C,2,2 Notes and rests (note or 0, then length)
+B $E94E,4,4 Command $34: glide towards note 39 in 10 steps, lowering the count (raising the pitch) by 9 a step
+B $E952,2,2
+B $E954,4,4 Command $34: glide towards note 37 in 10 steps, lowering the count (raising the pitch) by 9 a step
+B $E958,2,2
+B $E95A,4,4 Command $34: glide towards note 35 in 10 steps, lowering the count (raising the pitch) by 9 a step
+B $E95E,2,2
+B $E960,4,4 Command $34: glide towards note 33 in 10 steps, lowering the count (raising the pitch) by 9 a step
+B $E964,2,2
+B $E966,4,4 Command $34: glide towards note 31 in 10 steps, lowering the count (raising the pitch) by 9 a step
+B $E96A,2,2
+B $E96C,4,4 Command $34: glide towards note 29 in 10 steps, lowering the count (raising the pitch) by 9 a step
+B $E970,2,2
+B $E972,4,4 Command $34: glide towards note 10 in 25 steps, raising the count (lowering the pitch) by 9 a step
+B $E976,1,1 End marker
 c $E977 Convert a character row and column to a display-file address
 D $E977 Returns the display-file address of the top pixel line of the character cell at row D, column E. It is the same calculation as the ROM's CL-ADDR: the display file holds each of the three 64-line thirds as 2,048 bytes in which pixel line p of character row r starts 256*p+32*r bytes in, so the high byte is $40, $48 or $50 for the third and the low byte is the row within the third times 32 plus the column. Stepping down one pixel line from such an address is therefore INC H, with a carry into L (add 32, and take 8 back off H unless L overflowed into the next third) every eighth line, which is what every sprite drawer here does.
 D $E977 Used wherever a sprite or effect is placed by cell: the enemies (#R$D08C at $D1FC), the guardian's damage sprites (#R$D513), the hit and explosion effects ($D3E1, $D41B), $D8FD, #R$ED4E (which draws plain graphics a character cell at a time) and $C37A.
@@ -2683,7 +3296,7 @@ C $ED49,3 Restore the stack pointer
 c $ED4E Draw a graphic and colour it
 D $ED4E Copies a graphic of B bytes by C character rows from HL to the screen at row D, column E (converted by #R$E977), eight pixel lines a row, then fills the same B by C cells of the attribute file with the attribute held in the operand at $ED85. The graphic is plain screen bytes, one pixel line after another, with no mask, so it replaces what was there.
 D $ED4E FillAttrs at $ED86 is the attribute half on its own: it fills C rows of the attribute file from HL with A, the width taken from the operand at $ED87 (which the main entry sets to B). #R$C07C and #R$C33B use it that way.
-D $ED4E The whole routine runs with interrupts disabled and ends with EI, including when entered at $ED86. Nothing in it borrows the stack pointer or pages memory: the DI is not needed for its own correctness.
+D $ED4E The main entry disables interrupts and the routine ends with EI. FillAttrs at $ED86 skips the DI, so it runs with interrupts as the caller left them (enabled at every call in the recording) and still ends with EI.
 R $ED4E HL Graphic (entry $ED4E); attribute address (entry $ED86)
 R $ED4E B Width in bytes (entry $ED4E)
 R $ED4E C Height in character rows
@@ -2726,100 +3339,28 @@ R $EDD5 DE Address in the sprite buffer ($5C00-$5C3F)
 R $EDD5 HL Address of the graphic
 R $EDD5 O:DE Buffer address of the line below the graphic
 @ $EDD5 label=MaskIntoPlayerBuffer
-b $EE03 Data block at EE03
-B $EE03,105,8*13,1
-t $EE6C Message at EE6C
-T $EE6C,3,3
-b $EE6F Data block at EE6F
-B $EE6F,45,8*5,5
-t $EE9C Message at EE9C
-T $EE9C,3,3
-b $EE9F Data block at EE9F
-B $EE9F,9,8,1
-t $EEA8 Message at EEA8
-T $EEA8,4,4
-b $EEAC Data block at EEAC
-B $EEAC,31,8*3,7
-t $EECB Message at EECB
-T $EECB,3,3
-b $EECE Data block at EECE
-B $EECE,5,5
-t $EED3 Message at EED3
-T $EED3,3,3
-b $EED6 Data block at EED6
-B $EED6,11,8,3
-t $EEE1 Message at EEE1
-T $EEE1,3,3
-b $EEE4 Data block at EEE4
-B $EEE4,20,8*2,4
-t $EEF8 Message at EEF8
-T $EEF8,3,3
-b $EEFB Data block at EEFB
-B $EEFB,5,5
-t $EF00 Message at EF00
-T $EF00,6,6
-b $EF06 Data block at EF06
-B $EF06,18,8*2,2
-t $EF18 Message at EF18
-T $EF18,3,3
-b $EF1B Data block at EF1B
-B $EF1B,5,5
-t $EF20 Message at EF20
-T $EF20,3,3
-b $EF23 Data block at EF23
-B $EF23,1,1
-t $EF24 Message at EF24
-T $EF24,3,3
-b $EF27 Data block at EF27
-B $EF27,4,4
-t $EF2B Message at EF2B
-T $EF2B,4,4
-b $EF2F Data block at EF2F
-B $EF2F,9,8,1
-t $EF38 Message at EF38
-T $EF38,3,3
-b $EF3B Data block at EF3B
-B $EF3B,5,5
-t $EF40 Message at EF40
-T $EF40,3,3
-b $EF43 Data block at EF43
-B $EF43,13,8,5
-t $EF50 Message at EF50
-T $EF50,3,3
-b $EF53 Data block at EF53
-B $EF53,5,5
-t $EF58 Message at EF58
-T $EF58,3,3
-b $EF5B Data block at EF5B
-B $EF5B,6,6
-t $EF61 Message at EF61
-T $EF61,3,3
-b $EF64 Data block at EF64
-B $EF64,4,4
-t $EF68 Message at EF68
-T $EF68,3,3
-b $EF6B Data block at EF6B
-B $EF6B,6,6
-t $EF71 Message at EF71
-T $EF71,3,3
-b $EF74 Data block at EF74
-B $EF74,17,8*2,1
-t $EF85 Message at EF85
-T $EF85,6,6
-b $EF8B Data block at EF8B
-B $EF8B,8,8
-t $EF93 Message at EF93
-T $EF93,3,3
-b $EF96 Data block at EF96
-B $EF96,2,2
-t $EF98 Message at EF98
-T $EF98,3,3
-b $EF9B Data block at EF9B
-B $EF9B,14,8,6
-t $EFA9 Message at EFA9
-T $EFA9,6,6
-b $EFAF Data block at EFAF
-B $EFAF,45,8*5,5
+b $EE03 Unused
+D $EE03 93 bytes between the end of #R$EDD5 and the font's load address that nothing uses. They are zero on the tape-loaded machine, at the title and in every world snapshot, and no instruction reads or writes them: not in the whole recording, nor from start-up through the title, DEFINE KEYS, play, game over, the hi-score table and the next game.
+@ $EE03 label=UnusedEE03
+B $EE03,93,8*11,5
+b $EE60 Font as loaded, then the weapon graphics facing left
+D $EE60 Two uses. The tape loads the font here (characters $30-$5B, 352 bytes, running on to $EFBF), and the start-up code at #R$F0C0 moves it to #R$5C40 ($F0EF). These 288 bytes hold its first 36 characters, eight bytes each, which is what the snapshot shows; nothing reads them again.
+D $EE60 In play they hold the current weapon's graphics facing left. Whenever the weapon changes, #R$DCAC copies the 288 bytes at the address in WeaponGfxAddr ($BA2E) here ($DCBC) and #R$ECE9 mirrors them in place. The format is the one of the weapon graphics at #R$6160: three 24-by-16-pixel masked frames of 96 bytes, each pixel line six bytes (a mask byte and a graphic byte for each of three screen bytes). #R$C553 draws from here instead of the original when the player faces left: the first frame from $CF18 and $CF9E, the second (#R$EEC0) from $CF6C.
+@ $EE60 label=WeaponGfxLeft
+B $EE60,8,8 In play, the first weapon frame facing left (as loaded, font characters $30-$3B)
+B $EE68,88,8
+@ $EEC0 label=WeaponGfxLeftFrame2
+B $EEC0,8,8 In play, the second and third weapon frames facing left (as loaded, font characters $3C-$53)
+B $EEC8,184,8
+b $EF80 Enemy position map
+D $EF80 The enemy position map used in play: 128 one-byte cells from $EF80 to $EFFF, so it runs on over the key tables at #R$EFDC, #R$EFE8 and #R$EFF4, which are only needed before the first game starts (#R$F1C9 copies the chosen one to #R$BAA6). The map has 16 columns of 8 cells, index = column * 8 + row, a cell being two character columns by two character rows of the play area; the player is in column 7.
+D $EF80 Every pass #R$D08C clears it by pushing 64 zero words from SP=$F000 ($D098) and, unless a guardian is active, writes each listed enemy's number 1-5 into its cells ($D0FF, $D108). The guardian code #R$D513 marks its cells with $FD ($D556), and a rising heart puts $FE or $FF in its cell ($D24C, value set at $D8ED). The player's contact test in #R$D38B reads it ($D4B1, $D4BE), as does the weapon's strike test #R$D77A ($D805-$D80B).
+D $EF80 As loaded (and in the snapshot) the first 64 bytes are the last eight characters of the font, $54-$5B, which #R$F0C0 moves to #R$5C40 with the rest (#R$EE60); the other 28 are zero.
+@ $EF80 label=EnemyPositionMap
+B $EF80,8,8 In play, map columns 0-7 (as loaded, font characters $54-$5B)
+B $EF88,56,8
+B $EFC0,8,8 In play, map columns 8-10 and rows 0-3 of column 11 (zero as loaded); rows 4-7 of column 11 and columns 12-15 lie over the key tables at $EFDC-$EFFF
+B $EFC8,20,8*2,4
 b $EFDC Keyboard key table (default or defined keys)
 D $EFDC Six two-byte entries, one each for right, left, down, up, fire and pause. Each entry holds the high byte of the key's half-row port and the key's bit mask, as read by #R$F48B. The default keys are X (right), Z (left), SYMBOL SHIFT (down), L (up), ENTER (fire) and 1 (pause). DEFINE KEYS (#R$F355) clears these 12 bytes and writes the new keys here in the same order. #R$F1C9 copies the table to #R$BAA6 when key 1 (KEYBOARD) is chosen. Play overwrites it with other data, so it only matters until the game starts.
 @ $EFDC label=KeyboardKeys
@@ -2922,9 +3463,9 @@ C $F238,2 Is key 5 (DEFINE KEYS) pressed?
 C $F23A,3 None of keys 1-5: read them again
 C $F23D,3 Define the keys; #R$F355 comes back to $F1D6
 c $F240 Cycle the colours at the top of the title screen
-D $F240 Called by #R$F49E on every interrupt. Every third call it moves the ink of a 16x5-character block at the top of the title screen (attribute rows 0-4, columns 7-22) one step through the bright colours on black paper, blue up to white and back down to blue. Each colour is held for three interrupts and the two end colours for six, because at each end the step that goes too far is undone. The routine keeps all its state in its own instructions: the countdown is the operand of LD A at $F243 (address $F244), reloaded with 3 when it reaches zero; the current attribute is the operand of LD A at $F252 (address $F253); the direction is the opcode at $F254, DEC A or INC A, rewritten when the ink goes past white ($48) or reaches black ($40). The fill uses the stack pointer as a write pointer: with SP set just past the end of a row, eight PUSH DE instructions write sixteen copies of the attribute downwards. SP is saved first into the operand of the LD SP instruction at $F2A5 (address $F2A6), so that one instruction puts it back; the interrupted code's SP is not known in advance, so it cannot be a constant. Interrupts must stay off meanwhile, or an interrupt's return address would be pushed into the attribute file; they are already off inside an interrupt, so the DI at $F242 changes nothing. The routine re-enables them itself before returning. The first instruction reads port $9F and throws the value away (A is reloaded at once).
+D $F240 Called by #R$F49E on every interrupt. Every third call it moves the ink of a 16x5-character block at the top of the title screen (attribute rows 0-4, columns 7-22) one step through the bright colours on black paper, blue up to white and back down to blue. Each colour is held for three interrupts and the two end colours for six, because at each end the step that goes too far is undone. The routine keeps all its state in its own instructions: the countdown is the operand of LD A at $F243 (address $F244), reloaded with 3 when it reaches zero; the current attribute is the operand of LD A at $F252 (address $F253); the direction is the opcode at $F254, DEC A or INC A, rewritten when the ink goes past white ($48) or reaches black ($40). The fill uses the stack pointer as a write pointer: with SP set just past the end of a row, eight PUSH DE instructions write sixteen copies of the attribute downwards. SP is saved first into the operand of the LD SP instruction at $F2A5 (address $F2A6), so that one instruction puts it back; the interrupted code's SP is not known in advance, so it cannot be a constant. Interrupts must stay off meanwhile, or an interrupt's return address would be pushed into the attribute file; they are already off inside an interrupt, so the DI at $F242 changes nothing. The routine re-enables them itself before returning. The first instruction reads port $9F and throws the value away (A is reloaded at once). A 128K decodes nothing at that address (the ULA needs bit 0 low, the paging port $7FFD bit 1 low), so on the machine alone the read returns whatever is on the bus and has no effect. Its best-known meaning is to the Multiface One, Romantic Robot's snapshot interface for the 48K Spectrum, for which a read of port $9F pages its ROM and RAM in over $0000-$3FFF and a read of $1F pages them out again. With one attached, every title interrupt would put the Multiface's memory where the Spectrum ROM should be, so DEFINE KEYS' call to the ROM's KEY-SCAN (#R$C332) would run Multiface code instead; the only reads of $1F are the Kempston test at $F1FA and the Kempston routine at $F472. Whether the read is meant to stop the game working with a Multiface One, or is a leftover from the 48K version, cannot be told from the code. Port $9F also has bit 5 low, so a joystick interface that decodes only that bit (as many Kempston-compatible ones do) answers it with the joystick state, which is equally unused.
 @ $F240 label=CycleTitleColours
-C $F240,2 Read port $9F (the value is not used)
+C $F240,2 Read port $9F (the value is not used; on a Multiface One this read pages the interface's memory in)
 C $F242,1 Interrupts off (they already are inside an interrupt)
 C $F243,2 Count down to the next colour step (the operand at $F244 is the counter)
 C $F246,3 Store the new count
@@ -2957,52 +3498,57 @@ t $F2EE Credits text
 D $F2EE The credits page of the title: programming, graphics and music, each credit on three rows with the second row indented by the $FC code. The start-up code prints it at row 6, column 9 in plain white with #R$C292 and waits for a key (#R$C2ED); #R$F1C9 then blanks it with #R$ED23. Overwritten during play like the control menu text before it.
 @ $F2EE label=CreditsText
 T $F2EE,103,14:n3:2:n1:13:n2:14:n3:2:n1:11:n2:14:n3:2:n1:15
-c $F355 Routine at F355
-D $F355 Used by the routine at #R$F1C9.
-t $F424 Message at F424
-T $F424,7,7
-b $F42B Data block at F42B
-B $F42B,2,2
-t $F42D Message at F42D
-T $F42D,5,5
-b $F432 Data block at F432
-B $F432,1,1
-t $F433 Message at F433
-T $F433,4,4
-b $F437 Data block at F437
-B $F437,1,1
-t $F438 Message at F438
-T $F438,4,4
-b $F43C Data block at F43C
-B $F43C,4,4
-t $F440 Message at F440
-T $F440,4,4
-b $F444 Data block at F444
-B $F444,1,1
-t $F445 Message at F445
-T $F445,5,5
-b $F44A Data block at F44A
-B $F44A,1,1
-t $F44B Message at F44B
-T $F44B,5,5
-b $F450 Data block at F450
-B $F450,1,1
-t $F451 Message at F451
-T $F451,5,5
-b $F456 Data block at F456
-B $F456,1,1
-t $F457 Message at F457
-T $F457,6,6
-b $F45D Data block at F45D
-B $F45D,1,1
-t $F45E Message at F45E
-T $F45E,4,4
-b $F462 Data block at F462
-B $F462,1,1
-t $F463 Message at F463
-T $F463,14,14
-b $F471 Data block at F471
-B $F471,1,1
+c $F355 Define the keys
+D $F355 Option 5 of the control menu (#R$F1C9, JP at $F23D). It blanks the text area of the title (#R$F4BC), prints CHOOSE at row 7, column 12 with RIGHT, LEFT, DOWN, UP, FIRE and PAUSE one to a row from row 9 (#R$F424), clears the keyboard key table #R$EFDC, and asks for the six keys in that order.
+D $F355 For each key it waits until no key is held (#R$C2F6), then scans the keyboard itself: the eight half-rows from port $FEFE to $7FFE and the five bits of each, CAPS SHIFT first. The first key found held is looked up in the key table; if it is already there (defined earlier in this round) it is ignored, and the routine waits for all keys to be released and scans again. A new key's half-row high byte and bit mask are written as the next entry of #R$EFDC, and its name is printed at column 19 of its row: SYMBOL or CAPS if that shift key is held at the time, ENTER or SPACE for those keys, otherwise the one character the ROM gives for it (#R$C332).
+D $F355 After the sixth key it waits for the keys to be released and prints CORRECT (Y/N)? at row 7, column 9, over CHOOSE; because the printer skips spaces, it first blacks out the attribute at row 7, column 16, where an O of CHOOSE would show through the question's space. Y goes back to the control menu at $F1D6 (the LD HL,$EFDC before the jump is not used: the player must still press 1, KEYBOARD, which copies the defined table to #R$BAA6); N starts again.
+D $F355 The shift test looks at the shift key, not at the key found: any key but M, N and B (which are scanned after SYMBOL SHIFT) pressed while SYMBOL SHIFT is held is stored as that key but named SYMBOL. Holding CAPS SHIFT with another key defines CAPS SHIFT, which is scanned first.
+@ $F355 label=DefineKeys
+C $F355,3 Blank the text area of the title
+C $F358,3 Print CHOOSE and the six controls from row 7, column 12
+C $F361,3 Clear the keyboard key table
+C $F36A,2 C=9: the row of the first control's name
+C $F36D,2 Six keys
+C $F36F,1 Keep the table pointer and the counters
+C $F371,3 Wait until no key is held
+C $F374,2 Scan from half-row $FEFE (CAPS SHIFT to V) through eight half-rows
+C $F378,1 L=half-rows left; H=the bit of the first key in the half-row; five keys
+C $F37D,1 D=the half-row's high byte, E=the key's bit
+C $F37F,2 Is the key held?
+C $F384,3 Held: compare it with all six entries of the table
+C $F389,1 BC=an entry (high byte, bit)
+C $F38D,1 Is it this key?
+C $F394,2 Already defined: ignore it and wait for a fresh key
+C $F396,1 Next entry; a new key once all six differ
+C $F39B,1 Not held: on to the next key of the half-row
+C $F3A1,1 then the next half-row
+C $F3A5,2 Nothing held: scan again
+C $F3A7,1 C=the print row again; keep the key
+C $F3AA,1 Print its name at column 19
+C $F3B1,3 A=the ROM's character for the key, kept in the operand of LD A,$00 at $F3D3
+C $F3B7,2 H=0: no name chosen yet
+C $F3B9,2 SYMBOL SHIFT held?
+C $F3C6,2 CAPS SHIFT held?
+C $F3D3,2 ENTER?
+C $F3DC,2 SPACE?
+C $F3E3,1 Print the name chosen, or the character if none was
+C $F3EF,1 Store the key's high byte and bit in the table
+C $F3F6,1 Next row, next key
+C $F3FB,3 Wait until no key is held
+C $F3FE,1 Black out the attribute at row 7, column 16, where an O of CHOOSE would show through the space in the question
+C $F402,3 Print CORRECT (Y/N)? at row 7, column 9
+C $F40B,2 Y held?
+C $F413,3 Back to the control menu (#R$F1C9 reloads HL, so this address is not used)
+C $F419,2 N held?
+C $F421,3 Start again
+t $F424 Define keys text
+D $F424 The messages of DEFINE KEYS (#R$F355), in the game's font and the control codes of #R$C292 ($FF a new row, '#' the end; '>', '=' and ';' are drawn as '(', '/' and ')'). Like the control menu text, it is overwritten during play, so it exists only until the first game starts.
+@ $F424 label=DefineKeysText
+T $F424,39,7:n2:5:n1:4:n1:4:n1:2:n1:4:n1:6
+N $F44B ENTER, SPACE, SYMBOL and CAPS: the names printed at column 19 for the keys that have no single character ($F3C1-$F3E0).
+T $F44B,24,6*2,7,5
+N $F463 CORRECT (Y/N)?, printed at row 7, column 9 over CHOOSE when all six keys are in ($F402).
+T $F463,15,15
 c $F472 Kempston joystick routine (template)
 D $F472 #R$F1C9 copies all 25 bytes to #R$BA8D when KEMPSTON is chosen. The routine never runs here, but it runs as $BA8D-$BAA5 throughout the recording, called from $C553. It reads the joystick, whose bits 0-4 are set for right, left, down, up and fire, and stores each bit inverted in #R$BAB2-#R$BAB6. Each flag is 0 while its direction or fire is held, and 1 otherwise. It then stores key 1 in #R$BAB7 as the pause flag. Key 1 is the only key this method reads, and it cannot be redefined. The routine's only jump is relative and all of its addresses are absolute, so the copy runs unchanged: DJNZ $F47B here is DJNZ $BA96 at $BA9C. Play overwrites these bytes.
 @ $F472 label=KempstonTemplate
@@ -3041,19 +3587,42 @@ R $F4AC B Width in cells
 R $F4AC C Height in rows
 R $F4AC HL Address of the top left attribute cell
 @ $F4AC label=FillAttributes
-c $F4BC Routine at F4BC
-D $F4BC Used by the routines at #R$F1C9 and #R$F355.
-b $F4C6 Data block at F4C6
-B $F4C6,1108,8*138,4
-t $F91A Message at F91A
-T $F91A,3,3
-b $F91D Data block at F91D
-B $F91D,316,8*39,4
-t $FA59 Message at FA59
-T $FA59,4,4
-b $FA5D Data block at FA5D
-B $FA5D,231,8*28,7
-t $FB44 Message at FB44
-T $FB44,3,3
-b $FB47 Data block at FB47
-B $FB47,1209,8*151,1
+c $F4BC Clear the text area of the title screen
+D $F4BC Clears the pixels of rows 6-15, columns 8-23 of the title screen, the panel between the two pictures of Athena where the credits, the control menu and the DEFINE KEYS prompts are printed, by jumping into #R$ED23 with ten rows of eight zero words pushed leftwards from column 24. Attributes are left alone. Used by the control menu (#R$F1C9, $F1DB) before it prints the menu (the first time, together with the clear of row 16 at $F1D3, this removes the credits), and by #R$F355 before it prints CHOOSE.
+@ $F4BC label=ClearTitleText
+C $F4BC,3 From row 6, column 24, clear eight words (16 cells) leftwards on each of ten rows
+b $F4C6 Bit-reversal table as loaded
+D $F4C6 The tape loads the 256-byte bit-reversal table here, and the start-up code at #R$F0C0 moves it to #R$5B00 ($F0FA-$F103), whose page the mirroring routines depend on. Nothing reads this copy again.
+D $F4C6 In play these bytes are part of the play area buffer at #R$F000 (lines 38-46) and are overwritten by the first redraw.
+@ $F4C6 label=BitReverseTableSource
+B $F4C6,16,16 Moved to $5B00 by $F0FA-$F103; part of the play area buffer in play
+B $F4D6,240,16
+b $F5C6 Unused
+D $F5C6 18 bytes between the bit-reversal table and the SNK logo that nothing uses before play. They are zero on the tape-loaded machine and at the title, nothing reads or writes them during start-up, the title or the menus, and in play they are part of the play area buffer at #R$F000, first written by the buffer's redraw ($DE88, $DE8A).
+@ $F5C6 label=UnusedF5C6
+B $F5C6,18,16,2
+b $F5D8 Title graphic: the SNK logo
+D $F5D8 A plain 104-by-32-pixel bitmap with no mask: 13 bytes a pixel line, 32 lines, bit 7 leftmost. It shows the S emblem, the letters SNK and the words SNK GROUP. The start-up code at #R$F0C0 draws it once with #R$ED4E in white at row 18, column 18 (B=13 cells, C=4 rows, $F16B-$F179), then colours the emblem and the letters ($F17C-$F191).
+D $F5D8 It is drawn only at start-up, which cannot run again, and in play the play area buffer at #R$F000 overwrites it (lines 46-59).
+@ $F5D8 label=TitleSnkLogo
+B $F5D8,416,13
+b $F778 Title graphic: the Imagine logo
+D $F778 A plain 104-by-40-pixel bitmap with no mask: 13 bytes a pixel line, 40 lines, bit 7 leftmost. It shows the slanted Imagine logo with 'the name of the game' beneath. The start-up code at #R$F0C0 draws it once with #R$ED4E in bright cyan at row 17, column 1 (B=13 cells, C=5 rows, $F15A-$F168), and colours the words under it bright white ($F192-$F19A).
+D $F778 It is drawn only at start-up, and in play the play area buffer at #R$F000 overwrites it (lines 59-75).
+@ $F778 label=TitleImagineLogo
+B $F778,520,13
+b $F980 Title graphic: Athena (first 108 lines)
+D $F980 A plain 64-by-128-pixel bitmap with no mask, eight bytes a pixel line, bit 7 leftmost: Athena standing full length with a sword. The start-up code at #R$F0C0 draws it twice with #R$ED4E in bright yellow, at row 0, columns 0 and 24 (B=8 cells, C=16 rows, $F10B-$F125), unmirrored, then colours the bikini red on both copies ($F128-$F14B).
+D $F980 Only its first 108 lines are here: the last 20 were at #R$FCE0-$FD7F, which the start-up code overwrites once the title is drawn ($F1A5), so only the machine as loaded from tape still has them. In play the play area buffer at #R$F000 overwrites this too (lines 76-102).
+@ $F980 label=TitleFigure
+B $F980,864,8
+b $FCE0 Copy of the tape loader's stack area
+D $FCE0 As loaded, these 800 bytes are the last 20 lines of Athena's figure (#R$F980, eight bytes a line, to $FD7F) and the ATHENA title logo (TitleAthenaLogo, $FD80-$FFFF: a plain 128-by-40-pixel bitmap, 16 bytes a line, which #R$F0C0 draws at row 0, column 7 with B=16 and C=5 at $F14E-$F157; the title interrupt #R$F49E then cycles its colours through the attribute file only).
+D $FCE0 As soon as the title is drawn, $F1A5-$F1AE copy the 800 bytes at $9CDA-$9FF9 over them, which is what the snapshot holds. That is the tape loader's stack area: all zero except six words around the loader's stack pointer, at $FECA-$FED5 after the copy, which are addresses in the loader at $8900-$8BFF. Nothing ever reads the copy: from here on every byte is written by the play area buffer code (#R$F000, lines 103-127) before anything reads it. The copy has no effect on the game, and the code does not show why it is there.
+@ $FCE0 label=LoaderStackCopy
+B $FCE0,8,8 As loaded, the figure's last 20 lines; after start-up, zeros copied from $9CDA-$9D79
+B $FCE8,152,8
+N $FD80 TitleAthenaLogo: #R$F0C0 draws the ATHENA logo from here at $F14E-$F157 before $F1A5 copies the loader's stack area over it.
+@ $FD80 label=TitleAthenaLogo
+B $FD80,16,16 As loaded, the ATHENA logo (16 bytes a line, 40 lines); after start-up, the copy of $9D7A-$9FF9: zeros apart from the loader's six stack words at $FECA-$FED5
+B $FD90,624,16
