@@ -14,15 +14,16 @@
 ; holds a RET (the byte before the in-game interrupt routine at $E986; asserted
 ; by the build). That RET pops the snapshot's PC, pushed below its SP.
 ;
-; ORACLE builds (src/next/oracle.asm) replace the last write with NEXTREG $57:
-; the game's own paging goes through the oracle handler there, so the 128K
-; latches do not matter, and the alternative ROM holding the handler stays in.
+; E1 on: every build installs the engine (src/next/engine.asm) in the alternative
+; ROM, maps its RAM page at $2000, and ends with NEXTREG $57: the game's own paging
+; goes through the engine, so the 128K latches do not matter, and the alternative
+; ROM holding the engine stays in.
 ; ---------------------------------------------------------------------------
 
 resume:
         di
         ld sp,$fff0
-        nextreg $07,SPEED               ; 0 = 3.5 MHz, 3 = 28 MHz
+        nextreg $07,SPEED               ; 0 = 3.5 MHz, 3 = 28 MHz (the enhanced port runs at 28)
 
         ; Select the 48K BASIC ROM (1FFD bit 2, 7FFD bit 4). Done from game RAM,
         ; not from here: ZEsarUX treats NextReg $8E like a port write and remaps
@@ -44,16 +45,25 @@ resume:
         ld bc,rom_select_len
         ldir
 
-    IFDEF ORACLE
-        ; The oracle handler goes into the Next's alternative ROM, write-protected
-        ; like a real ROM (see src/next/oracle.asm for why). With NextReg $8C in
-        ; write mode, reads come from the 48K ROM and writes go to the alternative
-        ; ROM, so copying $0000-$3FFF onto itself copies the ROM across.
+        ; The engine (src/next/engine.asm) - and in ORACLE builds the oracle
+        ; handler - goes into the Next's alternative ROM, write-protected like a
+        ; real ROM (see src/next/oracle.asm for why). With NextReg $8C in write
+        ; mode, reads come from the 48K ROM and writes go to the alternative ROM,
+        ; so copying $0000-$3FFF onto itself copies the ROM across.
         nextreg $8c,%11100000           ; alt ROM on, write mode, 48K ROM locked
         ld hl,$0000
         ld de,$0000
         ld bc,$4000
         ldir
+        ld a,$c3                        ; $0030 (RST $30): JP svc_entry
+        ld ($0030),a
+        ld hl,svc_entry
+        ld ($0031),hl
+        ld hl,engine_image              ; the engine, assembled to run at ENGINE_ORG
+        ld de,ENGINE_ORG
+        ld bc,engine_image_len
+        ldir
+    IFDEF ORACLE
         ld a,$c3                        ; $0028 (RST $28): JP handler
         ld ($0028),a
         ld hl,handler
@@ -62,13 +72,45 @@ resume:
         ld (ROM_SITE),a
         ld a,ROM_SITE_IDX
         ld (ROM_SITE+1),a
-        nextreg $56,HANDLER_PAGE        ; the handler, assembled to run at $386E
+        nextreg $56,HANDLER_PAGE        ; the handler, assembled to run at HANDLER_ORG
         ld hl,$c000
         ld de,handler
         ld bc,handler_len
         ldir
-        nextreg $8c,%10100000           ; alt ROM on for reads; writes now ignored
     ENDIF
+        nextreg $8c,%10100000           ; alt ROM on for reads; writes now ignored
+
+        ; The engine's RAM, at $2000-$3FFF for good.
+        nextreg $51,ENGINE_RAM_PAGE
+        ld hl,E_BASE
+        ld de,E_BASE+1
+        ld bc,$1fff
+        ld (hl),0
+        ldir
+        ld hl,"TA"                      ; "ATHE"
+        ld (E_MAGIC),hl
+        ld hl,"EH"
+        ld (E_MAGIC+2),hl
+        ld a,SPEED
+        ld (E_SPEED),a
+        ld bc,$243b                     ; 50 or 60 Hz: NextReg $05 bit 2
+        ld a,$05
+        out (c),a
+        inc b
+        in a,(c)
+        ld hl,312
+        ld e,50
+        bit 2,a
+        jr z,.hz
+        ld hl,262
+        ld e,60
+.hz:    ld (E_LPF),hl
+        ld a,e
+        ld (E_HZ),a
+        ; One interrupt a frame, from line 128 - just below the play area -
+        ; instead of the ULA's at the top of the frame.
+        nextreg $23,INT_LINE
+        nextreg $22,%00000110
 
         ; $5B00-$5CFF as the snapshot has it: a NEX loader may have used it.
         nextreg $56,16
@@ -117,9 +159,13 @@ main_af: dw REG_A << 8 | REG_F
 
         ORG $e981
 final:
-    IFDEF ORACLE
-        nextreg $57,1
-    ELSE
-        nextreg $8e,%00001011           ; bank 0 at $C000 (ports 7FFD/DFFD say so too), 48K ROM
-    ENDIF
-        ASSERT $ == $e985               ; the next fetch is bank 0's RET at $E985
+        nextreg $57,1                   ; bank 0's second half over this code: the
+        ASSERT $ == $e985               ; next fetch is bank 0's RET at $E985. The
+                                        ; game's own paging goes through the engine
+                                        ; (service 3), so the 128K latches do not matter.
+engine_image:
+        DISP ENGINE_ORG
+        INCLUDE "src/next/engine.asm"
+        ENT
+engine_image_len EQU $ - engine_image
+        ASSERT ENGINE_ORG + engine_image_len <= HANDLER_ORG

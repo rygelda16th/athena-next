@@ -59,6 +59,7 @@ from skoolkit.simutils import (A, F, B, C, D, E, H, L, IXh, IXl, IYh, IYl,  # no
                                 xA, xF, xB, xC, xD, xE, xH, xL)
 from rzxsim import Replay                     # noqa: E402
 from specfile import Rzx, Z80Snapshot         # noqa: E402
+import nexpatches                             # noqa: E402
 
 OUT = "build/g3"
 IN_N, IN_C, LD_AR = 0, 1, 2
@@ -152,11 +153,15 @@ def main():
     for i, (pc, k, at, orig) in enumerate(SITES):
         if at is not None:
             patches[at], patches[at + 1] = RST, i
-    for pc in SERVICE:
-        patches[pc], patches[pc + 1] = RST, 0x80
+    # The world loader's OUT (C),A sites (SERVICE) are the engine's since E1
+    # (tools/nexpatches.py), so they are not poked here; the handler's $80 service
+    # remains, unused.
     patches[TUNE_CALL], patches[TUNE_CALL + 1], patches[TUNE_CALL + 2] = RST, 0x82, 0x00
-    full = without(FULL, set(patches))
-    light = without(LIGHT, set(patches))
+    skip = set(patches) | nexpatches.addresses()
+    if set(patches) & nexpatches.addresses():
+        sys.exit("an oracle patch overlaps an engine patch")
+    full = without(FULL, skip)
+    light = without(LIGHT, skip)
 
     snap = Z80Snapshot(open("data/athena128.z80", "rb").read())
     rzx_snap = Z80Snapshot(Rzx(open("data/athena.rzx", "rb").read()).snapshots[0][1])
@@ -167,6 +172,7 @@ def main():
     for pc in SERVICE:
         if view[pc:pc + 2] != b"\xED\x79":
             sys.exit(f"service site ${pc:04X} is not OUT (C),A")
+    nexpatches.verify(view)
     if view[TUNE_CALL:TUNE_CALL + 3] != b"\xCD\xD9\xDE":
         sys.exit(f"${TUNE_CALL:04X} is not CALL $DED9")
 

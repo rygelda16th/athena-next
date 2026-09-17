@@ -28,6 +28,7 @@ ZESARUX128 := zesarux --vo null --ao null --machine 128k --enable-remoteprotocol
 NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
 
 .PHONY: help certs image doctor shell fetch check-data provenance html gfx check-gfx worlds check-worlds check-audit toolchain-diff \
+        orig-passes check-hz60 check-pace e1 \
         rzx-end check-orig orig play-orig bank-exec scripts ctl-bootstrap skool ctl \
         check-ctl check-reasm coverage g2 oracle-stream nex oracle-nex check-play \
         check-oracle check-cspect g3 play clean distclean
@@ -58,10 +59,12 @@ help:
 	@echo "make coverage       G2: what no run executed, sorted by evidence"
 	@echo "make g2             everything G2, in order"
 	@echo "make nex            build/athena.nex: the original, rebuilt, as a Next program"
-	@echo "make check-play     G3: athena.nex runs the original under headless ZEsarUX (Next)"
+	@echo "make check-play     G3/E1: athena.nex runs the original at 28 MHz with the engine (Next)"
 	@echo "make oracle-stream  G3: every value the game took from outside, from the recording"
 	@echo "make check-oracle   G3: the recording replayed through the port at 3.5 and 28 MHz"
 	@echo "make check-cspect   G3: athena.nex runs in CSpect too (opens a window briefly)"
+	@echo "make check-pace     E1: the port keeps the original's pace (after check-oracle); 60 Hz ticks"
+	@echo "make e1             E1: check-play, check-oracle, check-pace"
 	@echo "make play           play build/athena.nex in CSpect"
 	@echo "make toolchain-diff has the shared toolchain drifted from anotherworld-next?"
 
@@ -191,7 +194,7 @@ CSPECT ?= $(HOME)/src/cspect
 nex: | $(BUILD)
 	@test -f build/g2/plain/bank0.bin || { echo "run make check-reasm first"; exit 1; }
 	@test -f build/g3/play_gen.asm || { echo "run make oracle-stream first"; exit 1; }
-	$(RUN) sjasmplus --nologo --msg=war -DSPEED=0 src/next/athena.asm
+	$(RUN) sjasmplus --nologo --msg=war -DSPEED=3 src/next/athena.asm
 
 oracle-stream: | $(BUILD)
 	$(RUN) python3 tools/mkstream.py
@@ -213,6 +216,20 @@ check-cspect: check-play
 	python3 tools/checkcspect.py
 
 g3: oracle-stream nex check-play check-cspect check-oracle
+
+# ---- E1: pace at 28 MHz ---------------------------------------------------------
+orig-passes: | $(BUILD)
+	$(RUN) python3 tools/origpasses.py
+
+check-hz60: nex
+	$(RUN) sh -c '$(ZESARUX_NEXT) >/tmp/zesarux.log 2>&1 & sleep 3; python3 tools/checknex.py hz60'
+
+# check-oracle records the port's pass lengths (build/e1/pace-35.json, pace-28.json).
+check-pace: orig-passes check-hz60
+	@test -f build/e1/pace-28.json || { echo "run make check-oracle first"; exit 1; }
+	python3 tools/checkpace.py
+
+e1: check-play check-oracle check-pace
 
 play: nex
 	cp build/athena.nex $(CSPECT)/sd/ATHENA.NEX

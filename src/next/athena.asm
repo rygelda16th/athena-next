@@ -2,7 +2,7 @@
 ; Athena on the ZX Spectrum Next: the original game, rebuilt from the
 ; disassembly, as a .nex. Assemble from the repository root:
 ;
-;   sjasmplus -DSPEED=0 src/next/athena.asm            build/athena.nex
+;   sjasmplus -DSPEED=3 src/next/athena.asm            build/athena.nex (28 MHz)
 ;   sjasmplus -DSPEED=0 -DORACLE src/next/athena.asm   build/g3/athena-oracle-35.nex
 ;   sjasmplus -DSPEED=3 -DORACLE src/next/athena.asm   build/g3/athena-oracle-28.nex
 ;
@@ -12,6 +12,9 @@
 ; ---------------------------------------------------------------------------
 
         DEVICE ZXSPECTRUMNEXT
+
+ENGINE_RAM_PAGE EQU 80                  ; bank 40: the engine's variables, at $2000 in play
+HANDLER_ORG     EQU $1000               ; the oracle handler, in the alternative ROM
 
     IFDEF ORACLE
         INCLUDE "build/g3/oracle_gen.asm"
@@ -40,6 +43,8 @@ HANDLER_PAGE EQU 19
         MMU 6 7, 0, $c000
         ASSERT {b $e985} == $c9
 
+        INCLUDE "src/next/patches.asm"
+        engine_patches
     IFDEF ORACLE
         oracle_pokes
     ENDIF
@@ -56,7 +61,7 @@ HANDLER_PAGE EQU 19
 
     IFDEF ORACLE
         ; bank 9: page 18 = the handler's variables (paged in at $4000 while it
-        ; runs), page 19 = the handler, assembled for $386E in the alternative ROM
+        ; runs), page 19 = the handler, assembled for HANDLER_ORG in the alternative ROM
         MMU 2, VARS_PAGE, $4000
 v_magic:  db "ATHO"
 v_status: db 0
@@ -79,10 +84,10 @@ v_int:    db 0
 v_count:  dw 0
 v_treg:   ds 18
         MMU 6, HANDLER_PAGE, $c000
-        DISP $386e
+        DISP HANDLER_ORG
         INCLUDE "src/next/oracle.asm"
         ENT
-        ASSERT handler_end <= $3d00     ; the 48K ROM's unused space ends at $3CFF
+        ASSERT handler_end <= $2000     ; below the engine's RAM at $2000
         ; banks 10 and up: the stream
         MMU 7 n, STREAM_BANK0*2, $e000
         INCBIN "build/g3/stream.bin"
