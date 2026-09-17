@@ -28,7 +28,7 @@ recording as the oracle that proves the game logic never changed.
 | D7 | completeness gate (`make check-audit`), Bugs/Pokes/Trivia pages, pass costs | **passed** - David moved on to Checkpoint A 2026-09-17 |
 | A | enhancement design and art bible (David decides) | **passed** - David approved `docs/design.md` and `docs/art-bible.md` 2026-09-17 |
 | E1 | pace at 28 MHz (`docs/plan.md` has every step from here) | **passed** (goal: to the end of step 10) |
-| C1 | arcade capture tooling; David's MAME play-through | - |
+| C1 | arcade capture tooling; David's MAME play-through | **passed** (tooling; World of Forest captured by the attract demo and a bot; the other seven worlds wait for David's play-through) |
 | E2 | play area on Layer 2; recolouring rules; `tools/artimport.py` | - |
 | E3 | hardware sprites, image cache, gliding | - |
 | C2 | contact sheets; first mapping (player, weapons, effects) | - |
@@ -808,6 +808,45 @@ pace instead of flat out); the 3.5 MHz one 18.
 
 **For David (provisional, goal running):** play `build/athena.nex` in CSpect and say whether the
 speed feels like the original.
+
+## C1 - what was built and what it proved
+
+**MAME in the tools image** (Debian bookworm's 0.251, `make image`), running the player's own
+arcade set from `data/arcade/` headless at 35-47x real time. MAME finds the files by CRC, so
+David's older board-location names work.
+
+**The capture** (`tools/arcade/capture.lua`): write taps on both arcade CPUs log every frame's
+sprite table, every write to the background and text video RAM, the scroll and video
+registers, and every sound command the main CPU sends. **The frame rebuild**
+(`tools/arcade/frame.py`, `arcgfx.py`): MAME's own drawing order - background tilemap, 50
+sprites with the shadow value, text layer - from the log and the arcade graphics.
+
+**Proof** (`make check-capture`): 900 frames of the attract mode; frames 300, 600 and 900
+rebuilt from the log match MAME's snapshots pixel for pixel (power-on text, title logo, a
+scrolled game screen with sprites and panels).
+
+**Found by RAM search and reading the arcade program** (facts about the arcade program, like a
+POKE list): player 1's data is IY = `$FD08`; energy `$FD17` (matches the LIFE bar 99.8%),
+lives `$FD2E`, the clock's BCD seconds `$FE1C`, the world number `$FD35` (IY+`$2D`, read by
+the title routine at `$06C1`; the titles' order is Forest, Cavern, Sea, Sky, Ice, Hell, The
+Last World, Labyrinth); the world advance at `$1B24` fires when IY+`$07` reaches `$50` during
+a guardian fight, and after world 3 the next world is chosen partly at random; the sound
+commands queue at `$D7D0` and go to `$C400` from `$069F`.
+
+**Captured so far:** the attract demo (30,000 frames, World of Forest only) and a bot
+(`tools/arcade/bot.lua`: coin, start, energy, lives and clock held, walks right and tries
+other moves when it stops reaching new ground) for 72,000 frames - still in World of Forest.
+Poking the world number changes only the title; forcing the guardian damage outside a
+guardian fight does nothing.
+
+**Found the hard way:** the arcade's second CPU writes most of the video RAM through its own
+map, so the first logs held a tenth of the writes; and MAME drops a tap when Lua collects it,
+which silently stopped logging after 100 frames.
+
+**For David (the step's checkpoint, still open):** play the arcade game through in MAME -
+`make capture` with a window, or MAME on the Deck with `tools/arcade/capture.lua` - reaching
+all eight worlds. Until then only World of Forest's characters and sounds can be mapped;
+everything else uses recoloured Spectrum art, as the design allows.
 
 ## Method notes that carried over
 

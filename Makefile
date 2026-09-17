@@ -28,7 +28,7 @@ ZESARUX128 := zesarux --vo null --ao null --machine 128k --enable-remoteprotocol
 NATIVE_ZESARUX ?= $(HOME)/src/zesarux-patched/src/zesarux
 
 .PHONY: help certs image doctor shell fetch check-data provenance html gfx check-gfx worlds check-worlds check-audit toolchain-diff \
-        orig-passes check-hz60 check-pace e1 \
+        orig-passes check-hz60 check-pace e1 check-capture capture c1 \
         rzx-end check-orig orig play-orig bank-exec scripts ctl-bootstrap skool ctl \
         check-ctl check-reasm coverage g2 oracle-stream nex oracle-nex check-play \
         check-oracle check-cspect g3 play clean distclean
@@ -65,6 +65,8 @@ help:
 	@echo "make check-cspect   G3: athena.nex runs in CSpect too (opens a window briefly)"
 	@echo "make check-pace     E1: the port keeps the original's pace (after check-oracle); 60 Hz ticks"
 	@echo "make e1             E1: check-play, check-oracle, check-pace"
+	@echo "make check-capture  C1: arcade frames rebuilt from a MAME capture log, pixel for pixel"
+	@echo "make capture        C1: a play-through capture log (CAPTURE_BOT=tools/arcade/bot.lua for the bot)"
 	@echo "make play           play build/athena.nex in CSpect"
 	@echo "make toolchain-diff has the shared toolchain drifted from anotherworld-next?"
 
@@ -230,6 +232,22 @@ check-pace: orig-passes check-hz60
 	python3 tools/checkpace.py
 
 e1: check-play check-oracle check-pace
+
+# ---- C1: the arcade capture (the arcade set is optional; these need it) ---------
+check-capture: | $(BUILD)
+	$(RUN) python3 tools/checkcapture.py
+
+# A play-through log: CAPTURE_BOT=tools/arcade/bot.lua for the bot, or run MAME with a
+# window and tools/arcade/capture.lua where a person can play.
+CAPTURE_FRAMES ?= 72000
+capture: | $(BUILD)
+	@mkdir -p build/c1/play
+	$(RUN) sh -c 'CAPTURE_OUT=build/c1/play/capture.bin CAPTURE_FRAMES=$(CAPTURE_FRAMES) CAPTURE_BOT=$(CAPTURE_BOT) \
+		mame athena -rompath data/arcade -homepath /tmp/mame -cfg_directory /tmp/mame/cfg \
+		-nvram_directory /tmp/mame/nvram -snapshot_directory build/c1/play/snap -video none -sound none \
+		-nothrottle -skip_gameinfo -autoboot_script tools/arcade/capture.lua >/dev/null 2>&1; true'
+
+c1: check-capture
 
 play: nex
 	cp build/athena.nex $(CSPECT)/sd/ATHENA.NEX

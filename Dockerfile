@@ -123,5 +123,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PATH="/opt/skoolkit:${PATH}" \
     PYTHONPATH="/opt/skoolkit"
 
+# --- MAME: the arcade capture (C1) ---------------------------------------------
+# Debian bookworm's MAME 0.251, with its Lua scripting (the capture taps the arcade
+# main CPU's writes and reads the video memory every frame, headless). It runs only
+# the player's own arcade set from data/arcade/ (docs/licence.md).
+RUN apt-get update && apt-get install -y --no-install-recommends mame \
+    && rm -rf /var/lib/apt/lists/* \
+    && /usr/games/mame -version > /usr/local/share/mame.version
+ENV PATH="${PATH}:/usr/games"
+
 WORKDIR /work
 CMD ["/bin/bash"]
