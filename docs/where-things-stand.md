@@ -1,7 +1,7 @@
 # Where things stand
 
 **This file is canonical.** Where it disagrees with anything else, believe this
-one. Last updated 2026-09-17.
+one. Last updated 2026-09-17 (E7).
 
 ---
 
@@ -1049,6 +1049,22 @@ Start the pause flag. **Every check passes.** With every option off the oracle i
 say whether the three fixes left are worth doing.
 
 ## E7 - what was built and what it proved
+
+**Everything David has to look at, in one place.** The goal was "go to the end of step 10", so no
+step stopped for him; these are the calls now waiting:
+
+1. **Play it** - `make play` (CSpect) at each level: does the speed feel like the original, is the
+   scroll smooth, do the sprites glide, is the arcade art right?
+2. **The first arcade mapping** - `build/c2/mapping/index.html`: each Spectrum picture beside the
+   arcade frames chosen for it, and the list of what is still on Spectrum art.
+3. **The arcade play-through** - only World of Forest is captured, by the attract demo and a bot.
+   Everything for worlds 2-7 (their enemies, guardians, items) waits on your own run in MAME.
+4. **The tunes** - name them by ear and say where each should play (`tools/arcade/sound-cues.json`
+   holds the guesses), and tune the AY instruments.
+5. **The presets** - play-test ORIGINAL, EASIER and EASY and set their values
+   (`src/next/options.asm`, `presets`).
+6. **The three bug fixes left** - worth doing or not.
+7. **Your own scenery** - `data/art/cells/bank3/005.png` and so on, then `make check-art`.
 
 **The three build levels** (`make check-levels`): the Spectrum files alone; with the builder's
 arcade set (`-DARCADE`, which needs a 2MB Next for its pages); and with David's hand-made art on
