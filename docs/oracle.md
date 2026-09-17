@@ -72,9 +72,13 @@ address while the emulator runs.
    `$0000-$3FFF`. Something in the game writes into `$0000-$3FFF` - on a Spectrum
    that is ROM and the writes vanish; in RAM they overwrote `JP handler` at `$0028`,
    found by stepping ZEsarUX 2,000 opcodes at a time until those three bytes
-   changed. (This was first blamed on the text printer at `$C25x`; D2 showed that
-   routine cannot address below `$4000`, so which instruction writes there is still
-   open - `docs/disassembly.md`.) The handler now lives in the Next's
+   changed. (This was first blamed on the text printer at `$C25x`, wrongly. D5 found
+   the writers by logging every write over the whole recording: at the first game after
+   loading, `ClearListMarks` (`$C169`) walks a list whose address and count are still 0
+   and clears bit 7 of every third byte of `$0001-$02FE`, which would turn the `JP` at
+   `$0028` into `$43`; and in world 7 the feathered blade's blast, drawn above the top of
+   the screen, pushes sprite bytes into `$384C-$3FF5`, where this handler now lives.
+   Both land harmlessly in ROM on a Spectrum.) The handler now lives in the Next's
    **alternative ROM** (NextReg `$8C`): the stub copies the 48K ROM into it, adds
    the handler in the ROM's unused space from `$386E`, and write-protects it, so
    the game's stray writes are ignored exactly as on the original.

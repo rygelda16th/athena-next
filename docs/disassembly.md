@@ -1,7 +1,7 @@
 # The disassembly - how it is annotated, and what is still open
 
 Chunks D1-D7 (David's decision: the disassembly is complete before any enhancement).
-D1-D3 established 2026-09-16, D4 2026-09-17.
+D1-D3 established 2026-09-16, D4 and D5 2026-09-17.
 
 ## Where it lives
 
@@ -167,34 +167,53 @@ sites as they really behave and the controls E6 can offer.
 | `$D38C`, `$D504`, `$C95B` | `WeaponCellBlows`, `ContactCount`, `AttackFlag` | one analyst's entry each, with the reviews' corrections |
 | `$BA24`-`$BA26` | ArmourA (a piece at the body's right edge, item `$74`), ArmourB (body, `$75`), ArmourC (helmet, `$76`) | from the pictures and the handlers |
 
+## D5 - the enemies
+
+Three analysts (movers and slots, spawns and guardians, collision and the stray writer)
+and two reviewers (98 items: 61 confirmed, 34 partly right, 1 refuted, 2 unverified);
+merge in `build/d5/merge.py` with `build/d5/corrections.py`, 10 corrections to D1-D4
+text. The collision analyst instrumented a copy of SkoolKit's C simulator to log every
+memory read and write, and replayed all 119,655 frames of the recording on it.
+
+**Annotated:** the enemy mover in the main loop (`$CB02`-`$CC45`), the slot-list picker
+`$C51F` (topmost enemy first), the cell animation (`$C606`-`$C63B`), the contact and
+heart tests in `$D38B`, the heart release `$D8D6`, the enemy position map build in
+`$D08C`, the sprite drawers' pushes above the screen, and the complete 13-byte enemy slot
+in the EnemySlots description.
+
+**Found the hard way (D5):**
+- **The review found what both analysts missed:** most list starts are freed in the pass
+  they start (721 of 851), which also explained the high list-start counts in worlds 3
+  and 5 that the analysts had put down to the player's route.
+- **Slot byte 0 is not always a template high byte** - for a type 4 start it is the
+  start column until the first mover pass.
+
 ## Open questions carried forward
 
-Answered by D4: ClimbState 2 (turned sideways on a ladder) and 4 (at the foot of a
-ladder); what up, down and fire do; which armour piece each counter is; what every item
-does and every box rule (73 boxes in the recording matched); the weapon behind each
-level; the stray writes into `$0000`-`$3FFF` are **not** the player's
-display address going above the screen (it does, 628 times in the recording, but is only
-read before `$CD36` puts it back); world 1's open left end cannot be reached (walking
-left stops at scroll position 0).
+Answered by D5: **the writers into `$0000`-`$3FFF`** (`$C169` at the first game after
+loading, and the feathered blade's blast drawn above the screen; 1,768 writes in the
+recording); **no game logic reads the screen** (the only non-drawing read, at `$CB32`,
+checks the HIT bar's colour before flashing the POW label, and never ran); every
+collision is a lookup in the enemy position map or the world map, never pixels; enemy
+types 1-9 (types 6 and 7 fly, 4 falls, the rest are identical walkers); every slot byte;
+the draw order; world 7's spawn code `$FF` can never match; the guardian's row quirk
+(`$D53F`) does cost and give hits in play (worlds 3-7); a struck heart would free a
+"slot" at MapWindow or Score (shown in a controlled run, never in the recording).
 
-- **D5 (enemies):** enemy types 1-9, slot bytes 1, 5 and 12 (bit 5 of byte 5 doubles the
-  explosion and the points); the order `$C51F` returns slots in; what writes `$FF` and
-  `$FE` into the enemy position map (hearts, `$D24C`) and whether a struck heart can be
-  taken for an enemy; the guardian's cell ignoring the row within a third (`$D53F`);
-  whether world 7's spawn code `$FF` can match a cell; world 7's three-byte list walk;
-  **which instruction writes into `$0000`-`$3FFF`**.
 - **D6 (sound and front end):** why `$ED4E` runs with interrupts off; the 800 bytes
   copied to `$FCE0`-`$FFFF` at start-up; whether tune 11 can be cut short by a key;
   `IN A,($9F)` at `$F240`; why `$C3C0` writes `$FF` to `$BDB3`; define keys at `$F355`;
-  the 192 unused bytes at `$6CA0`.
-- **Checkpoint A / E6:** whether a fall through an open bottom cell of a lower part can
-  happen (the move at `$D42B` does not test which part the player is in); whether the
-  wrong-cell wall test after a rise off the top ever mattered in play; the high jump's
-  5-pass hang and the fall lookahead - design or accident.
+  the 192 unused bytes at `$6CA0`; the sound effects (`$C408`, the table at `$BC90`)
+  and the tune player and data (`$DEC6`-`$E878`); the hi-score table code (`$C015`).
+- **Checkpoint A / E6:** whether a fall through an open bottom cell of a lower part, or a
+  part change in world 7, can happen (the move at `$D42B` tests only the row); whether
+  the wrong-cell wall test after a rise off the top ever mattered in play; the high
+  jump's hang and the fall lookahead - design or accident; walking back over a destroyed
+  world 7 guardian's start position.
 - **Not decidable from the code:** why bank 7's unused second header holds bank 3's
   values; whether the differing second-half enemy frames are retouched art or errors;
   why the box pictures `$C7`/`$C8` are equal in banks 3 and 6 but not 4 and 7; what
   `$C0F1`'s handling of `$00` and `$D4` was for; what ArmourA's piece and item `$77`'s
-  picture are meant to show.
+  picture show; the creatures' names (the game gives none).
 - **E8 (hardware):** the flicker rates and the lost interrupt were measured in a replay
   model with estimated contention; the KS3 is the check.

@@ -48,7 +48,15 @@ E6's options default to the original; the oracle runs with all of them off.
 | Keep objects on a lost life | `$CD13`-`$CD14` as above | item `$61` only |
 | Feathered blade's energy cost | `CALL Z,$BEFE` at `$DA42`; taken away below 4 units at `$D025`-`$D038` | a unit every second blast |
 
-Bug fixes worth offering as separate options (D3, D4): the world 7 enemy list damaged at
+Bug fixes worth offering as separate options (D3-D5): the world 7 enemy list damaged at
 the world change (`$C169`), world 7's guardian column `$FF` still matching, the full item
-panel overwriting the tenth slot (`$DBE4`), and energy regained by items `$63` and `$6C`
-without redrawing the bar.
+panel overwriting the tenth slot (`$DBE4`), energy regained by items `$63` and `$6C`
+without redrawing the bar, **the guardian's hit area ignoring its row** (`$D53F`: in
+worlds 3-7 blows and contact land where no guardian is drawn and miss where one is), and
+**guardian damage carried into the next guardian** (strikes later in the pass that
+destroys one).
+
+Not a bug fix but a difficulty choice: **most list enemies never appear** - 721 of the
+recording's 851 list starts were at a screen edge over a ledge, stepped back out of
+bounds and freed in the same pass (then restarted, invisibly, every pass). "Fixing" it
+would put many more enemies on screen, so an option there changes the game's feel.

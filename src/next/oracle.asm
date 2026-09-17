@@ -7,8 +7,9 @@
 ; lists them), so something must answer at $0028. That something cannot be RAM:
 ; something in the game writes into $0000-$3FFF, which on a Spectrum is ROM and
 ; ignores it - in RAM it wrote over the handler's jump at $0028 and killed the
-; second tune service (found 2026-09-16; not the text printer, as first thought -
-; see docs/disassembly.md, D2). So the stub
+; second tune service (found 2026-09-16). The writers, found at D5: ClearListMarks
+; ($C169) at the first game after loading, and the feathered blade's blast drawn above
+; the screen in world 7 (docs/oracle.md). So the stub
 ; copies the 48K ROM into the Next's alternative ROM (NextReg $8C), patches the
 ; jump at $0028 and KEY-SCAN's IN A,(C) there, puts this code in the 48K ROM's
 ; unused space from $386E, and write-protects it. Writes to $0000-$3FFF are then

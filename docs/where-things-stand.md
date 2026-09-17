@@ -22,8 +22,9 @@ recording as the oracle that proves the game logic never changed.
 | D1 | disassembly: boot, paging, memory map, main loop, interrupts, input, randomness | **passed** - David said go 2026-09-16 |
 | D2 | disassembly: the renderer; every graphic exported (`make gfx`) | **passed** - David said go 2026-09-16 |
 | D3 | disassembly: level data; every world's map drawn (`make worlds`) | **passed** - David said go 2026-09-16 |
-| **D4** | disassembly: the player; difficulty controls for E6 (`docs/difficulty.md`) | **annotated, checks green - waiting at checkpoint D4** |
-| D5-D7 | the rest of the complete annotated disassembly | not started |
+| D4 | disassembly: the player; difficulty controls for E6 (`docs/difficulty.md`) | **passed** - David said go 2026-09-17 |
+| **D5** | disassembly: the enemies, collision, the stray writes | **annotated, checks green - waiting at checkpoint D5** |
+| D6-D7 | the rest of the complete annotated disassembly | not started |
 | A | enhancement design and art bible (David decides) | - |
 | E1-E8 | enhancements; art track alongside | - |
 
@@ -256,9 +257,9 @@ that feeds the values back and checks every hash on the machine.
 
 ### Findings that change later work
 
-- **Something in the game writes into `$0000-$3FFF`** (harmless on a Spectrum's
-  ROM; D2 showed it is not the text printer first blamed, and the writer is still
-  unidentified). Anything the port ever puts at `$0000-$3FFF` must be
+- **The game writes into `$0000-$3FFF`** (harmless on a Spectrum's ROM): D5 found
+  the two writers - the list-flag walk `$C169` at the first game after loading, and the
+  feathered blade's blast drawn above the screen in world 7. Anything the port ever puts at `$0000-$3FFF` must be
   write-protected - which is why the oracle handler lives in the Next's alternative
   ROM. The enhanced port inherits this constraint.
 - **Tunes use their own interrupt routines to run the note timing** (`$DF90`,
@@ -526,18 +527,70 @@ re-checked by a reviewer):
 - **Two analysts named the same weapons differently** (sword / broad sword, spiked /
   war hammer); the names taken are the ones that match the item pictures D3 read.
 
-## Checkpoint D4 - for David
+## Checkpoint D4 - closed
 
-1. Read **`docs/difficulty.md`** - you said the game is hard as nails; this is why, and
-   the controls E6 could offer. Which options do you want?
-2. `make html` and browse: **Strike the enemies a blow reaches** (`D77A`), the item
-   handlers from `DBF7` to `DCAC`, **Draw the flail's throw** (`D923`), and the movement
-   helpers from `DD06`.
-3. Read the open questions in `docs/disassembly.md`.
+David said go for D5 on 2026-09-17.
 
-**Next, if you say go - D5:** the enemies - types, movement, spawning, the slots, the
-guardians' behaviour and collision (including confirming that nothing reads the screen),
-and the stray writer into `$0000-$3FFF`.
+## D5 - what was built and what it proved
+
+Method and open questions: **`docs/disassembly.md`**; the new faults for E6's options:
+**`docs/difficulty.md`**.
+
+**What is annotated.** The enemy mover, the slot-list picker `$C51F`, the complete enemy
+slot, the cell animation, the contact and heart tests, the heart release, the enemy
+position map build, and the sprite drawers' behaviour above the screen. Across all six ctl
+files: 283 of 429 blocks titled, 372 labels, 1,378 instruction comments. Every gate
+passes.
+
+**Two of the plan's named risks are closed, by logging every memory read and write over
+the whole recording** (an instrumented copy of SkoolKit's C simulator, all 119,655
+frames):
+
+- **Collision never reads the screen.** Every collision - player and enemies, weapon and
+  enemies, player and scenery, items, hearts - is a lookup in the enemy position map or
+  the world map, in cells two character columns by two rows. The only non-drawing screen
+  read checks the HIT bar's colour before flashing the POW label. **The plan's
+  hidden-buffer fallback is not needed: E2-E4 can replace the renderer outright.**
+- **The writers into `$0000-$3FFF` are known** (1,768 writes): the list-flag walk
+  `$C169` at the first game after loading (list address and count still 0, so it clears
+  bit 7 of every third byte of `$0001-$02FE` - the change that broke the first oracle
+  handler), and the feathered blade's blast drawn above the top of the screen in world 7
+  (`$384C-$3FF5`). A broad sword shot striking a rising heart could also write there (shown
+  in a controlled run, never in the recording). **The port must keep `$0000-$3FFF`
+  write-protected** unless all three are fixed.
+
+### Findings that change later work
+
+- **Enemies:** types 6 and 7 fly one column a pass through everything; types 1-5, 8 and 9
+  walk one column every second pass, turning at walls and ledges; type 4 walks off ledges
+  and falls. An enemy's column is a screen column - scrolling never moves it. Five slots,
+  topmost enemy drawn first.
+- **Most list enemies never appear**: 721 of 851 list starts were started at a screen
+  edge over a ledge, stepped back out of bounds and freed in the same pass - and started
+  again, invisibly, every pass.
+- **Two more faults for E6's bug-fix options**: the guardian's hit area ignores its row
+  in worlds 3-7 (blows and contact land where no guardian is drawn), and guardian damage
+  carries into the next guardian.
+
+### Found the hard way
+
+- **The first answers to "who writes below `$4000`" were guesses** (the text printer at
+  G3, a struck heart at D5's start); only logging every write over the whole recording
+  settled it.
+- **The review caught what both analysts missed** (the invisible list starts), which
+  changed several of their counts.
+
+## Checkpoint D5 - for David
+
+1. Read the two closed risks above: the renderer can be replaced outright, and
+   `$0000-$3FFF` stays protected in the port.
+2. `make html` and browse the enemy mover in **Main game loop** (`C553`, from `CB02`),
+   **Pick the topmost enemy not yet listed** (`C51F`), and the **Game variables** entry
+   for EnemySlots (`B9C2`).
+3. Look at the new bug-fix options in `docs/difficulty.md`.
+
+**Next, if you say go - D6:** sound and the front end - the tune player and tune data,
+the sound effects, the hi-score table, define keys and the remaining messages.
 
 ## Method notes that carried over
 

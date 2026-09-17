@@ -282,7 +282,7 @@ B $B95E,90,16*5,10 Ten 9-byte records, one for each item box a weapon blow has o
 @ $B9B8 label=UnusedB9B8
 B $B9B8,10,8,2 Ten bytes between the last map-change record and the enemy slots that nothing reads or writes except the clears at $BD04 and $BD85 and the zero-fill at $DEBE. The unbounded free-record search at $D61C could only reach them if all ten $B95E records were in use.
 @ $B9C2 label=EnemySlots
-B $B9C2,65,13 Five 13-byte enemy slots. Byte 0 non-zero = in use; 2 = column; 3 = row; 4-8 = copy of the enemy's five-byte template (8 = type); 9 is a state and direction byte (bit 7 set while it moves right: #R$DD41 sets it for an enemy started on the left and the movers flip it when it turns round ($CC07, $CC33); while it is set the enemy is drawn from the second half of the frame area, +the operand at $CC7E; bits 0-2 the frame number, 1-2, or 1-4 for type 7; bits 5-7 are changed as it moves); 10-11 are the address of the started flag (byte 1, or byte 2 in world 7) of the list entry that started it, written at $C694-$C69A and used by #R$D909 to clear that flag when the slot is freed.
+B $B9C2,65,13 Five 13-byte enemy slots. Byte 0-1: the address of the enemy's current frame, high byte first, set by the mover at $CC81 every pass; byte 0 non-zero marks the slot in use (#R$DD41 first puts a non-zero marker there: the template address's high byte, or for a type 4 start the start column). 2: screen column of the left edge (a screen column: scrolling never moves an enemy). 3: character row of the top. 4-8: copy of the enemy's five-byte template: 4 width in bytes, 5 height in pixel lines (16, 24 or 32; the points and the double explosion read its bits 3-5 and bit 5), 6-7 the first left-facing frame, 8 the type. 9: state: bit 7 moving right (#R$DD41 sets it for an enemy started in the left half; the movers flip it when it turns round, $CC07, $CC33; while it is set the enemy is drawn from the second half of the frame area, +the operand at $CC7E, except type 7), bit 6 falling (type 4 only, $CC1F), bit 5 already listed this pass (#R$C51F sets it, $CB57 clears it), bits 3-4 unused, bits 0-2 the frame number, 1-2, or 1-4 for type 7. 10-11: the address of the started flag (byte 1, or byte 2 in world 7) of the list entry that started it, written at $C694-$C69A for list starts only and used by #R$D909 to clear that flag when the slot is freed. 12: the wall-turn delay, set to 8 when a walker turns at a wall ($CC03) and counted down each walking pass ($CBE3); for seven passes while it runs a wall does not turn the enemy again.
 @ $BA03 label=HitEffectTimer
 B $BA03,1,1 Passes left (2, 1) of a two-frame effect drawn after a map cell has been changed at $D742: set to 2 at $D74C, drawn from graphics $6BE0 or $6C60 (bit 1 picks) at $D3C5-$D3F1 and decremented at $D3F7; with weapon kinds 5-7 it is cleared at once ($D3CB).
 @ $BA04 label=ExplosionTimer
@@ -290,13 +290,13 @@ B $BA04,1,1 Passes left (8 down to 1) of the animation drawn where an enemy was 
 @ $BA05 label=ShotTimer
 B $BA05,1,1 Passes left of a shot from weapon kind 6 or 7: set to 7 at $C99F when fire is pressed with such a weapon, decremented once per pass at $D291-$D298. While it is non-zero the player cannot climb ($C884, $C939) and $C968, $D02C, $D178, $D2DF and $D7C1 treat the shot as still in flight.
 @ $BA06 label=CellAnimCode
-B $BA06,1,1 Cell code of a three-step map-cell animation, or 0 when none is running. When the cell at column offset $31 beside the player is $79 or $7A, $C712-$C71D writes code minus $6D into it and sets this to $7B; $C606-$C621 then steps it to $7C and $7D, stepping when the counter in the operand at $C60E runs out while #R$DD93 returns Z (the counter is reloaded with 8 at $C638), and back to 0 after $7D, drawing the cell at the column saved in $C628.
+B $BA06,1,1 Cell code of a three-step map-cell animation, or 0 when none is running. When the cell at column offset $31 beside the player is $79 or $7A, $C712-$C71D writes code minus $6D into it and sets this to $7B; $C606-$C621 then steps it to $7C and $7D, stepping when the counter in the operand at $C60E runs out while #R$DD93 returns Z (the counter is reloaded with 8 at $C638), and back to 0 after $7D, each time drawing the picture of the next code ($7C, $7D, then $7E: a growing plant) over the cell, at the buffer column saved in $C62E less the columns scrolled since the scroll position saved in $C628, on the row saved in $C632.
 @ $BA07 label=Crouching
 B $BA07,1,1 1 while the player is crouching. Cleared at the start of the player's pass ($C6DB); set at $C8AD when down is held and the cell below is not climbable. While it is set the player cannot walk ($C9D9, $CA8A), the crouching graphic address $BA35 is used, and firing depends on the weapon ($C9AB, $D780).
 @ $BA08 label=MapChangeCooldown
 B $BA08,1,1 Set to 1 at $D60C when a map-change record is made ($B95E) and decremented at $CB21-$CB29; while it is non-zero #R$DBAB returns at once, so the cell check it does is skipped.
 @ $BA09 label=EnemyDrawList
-B $BA09,10,8,2 Five words, each the address of an enemy slot in $B9C2 (or 0 for none), in the order the enemies are processed. $D08C refills them every pass from five calls to #R$C51F, storing IY at $BA09, $BA0B, $BA0D, $BA0F and $BA11; $D0CE-$D109 walks them to write each enemy's number into the enemy position map at $EF80-$EFFF (skipped while a guardian is active); the enemies are drawn later in #R$D08C (a zero high byte means an empty entry), and $D1E6 and $D87B index them by slot number.
+B $BA09,10,8,2 Five words, each the address of an enemy slot in $B9C2 (or 0 for none), sorted by row, the topmost enemy first (ties in slot order), as #R$C51F picks them. $D08C refills them every pass from five calls to #R$C51F, storing IY at $BA09, $BA0B, $BA0D, $BA0F and $BA11; $D0CE-$D109 walks them to write each enemy's number into the enemy position map at $EF80-$EFFF (skipped while a guardian is active) (the map writes at $D0D4 treat a zero high byte as an empty entry, the drawing loop at $D1E9 a zero low byte; slot addresses have neither); the drawing loop at $D1E4 takes them in list order, and $D87B finds a struck enemy's entry from its number in that map (entry 5 minus the number).
 @ $BA13 label=UnusedBA13
 W $BA13,2,2 Two bytes after the enemy list that nothing reads or writes except the clears ($BD04, $BD85, $DEBE).
 @ $BA15 label=Score
@@ -646,12 +646,13 @@ C $C165,1 A=the kind
 C $C167,1 Carry set: a weapon was found
 c $C169 Clear the started marks in the enemy start list
 D $C169 Clears bit 7 of the second byte of every entry in the list whose address and count are in the operands at $D5D2 and $D5DB, so that every enemy in the list can start again. Called from BeginLife ($BE5C) at every life start, and from $DEB3 in #R$DE96, which runs at world set-up ($BE42) and at every move between the upper and lower parts of the map (#R$DD66).
-D $C169 Two faults. At a world change both calls come before $BE9F and $BEA5 install the new world's list, so the walk uses the previous world's list positions over the data just loaded. After world 2 that clears bit 7 of five bytes of cell graphics 90 and 92 in bank 4 ($B261, $B270, $B297, $B29A, $B29D), which world 3 then draws; after world 6 it clears bit 7 of nine bytes of world 7's list, moving six enemies 64 map columns (128 $B95A units) earlier and three to the left edge. The other changes (worlds 2, 4, 5, 6 and a new game) hit only bytes with bit 7 already clear.
+D $C169 Two faults. At a world change both calls come before $BE9F and $BEA5 install the new world's list, so the walk uses the previous world's list positions over the data just loaded. After world 2 that clears bit 7 of five bytes of cell graphics 90 and 92 in bank 4 ($B261, $B270, $B297, $B29A, $B29D), which world 3 then draws; after world 6 it clears bit 7 of nine bytes of world 7's list, moving six enemies 64 map columns (128 $B95A units) earlier and three to the left edge. The other changes (worlds 2, 4, 5, 6 and a new game) hit only bytes with bit 7 already clear. The exception is the first game after loading: the operands still hold 0 then, so both calls walk 256 entries (B=0) from address 0 and reset bit 7 of every third byte of $0001-$02FE. On the Spectrum that is ROM and nothing happens; in the recording these and the feathered blade's blast (#R$D991) are the only writes into $0000-$3FFF, and in the first oracle, which kept its handler in RAM there, they turned the JP at $0028 into $43.
 D $C169 And it always steps three bytes, but world 7's entries are four, so in world 7 it would clear bit 7 of position and side bytes and miss three of every four started flags. In the recording world 7 never lost a life or changed part, so this never ran there.
 @ $C169 label=ClearListMarks
 C $C169,3 HL=address of the world's list of enemy starts (the operand at $D5D2)
 C $C16C,3 B=number of entries (the operand at $D5DB)
 C $C170,1 Clear the started flag, bit 7 of the entry's second byte
+C $C171,2 Reset it. At the first game after loading HL starts at 0 and B at 0, so this resets bit 7 of every third byte of $0001-$02FE in ROM, a write that does nothing on the Spectrum
 C $C173,1 On to the next 3-byte entry
 c $C178 Wear the armour
 D $C178 Called by #R$BEFE, on each call that takes a unit of energy, while the wear count ArmourWear ($BA34) is not zero. It counts the wear down, and when the count reaches 0 takes a level off the first armour counter that is not zero, in the order ArmourA ($BA24, the hand piece), ArmourB ($BA25, the body) and ArmourC ($BA26, the helmet). The count is not reloaded, so each armour pickup (#R$DCCA, which sets it to 4) costs at most one level, four units of energy later. The HIT bar is not coloured here; the main loop does it every pass (#R$C091 from $D10F).
@@ -982,8 +983,18 @@ C $C515,3 Just past column 28 of pixel line 0
 C $C518,2 13 words: columns 3-28
 C $C51A,2 Character rows 0-15
 C $C51C,3 Clear the pixels
-c $C51F Routine at C51F
-D $C51F Used by the routine at #R$D08C.
+c $C51F Pick the topmost enemy not yet listed
+D $C51F Returns the in-use enemy slot (byte 0 non-zero) with the smallest row (byte 3) among those not yet picked this pass (bit 5 of byte 9 clear), and marks it picked by setting that bit. Of two slots on the same row the first in slot order wins, because a later slot must have a strictly smaller row to replace it (CP C, JP NC at $C53E). When no slot qualifies, IY is 0.
+D $C51F #R$D08C calls it five times a pass to fill EnemyDrawList $BA09-$BA12, so the list runs from the enemy highest on the screen to the lowest, with zero words after the last. The movers clear every slot's bit 5 at $CB57 earlier in the same pass.
+D $C51F The order has two effects. The enemies are drawn in list order ($D1E4), so where two sprites overlap the lower one is drawn over the upper one. And $D0CE-$D109 writes each listed enemy's number into the enemy position map, 5 for the first entry down to 1 for the last, so where two enemies cover the same map cell the lower one's number is left there: player contact treats every number alike, but a blow that reaches only that cell ($D874-$D888) destroys only the lower enemy. In the recording two enemies shared a cell of that map on 883 of 25,369 passes without a guardian, and two sprites overlapped on 1,652.
+D $C51F The search starts with C=$FF and returns early (BIT 7,C) without marking when the best row found has bit 7 set; rows never get that high while a slot is in use, since #R$DD29 frees an enemy whose row is 14 or more, so the only early return is the one with nothing found and IY=0.
+R $C51F O:IY Address of the slot, or 0 if every in-use slot is already listed
+R $C51F O:C Its row ($FF if none)
+R $C51F O:B 0
+R $C51F O:DE $000D
+R $C51F O:IX $BA03, just past the last slot
+R $C51F O:A Corrupted
+@ $C51F label=NextEnemyToDraw
 c $C553 Main game loop
 D $C553 One pass of this loop is one step of play: it reads the controls, starts enemies, moves the player (scrolling the map when the player walks left or right), moves the enemies, handles a lost life, builds the player's sprite, waits for the next frame interrupt, and then checks for the end of the world, the abort keys and the pause key, and runs the clock. It then continues by jumps, not calls: through the clock routines #R$DAD7 or #R$DAF2 to the clock print at $DB1C, into #R$D08C, which draws the screen, and on through the loop tail in #R$D38B, whose six JP $C553 instructions ($D4BA, $D4C0, $D4D2, $D4EB, $D4F2, $D510) start the next pass. The stack is empty at the loop head (SP=$B8B7 at every pass traced).
 D $C553 The loop is entered by JP $C553 at $BEE7, at the end of the world set-up code that starts at $BE47. That code runs at every world start and again after every lost life ($CD33 JP $BE47), so a lost life restarts the loop from the set-up, not from here.
@@ -1042,6 +1053,21 @@ C $C601,1 Keep that flag for #R$DD41
 C $C602,1 A=high byte of the template address (non-zero, marking the slot in use)
 C $C603,3 Fill in the slot
 N $C606 While $BA06 is non-zero (set to $7B at $C71D when the player steps on a map cell holding $79 or $7A), redraw that cell with #R$DB3B about every eight passes, using $7C, $7D and $7E in turn, and then clear $BA06. It marks a $79 or $7A cell the player has stood on at a scroll column start ($C708-$C71A, now $0C or $0D); a weapon blow on that cell releases a heart (#R$D8D6).
+C $C606,3 Is a cell animation running (CellAnimCode $BA06 non-zero)?
+C $C60A,3 Jump if not
+C $C60D,2 D=passes left before the next picture (the operand here, set to 8 at $C739 and $C638)
+C $C60F,1 Count it down; while it has not run out, store it back and go on
+C $C612,1 Keep the code in A' and go on only at a scroll step count of 4 or 8 (#R$DD93), so the picture lines up with whole map cells; otherwise leave the operand at $C60E at 1, so the count runs out again next pass
+C $C619,1 A=the next picture code: $7C, $7D or $7E
+C $C61B,1 C=that code, for #R$DB3B
+C $C61C,2 After drawing $7E the animation ends: store 0 instead
+C $C621,3 Store the new code (or 0)
+C $C624,3 HL=the scroll position ($B95A, in character columns) less the one saved when the cell was stepped on (the operand at $C628, planted at $C736): how many columns the picture has scrolled since
+C $C62D,2 E=the cell's buffer column (the operand at $C62E, 13 or 15, planted at $C730) less that distance
+C $C631,2 A=the cell's row (the operand at $C632: the player's even row plus 2, planted at $C723), D=0
+C $C635,3 Draw picture C over the cell in the play-area buffer
+C $C638,2 Wait 8 passes before the next picture
+C $C63A,1 Store the pass count in the operand at $C60E
 N $C63E Start the enemy that the world's object list (#R$D5D1) holds for the column now at $B95C, if an enemy slot is free (#R$C480) and the entry is not yet marked as started (bit 7 of its second byte). The entry is marked before bit 6 is compared with $B957, so an entry for the other part of the map is marked without starting; no slot records it, so it stays marked until a #R$C169 walk (a lost life, a move between the upper and lower parts of the map through #R$DD66, or a world set-up) clears every mark. In world 7 BeginLife plants #R$D5E3 in the CALL here, which looks up four-byte entries by $B95A instead.
 C $C63E,3 Find the list entry for this position: #R$D5D1 (by map column) or, in world 7, #R$D5E3 (by $B95A); HL=its byte 0, or byte 1 in world 7
 C $C641,2 Jump if there is none
@@ -1193,6 +1219,8 @@ C $CAB9,3 Unless jumping, start falling if the cell under the feet in column 6 i
 C $CAD0,3 At scroll step 4 only: a player facing left turns round, which takes the pass
 C $CAE4,2 Facing right: the player's two cells in column 7 ($38 upper, $39 lower) must both be open
 C $CAF4,3 Facing right: scroll. Facing left, which here means step 8: move the map window on a column and turn right, which takes the pass
+C $CB02,3 Step count 8: move the map window on one map column (eight bytes)
+C $CB0C,1 Face right (FacingLeft=0) and end the move without scrolling (#R$DAC9)
 C $CB13,3 One scroll step fewer before the map window moves a column
 C $CB17,3 Move the scroll position on one step
 C $CB1E,3 Scroll the map, then fall through
@@ -1202,7 +1230,84 @@ C $CB21,3 Is the $BA08 countdown running?
 C $CB26,3 Jump if not
 C $CB29,1 Count it down
 N $CB2A At weapon level 6 ($BA2D), and while the attribute at $59BE is $46, flash the 2x2 attribute block at rows 11-12, columns 30-31 by changing its INK every eight passes (the counter is the operand of LD A,$08 at $CB3A).
+C $CB2A,3 Weapon level 6?
+C $CB32,3 And the attribute at $59BE still $46 (bright yellow on black)?
+C $CB3A,2 Count down the eight-pass counter (this operand)
+C $CB3D,2 Jump unless it has run out
+C $CB3F,3 Toggle INK bits 0 and 2 of the attribute at $597E
+C $CB44,1 and write it to the 2x2 block at $597E-$597F and $599E-$599F
+C $CB4C,2 Reload the counter
+C $CB4E,3 Store the counter in the operand at $CB3B
 N $CB51 Move the enemies in the five 13-byte slots at #R$B9C2. Each active slot (byte 0 non-zero) is stepped according to its type (byte 8) and the map cells around it, its new graphic address is stored in bytes 0-1, and #R$DD29 checks its position (bytes 2-3); an enemy that has left the screen is removed by #R$D909, which also frees its object list entry.
+C $CB51,4 IX=the first enemy slot
+C $CB55,2 C=five slots to do
+C $CB57,4 Clear the slot's listed mark (bit 5 of byte 9) for this pass's #R$C51F calls, whether or not the slot is in use
+C $CB5B,3 Skip a free slot (byte 0 zero)
+N $CB62 Types 6 and 7 fly straight across the screen in their starting direction, one character column a pass, through walls and floors, until #R$DD29 finds them past an edge. Type 7 cycles frames 1-4, type 6 frames 1-2.
+C $CB62,3 A=type (byte 8). Type 6, a flier with two frames?
+C $CB6A,2 Type 7, a flier with four frames? Jump if neither: a walker
+C $CB6F,3 Type 7: A=the state (byte 9); after frame 4 (bit 2 set) set the frame to 0, keeping the direction
+C $CB78,3 Join the flight
+C $CB7B,3 Type 6: after frame 2 (bit 1 set) set the frame to 0, keeping the direction
+C $CB84,3 Fly one character column (eight pixels) every pass, whatever the map holds: one column left...
+C $CB87,2 D=the state to store; moving right (bit 7)?
+C $CB8A,3 Jump if moving left
+C $CB8D,3 ...or, moving right, one column right instead
+C $CB93,3 On to the frame step (fliers never turn, fall or test the map)
+N $CB96 Every other type walks. Find the map cell at the enemy's leading edge in its top row: the enemy's screen column minus 2 (moving left) or its column plus width minus 3 (moving right), halved, taken as a map column of the window. This ignores how far the map has scrolled since the window last moved (0-14 pixels), so the cell tested is under the enemy's leading edge rather than beyond it. Nothing moves an enemy when the map scrolls; its column is a screen column.
+C $CB96,3 A=the column (byte 2) minus 2...
+C $CB9B,4 ...or, moving right (bit 7 of byte 9), its rightmost column less 2: column - 3 + width
+C $CB9F,3 Jump if moving left
+C $CBA2,1 ...or, moving right, the column plus the width minus 3
+C $CBA6,2 Halve it: the map column of the enemy's leading edge, counted from the window
+C $CBA8,1 Eight cells a map column
+C $CBAB,3 Plus the cell row of the enemy's top (character row / 2)
+C $CBB1,3 HL=that map cell, from MapWindow $BA17
+C $CBB8,4 Falling (bit 6 of byte 9, type 4 only)?
+C $CBBC,2 Jump if not
+C $CBBE,3 Falling: drop two character rows (a whole cell, 16 pixels)
+C $CBC4,1 HL=the cell below the old top cell, in the same column
+C $CBC5,3 D=the state with the frame set to 0 (a falling enemy shows frame 1)
+C $CBCB,1 Is that cell open (#R$DB90)?
+C $CBCF,3 Jump if so: the drop stands
+C $CBD2,3 Solid: undo the drop
+C $CBD8,2 and stop falling; it walks on from the next pass
+C $CBDA,3 On to the frame step (no step sideways while falling)
+N $CBDD A walker turns round at a wall (a solid leading cell in any row it covers) or, unless it is type 4, at a ledge (an open cell under its feet in the leading column); a type 4 enemy walks off a ledge and falls. It takes a one-column step every second pass. The ledge step back at $CC24 can push an enemy started at a screen edge outside #R$DD29's limits in its first pass, so a list walker started over a ledge at an edge is freed at once and never drawn - and started again on the next pass.
+C $CBDD,3 Walking: count down the wall-turn delay (byte 12) if it is running
+C $CBE6,1 Is the leading cell in the enemy's top row solid (#R$DB90)?
+C $CBEA,2 Jump if so: a wall
+C $CBEC,3 One cell tall (16 lines)?
+C $CBF1,2 Jump if so to look for a floor
+C $CBF3,1 Taller: is the leading cell in the next row down open too?
+C $CBF8,2 Jump if so to look for a floor
+C $CBFA,3 A wall ahead. Is the wall-turn delay running?
+C $CBFE,3 A=the state
+C $CC01,2 Jump if so: walk on regardless
+C $CC03,4 Otherwise start the delay (eight passes)...
+C $CC07,2 ...and turn round, without a step back
+C $CC09,3 On to the step
+C $CC0C,1 HL=the cell under the enemy's feet in the leading column
+C $CC0E,3 Is it open (#R$DB90)?
+C $CC11,3 A=the state
+C $CC14,2 Jump if it is solid: a floor, walk on
+C $CC16,1 A ledge. Type 4?
+C $CC17,3 No ground: type 4 starts falling...
+C $CC1D,2 Jump if not
+C $CC1F,2 Type 4: set bit 6 to fall from the next pass (this pass it may still step)
+C $CC21,3 On to the step
+C $CC24,3 Other types: step back one column at once (left if moving right)...
+C $CC27,4 Moving right?
+C $CC2B,2 Jump if so
+C $CC2D,3 ...or right if moving left
+C $CC33,2 Turn round (flip bit 7)
+C $CC35,1 D=the new state. Is the frame 2 (bit 1)? Walkers step on every second pass only
+C $CC38,2 Jump if not (frame 1: no step this pass)
+C $CC3A,1 Frame back to 0 (1 after the step below), keeping bits 6-7
+C $CC3E,3 Step one column (eight pixels) left...
+C $CC41,2 Moving right?
+C $CC43,2 Jump if not
+C $CC45,3 ...or, moving right, one column right
 C $CC4B,1 Step the frame number in bits 0-2 of byte 9 (the movers above have reset it to 0 after frame 2, or after frame 4 for type 7)
 C $CC50,2 A=frame number, 1-4
 C $CC52,2 DE=lines (byte 5)
@@ -1211,11 +1316,12 @@ C $CC5F,1 ...x 2 (a mask byte before each graphic byte): DE=the size of one fram
 C $CC62,3 HL=the first frame (bytes 6-7, from the template)
 C $CC68,1 Add one frame size for each frame after the first
 C $CC6F,4 Moving right (bit 7 of byte 9) and not type 7? Then use the matching frame in the second half of the world's frame area
-C $CC7D,3 Half the frame area's length (the operand, from header bytes 16-17, planted at $BEAC)
+C $CC7D,3 Operand of LD DE,$0000 at $CC7D: the distance from an enemy's left-facing frames to its right-facing ones, half the world bank's frame area, planted from world header bytes 16-17 at $BEA8-$BEAC when a life starts. Added to the frame address at $CC80 for an enemy moving right (bit 7 of slot byte 9) of any type but 7. bytes 16-17, planted at $BEAC)
 C $CC81,3 Keep the frame's address in bytes 0-1 (high byte first; it is non-zero, so the slot stays in use)
 C $CC87,3 Is the enemy still in the play area (#R$DD29)?
 C $CC90,3 Free the slot if not, releasing its list entry (#R$D909)
 C $CC93,3 Next slot
+C $CC98,1 Until all five slots are done
 N $CC9C Lose a life when the energy ($BF1B) is used up, except on a pass whose scroll step has just brought $D4A2 to zero (the loop tail resets it at $D4A1). The lives digit (the operand at $C1EE) is decremented and printed by $C1E7. While lives remain, LIFE LOST is shown, tune 13 is played and play restarts at $BE47 (below). When the digit reaches '0' a continue is needed: if any remain (the operand at $CCB9 is 4 in a new game, so three are offered, and 1 in world 7, so none), CONTINUE? is shown with a countdown from 9, one digit every 50 frames (#R$C400), and a key held when a digit is shown (#R$C2E5) resets the lives to 5 (#R$C1E2) and continues; otherwise OUT OF LIFE ends the game at #R$C3C0.
 C $CC9C,3 Is there any energy left?
 C $CCA0,3 Jump if so
@@ -1340,7 +1446,17 @@ D $D08C In order: it clears the enemy position map at $EF80-$EFFF by pushing 64 
 D $D08C Two stretches run with interrupts disabled because they use SP as a data pointer: $EBFA (about 53,600 T-states, three quarters of a frame) and $D13A-$D170 (about 2,360 T-states). The first almost always spans a frame interrupt, which is lost: 1.01-1.03 lost interrupts per pass in every world.
 @ $D08C label=DrawPass
 C $D0C8,2 A guardian is active: wait instead of writing the enemies to the map (100 DJNZs), which keeps the start of the copy below at about the same time after the frame interrupt
+C $D0CE,4 Walk the five entries of EnemyDrawList ($BA09), B=5 down to 1: the number written into the map is 5 for the first entry, 1 for the last
+C $D0D4,3 An empty entry has a zero high byte
 C $D0DB,2 An empty entry: a short delay in place of the map writes, for the same reason
+C $D0E3,3 IX=the enemy's slot
+C $D0EC,3 A=column (slot byte 2) SRA 1, times 8: a map column is two character columns, eight cells a column
+C $D0F4,3 plus row (byte 3) SRA 1: a cell is two character rows
+C $D0FA,2 Bit 7 set, so HL is always in $EF80-$EFFF: a character column of 32 or more (or a negative one) wraps onto map columns 0-15, and a row of 16 or more spills into the next map column
+C $D0FF,1 Write the enemy's number into the cell of its top-left character. The width (byte 4) is not used, so only the enemy's left column counts; a later (lower-numbered) enemy in the same cell replaces it
+C $D100,3 An enemy 16 lines high has only that cell
+C $D107,1 Taller ones (24 or 32 lines) also get the cell below (the next map column's top cell when the enemy's cell is in row 7, and $F000 past the end of the map for the last cell)
+C $D109,2 Next entry
 N $D112 While the immunity timer at $BA2A is running (set to 200 by #R$DC54), count it down and flash the LIFE label at the top left of the status bar in random colours; otherwise keep it bright yellow.
 C $D112,3 Is the immunity timer running?
 C $D116,2 C=bright yellow on black, the LIFE label's usual colour
@@ -1400,7 +1516,7 @@ C $D333,3 Operand of LD HL,$0000 at #R$D333: display address where the feathered
 c $D38B Main loop: finish a pass
 D $D38B The last part of every pass of the main loop (#R$C553). It is reached from #R$D08C (JP C,$D38B at $D2D9, or JP $D3BE from $D2AC, $D2B6, $D2E4, $D330) and from the weapon code (#R$D333 at $D388, #R$D991 at $D9F2 and $DA3E), and it ends every pass with one of six JP $C553 instructions.
 D $D38B In order: on the pass a blow starts with weapon kinds 1-5 (it is reached by JP C,$D38B at $D2D9 only after the AttackState and AttackFlag tests), while the operand at $D38C is non-zero it calls #R$D8D6 and, at scroll step 4, strikes the map cells next to the player with #R$D64F; from $D3BE it draws the effects that the counters $BA03 and $BA04 time ($E977, $EB72); from $D42B it moves the player between the two parts of the map: walking off the bottom of the screen (row 12 or more) sets $B957 to $40 and moves the map window ($BA17) $0680 on, and leaving by the top (row 0, with up held or a rise running, and the cell above passable) clears $B957 and moves it back (#R$DD66); at $D4A1 it completes a scroll column when the step count at $D4A2 (the operand of LD A,$08 at $D4A1) has reached 0 (#R$DDC4 resets it to 8 and moves the map window); and from $D4A5 it checks the enemy position map built by #R$D08C at the player's position.
-D $D38B The collision check reads the cell of that map at $EFB9 plus half the player's row and, if it is empty and $BA07 is zero, the cell before it; if both are empty the pass ends. $FF lengthens the energy bar by one empty unit (#R$BF39 adds one to the energy-lost count at $BF28 while energy plus lost is below 19, then redraws the bar) and $FE moves up to three units from the lost part of the bar back to the energy (#R$BF5E, #R$BF15), each with sound effect 11 (#R$C408). Any other value is an enemy's number. Unless the immunity timer at $BA2A is running, it plays sound effect 1 and counts the contact at $D504 (the operand of LD A,$00 at $D503): with B three quarters of the armour total $BA24+$BA25+$BA26 read by #R$DDA2 (halved, plus that halved again), B contact passes go by between drains, and on the next one #R$BEFE is called (which takes energy on every second call, $BA31) and the count restarts. With no armour every contact pass calls #R$BEFE.
+D $D38B The collision check reads the cell of that map at $EFB9 plus half the player's row and, if it is empty and $BA07 is zero, the cell before it; if both are empty the pass ends. $FF lengthens the energy bar by one empty unit (#R$BF39 adds one to the energy-lost count at $BF28 while energy plus lost is below 19, then redraws the bar) and $FE moves up to three units from the lost part of the bar back to the energy (#R$BF5E, #R$BF15), each with sound effect 11 (#R$C408). Any other value is an enemy's number, or the guardian's $FD (#R$D513 marks its cells with it), which counts as a contact in the same way. Unless the immunity timer at $BA2A is running, it plays sound effect 1 and counts the contact at $D504 (the operand of LD A,$00 at $D503): with B three quarters of the armour total $BA24+$BA25+$BA26 read by #R$DDA2 (halved, plus that halved again), B contact passes go by between drains, and on the next one #R$BEFE is called (which takes energy on every second call, $BA31) and the count restarts. With no armour every contact pass calls #R$BEFE.
 @ $D38B label=EndPass
 C $D38B,2 Operand of LD A,$00 at #R$D38B: how many blows (through #R$D64F) a weapon of kinds 1-5 gives the map cells beside the player when a blow starts. #R$D38B is reached only by JP C,$D38B at $D2D9, after $D2A8-$D2B6 have required AttackState $D2A9 = 1 and AttackFlag $C95B non-zero, which for kinds 1-5 is the pass fire starts a blow. If it is non-zero, the heart check #R$D8D6 runs; then, only while the scroll step count $D4A2 is 4, the cell at offset $38 (D = 0) is struck and, if that returns carry, the cell at $39 (D = 2). Set with the weapon at $DCB9 from byte 0 of its entry in $BCCE: 2 for kinds 1 and 4, 1 for kind 3, 0 for kinds 2, 5, 6 and 7.
 N $D3BE This entry point is used by the routines at #R$D08C, #R$D333 and #R$D991.
@@ -1414,9 +1530,26 @@ C $D48B,3 Move the map window back to the upper part, $0680 bytes back...
 C $D494,3 ...and rebuild the buffer at the current scroll position (#R$DD66)
 C $D4A1,2 Operand of LD A,$08 at $D4A1: scroll steps left in the current map column, 8 down to 0. Each scroll step decrements it; when it reaches 0, #R$DDC4 (called at $D4A4) resets it to 8 and moves the map window at $BA17 a column. The movement code treats 8 and 4 as the points where the player may turn, climb or collect (#R$DD93, #R$DCD7, #R$DBAB), and a life is not lost on a pass that has just brought it to 0.
 C $D4A4,3 After the eighth step: move the window a column and draw the new edge column (#R$DDC4)
+C $D4A7,3 HL=the enemy position map cell of the player's lower half: map column 7 ($38), row PlayerRow/2 + 1
+C $D4B1,1 Anything there (an enemy number, the guardian's $FD or a heart)?
+C $D4B3,3 Jump if so
+C $D4B6,3 While crouching only the lower cell counts: end the pass
+C $D4BD,1 Otherwise try the cell above, the player's upper half
+C $D4C0,3 End the pass if that is empty too
+C $D4C3,2 A $FF heart?
+C $D4C7,3 Lengthen the energy bar by one unit (#R$BF39)
+C $D4CA,1 Stop the rising heart (the counter at $D215); its value stays in the map until #R$D08C clears it next pass
+C $D4CE,3 Sound effect 11
 B $D4D1,1,1 Sound effect number, read by #R$C408 (which returns past it)
+C $D4D5,2 A $FE heart?
+C $D4D9,2 Move up to three lost units back into the energy (#R$BF5E three times) and redraw the bar (#R$BF15)
+C $D4E3,1 Stop the rising heart
+C $D4E7,3 Sound effect 11
 B $D4EA,1,1 Sound effect number, read by #R$C408 (which returns past it)
+C $D4EE,3 An enemy or the guardian: nothing happens while the immunity timer runs
+C $D4F5,3 Sound effect 1
 B $D4F8,1,1 Sound effect number, read by #R$C408 (which returns past it)
+C $D4F9,3 B=the armour total (#R$DDA2) halved, plus that halved again
 C $D503,2 Operand of LD A,$00 at $D503: contact passes since the last call of #R$BEFE. On each pass the player touches an enemy (without immunity) it counts up; when it would pass B, the armour total (#R$DDA2) halved plus that halved again, rounded down each time (0-4), #R$BEFE is called and it restarts at 0. With under two armour levels B is 0 and every contact pass calls #R$BEFE.
 c $D513 Move and draw the end-of-world guardian
 D $D513 Used by the main loop at $D1DE, in place of drawing the enemies, while $B955 is set. The guardian follows a list of display-file addresses set up at $C59A-$C5A0 from the world data ($7667 and $7669, or $767E and $7680 when $B95A holds $046E), taking one entry a pass and starting again at the $FF that ends it; bit 7 of an entry's high byte selects the second of two sets of graphics. Each pass it marks a block of 16 cells in the collision map at $EF80 with $FD, which is how #R$D77A knows the player's weapon has hit it, and draws it in two parts. Once its damage at $B956 reaches 64 it also draws one extra 16-line sprite per point of damage above 63 (1-16, since at 80 it is destroyed), each picked at random from the four frames of the explosion animation at $6BA0 (16 by 16 pixels, 64 bytes each; the same frames #R$D38B draws where an enemy is hit) and placed at one of four spots chosen by the count divided by 4, so up to four sprites share each spot.
@@ -1564,8 +1697,8 @@ R $D763 H Adjustment in bytes for the scroll position
 c $D77A Strike the enemies a blow reaches
 D $D77A Works out which cells of the enemy position map at $EF80 the player's weapon reaches and destroys the enemy, or damages the guardian, found in each. The map has 16 columns of 8 cells (a cell is two character columns by two character rows of the play area; index = column * 8 + row); the player is in column 7, rows PlayerRow/2 and the one below. The map is the one #R$D08C built on the previous pass, so a blow is judged against where the enemies were last drawn.
 D $D77A Nothing is struck while climbing (ClimbState 1 or 4), nor while crouching with weapon kind 5, so the kick can only reach the upper of the player's two rows. The cell reached depends on the weapon kind $BA2C. Kinds 2-5: the cell in front (column 8 facing right, 6 facing left), in the upper row, or the lower while crouching. Kind 1 (the broad sword): the cell of its thrown shot (display address in $D25B) and then the cell in front. Kind 6 (the feathered blade): only while ShotTimer $BA05 is below 2, the five cells in front in the lower row (columns 8-12 or 6-2; the ADD or SUB at $D7E3 is written first). Kind 7 (the flail): the cell in front moved on by the chain length at $D94E (0-3 cells, set by #R$D923 on the pass before).
-D $D77A From $D805 one cell is tested. $FD is the guardian: its damage GuardianDamage $B956 goes up by the weapon level $BA2D (so weapon level 0 never harms it), and at 80 it is destroyed - 500 * (world + 2) points (#R$C1F6; shown ten times larger), the damage and the left-walk block at $C9E7 are reset, and in worlds 1-6 the world is completed ($D04A); in world 7 GuardianActive is cleared and, after the second guardian, the ending runs ($D848-$D86D). Below 80 the blow only plays sound effect 0. Any other non-zero value is an enemy number 1-5: its slot (from EnemyDrawList $BA09) is freed at once (#R$D909), so every enemy dies to one blow from any weapon; the explosion is started at the slot's position ($D419, ExplosionTimer $BA04 = 8, drawn once or twice by the count at $D41F); an enemy whose slot byte 5 has bit 5 set may upgrade weapon levels 0, 1 and 4 (#R$DDBC); and the points are slot byte 4 times bits 3-5 of slot byte 5 (#R$C1F4), then sound effect 0; the points are an 8-bit product, so they wrap above 255, and a slot whose bits 3-5 are 0 gives 0 (the DJNZ at $D8CB runs 256 times).
-D $D77A Called at most twice a pass from #R$C553: at $C957 while a kind 1 shot is out, and then either at $C960 on the pass after a blow (and on every pass while ShotTimer runs) or at $C98C when fire is pressed. In the recording a war hammer blow hit a guardian on both of its passes ($C98C and then $C960), a hit on each pass of a flail throw, and hits one or two frames apart from the broad sword. A kind 1 blow on the fire pass itself uses the stale address in $D25B (low byte 0 when no shot is out), so it tests a cell in map column 0 or 1.
+D $D77A From $D805 one cell is tested. $FD is the guardian: its damage GuardianDamage $B956 goes up by the weapon level $BA2D (so weapon level 0 never harms it), and at 80 it is destroyed - 500 * (world + 2) points (#R$C1F6; shown ten times larger), the damage and the left-walk block at $C9E7 are reset, and in worlds 1-6 the world is completed ($D04A); in world 7 GuardianActive is cleared and, after the second guardian, the ending runs ($D848-$D86D). Below 80 the blow only plays sound effect 0. Any other non-zero value is taken for an enemy number 1-5 - including a rising heart's $FE or $FF, which would make $D87B-$D886 fetch the 'slot' address from MapWindow $BA17 or Score $BA15 and write zeros there (only kind 1's shot can reach map column 7, where hearts rise; a controlled run showed it, the recording never did): its slot (from EnemyDrawList $BA09) is freed at once (#R$D909), so every enemy dies to one blow from any weapon; the explosion is started at the slot's position ($D419, ExplosionTimer $BA04 = 8, drawn once or twice by the count at $D41F); an enemy whose slot byte 5 has bit 5 set may upgrade weapon levels 0, 1 and 4 (#R$DDBC); and the points are slot byte 4 times bits 3-5 of slot byte 5 (#R$C1F4), then sound effect 0; the points are an 8-bit product, so they wrap above 255, and a slot whose bits 3-5 are 0 gives 0 (the DJNZ at $D8CB runs 256 times).
+D $D77A Called at most twice a pass from #R$C553: at $C957 while a kind 1 shot is out, and then either at $C960 on the pass after a blow (and on every pass while ShotTimer runs) or at $C98C when fire is pressed. In the recording a war hammer blow hit a guardian on both of its passes ($C98C and then $C960), a hit on each pass of a flail throw, and hits one or two frames apart from the broad sword. A kind 1 blow on the fire pass itself uses the stale address in $D25B (low byte 0 when no shot is out), so it tests a cell in map column 0 or 1. The map is not rebuilt until #R$D08C, so strikes after the one that destroys a world 7 guardian, later in the same pass, still find $FD and add the weapon level to the damage just reset, and the next guardian starts with it (5, 5 and 15 in the recording); a blow counter left over from the last pass of a world does the same on the next world's first pass (worlds 6 and 7 started with 2 and 3).
 R $D77A O:AF Corrupted
 R $D77A O:BC Corrupted
 R $D77A O:DE Corrupted
@@ -1613,7 +1746,7 @@ C $D888,3 Free the slot: one blow kills any enemy
 C $D88B,3 Start the explosion at the slot's position (bytes 2-3)...
 C $D894,2 ...for 8 passes
 C $D899,2 Draw it once, or twice when bit 5 of slot byte 5 is set (the operand at $D41F)
-N $D8A5 Hitting an enemy whose template has bit 5 of its second byte set (for example the type 6 enemy; some templates in the ($768E) table have it too) may upgrade a weak weapon at random.
+N $D8A5 Hitting an enemy 32 lines tall (bit 5 of its height, slot byte 5, is set only for heights of 32: every type 6 and most walkers, but not types 4 and 7 or the 16- and 24-line walkers) may upgrade a weak weapon at random.
 C $D8A5,4 Is bit 5 of the enemy's template byte set?
 C $D8A9,2 Jump if not
 C $D8AB,3 A=weapon level
@@ -1623,7 +1756,7 @@ C $D8B6,2 Level 1?
 C $D8B8,2 If so, try for an upgrade
 C $D8BA,2 Level 4?
 C $D8BC,2 If so, try for an upgrade
-C $D8BE,3 Points = slot byte 4 times bits 3-5 of slot byte 5 (0 when those bits are 0)
+C $D8BE,3 Points = the width (byte 4) times the height in character rows (bits 3-5 of byte 5, lines / 8): the enemy's size in character cells, 4, 6, 12 or 16
 C $D8CE,3 Add them to the score
 C $D8D1,3 Sound effect 0
 B $D8D4,1,1 Sound effect number, read by #R$C408 (which returns past it)
@@ -1632,6 +1765,15 @@ D $D8D6 Part of a weapon blow. Looks at the map cell in the player's row at colu
 D $D8D6 Any other cell code returns at once. Each $79/$7A cell therefore gives one heart per visit to the world: the codes stay $0E/$0F until the bank is reloaded.
 R $D8D6 A Offset from the map window, eight times the column (the player's cell row is added)
 @ $D8D6 label=StrikeSteppedCell
+C $D8D6,1 E=offset A plus half the player's row: the player's cell in that map column
+C $D8DE,1 Read the map cell at offset E (#R$C2D9 with A=0, HL left pointing at it)
+C $D8E2,2 Return unless it is $0C or $0D, a $79 or $7A cell already stood on
+C $D8E9,1 Make it $0E or $0F so it gives no second heart
+C $D8EB,2 The heart's value: $FE from $0C, $FF from $0D
+C $D8F0,2 Start the rising heart: 32 passes
+C $D8F5,3 D=the row planted at $C632 by the last step on a $79/$7A cell (the player's even row plus 2) less 3, E=column 14. With the player on row 0 that is row $FF, which #R$E977 turns into an address #R$C3DA never reads back as a row below 15, so that heart is neither drawn nor put into the map
+C $D8FD,3 Keep the heart's address for #R$D08C
+C $D904,3 Sound effect 10
 B $D907,1,1 Sound effect number, read by #R$C408 (which returns past it)
 c $D909 Free an enemy slot
 D $D909 Frees the enemy slot at IX: zeroes byte 0 (in use), byte 8 (type) and byte 12. If the slot was started from the world's enemy start list (byte 11 non-zero), clears bit 7 of the list entry's started flag, whose address is in bytes 10-11, and zeroes byte 11, so that entry can start its enemy again the next time its column (or, in world 7, position) is reached.
@@ -1667,7 +1809,7 @@ C $D98C,1 Facing left: four back, two columns left in all
 c $D991 Draw the feathered blade's blast
 D $D991 Draws one pass of a blow with weapon kind 6, the feathered blade (the weapon item $66 gives, weapon level 6): a flame-like blast in three phases. #R$D08C jumps here from $D2A2 on each of the seven passes the ShotTimer $BA05 runs, with A the timer after it was decremented (6 down to 0). Each call first waits for the next frame interrupt (EI, HALT), so these passes take up to a frame longer.
 D $D991 A = 6 or 5: the blast rises. Two 24x24 dithered beams ($6A10) and a 16x16 end ($6AA0) are drawn in a diagonal line going up and forward from the weapon graphic's display address ($CF8D): two columns forward and 18 pixel lines up, then two columns and 16 lines, then two columns and 8 lines. A = 4 or 3: it turns over above the player: a 16x8 wisp ($69F0) 72 pixel lines up, and the 24x24 streaks ($6960) twice beside it. A = 2, 1 or 0: it strikes along the ground: two 32x16 shafts ($6AE0) end to end and the 16x16 tip ($6B60), from two columns in front of the weapon three pixel lines up, reaching ten character columns; the address of the first shaft is stored at $D334 and the code goes on to #R$D333, which strikes the map cells along the beam. On the last pass (A = 0) #R$BEFE is called, so every blast counts towards an energy loss and every second blast costs one unit of energy (and wears the armour while ArmourWear $BA34 is running).
-D $D991 Facing left, #R$DA9E adds $0920 to each graphic address for the mirrored copies, and the positions are adjusted for the mirrored graphics. The first two phases end at #R$D3BE. The enemies are struck separately, by #R$D77A: on the pass fire is pressed, and while the timer is below 2 (the ground phase), five enemy map cells in front of the player.
+D $D991 Facing left, #R$DA9E adds $0920 to each graphic address for the mirrored copies, and the positions are adjusted for the mirrored graphics. Nothing clips the rising and turning phases at the top of the screen: #R$C312 carries a display address above row 0 into $3800-$3FFF, so with the player in the top rows the beams, the end, the wisp and the streaks can start above the display file (up to six character rows above it in the recording). The drawers then read ROM bytes as the screen and push the combined bytes back into ROM, where they vanish, and carry on into row 0 correctly, so on the Spectrum the blast simply appears cut off at the top. These pushes (at $EB92 and $EBDC-$EBDD) and #R$C169 are, in the recording, the only writes into $0000-$3FFF. The first two phases end at #R$D3BE. The enemies are struck separately, by #R$D77A: on the pass fire is pressed, and while the timer is below 2 (the ground phase), five enemy map cells in front of the player.
 R $D991 A ShotTimer after its decrement (6-0)
 @ $D991 label=DrawBladeBlast
 C $D991,1 Wait for the next frame
@@ -2465,6 +2607,13 @@ R $EBAF O:DE Display-file address of the line below the sprite
 @ $EBAF label=DrawSprite24C
 N $EBB0 This entry point is used by the routines at #R$D08C and #R$D991.
 @ $EBB0 label=DrawSprite24
+C $EBC7,1 BC and DE=four screen bytes from this line: C, B and E are the three under the sprite and D is the byte after them, pushed back unchanged (below $4000, ROM bytes, when #R$D991 draws above the top of the screen)
+C $EBCA,1 Each byte = (screen AND mask) OR graphic
+C $EBDC,1 Write the four bytes back (the fourth unchanged); above the screen these pushes go into ROM at $3800-$3FFF and are lost
+C $EBDE,1 Down a pixel line; after the last line of a character row move L to the next row and take H back to the row's top line, unless L carried into the next third (which also takes an address at $3FEx on to row 0 at $40xx)
+C $EBEF,1 Next line
+C $EBF4,1 DE=display address of the line below the sprite
+C $EBF5,3 Restore SP (the operand at $EBF6) and interrupts
 c $EBFA Copy the play area from the buffer to the screen
 D $EBFA Called once a pass by #R$D08C (at $D137, with HL'=$F003 and HL=A=$4013) to copy the play area from the back buffer at $F000 to the display file. Each of the buffer's 128 lines is 32 bytes; bytes 3-28 of line n are copied to columns 3-28 of pixel line n, so the picture fills character rows 0-15, columns 3-28 (208 by 128 pixels). Bytes 1-2 and 29-30 of each buffer line are the hidden edge cells where new map columns are drawn before they scroll into view. Attributes are not touched: the whole play area is one colour, set by #R$C07C.
 D $EBFA The copy borrows the stack pointer as a data pointer, so it runs with interrupts disabled. For each line it points SP at the buffer and pops eight words into BC, DE, AF, IX, BC', DE', AF' and IY, then points SP just past the destination and pushes them back in reverse order: 16 bytes to columns 3-18, then 10 more (three words and two words) to columns 19-28. The self-modified operands hold the low byte of the display address just past the end of each part ($EC3A: column 19, used at $EC39 to reset L; $EC1C: column 29, used at $EC1B). The display file is not laid out line by line: within a third of the screen, the high byte of an address selects the pixel line inside a character row and the low byte's top three bits the character row, so the loop runs INC H for the eight pixel lines of a character row and adds $20 to L for the next character row. The first loop ($EBFF-$EC47) does the top third (H=$40-$47), the second ($EC4C-$EC94) the middle third (H=$48-$4F); the source pointer simply advances 32 bytes a line.
