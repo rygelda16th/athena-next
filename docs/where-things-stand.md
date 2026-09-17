@@ -649,7 +649,7 @@ and his answers:
 
 | # | Question | Answer (David, 2026-09-17) |
 |---|---|---|
-| 1 | Art style | **a) faithful remaster**: Ivan Horn's poses and outlines, coloured and shaded. (Extra screens not answered; the recommendation stands for now: new title, panel, font and ending, the Combat School advert dropped.) |
+| 1 | Art style | **a) faithful remaster** of the play area: Ivan Horn's poses and outlines, coloured and shaded. **Every screen stays intact** (David, later the same day): the title, panel, font, text screens, ending and Combat School advert are the original's, not redrawn |
 | 2 | Motion | **a) sprites glide** between pass positions, over the smooth scroll - **and asked whether extra frames of animation can be added** (being researched) |
 | 3 | Sound | **c) the original beeper sound, played cleanly, as a classic mode** - **and asked whether the arcade game's music and sound effects can be converted** (being researched) |
 | 4 | Options menu | **c) presets that set the individual settings**, which can then be adjusted; one switch for the nine bug fixes; the invisible enemies as their own switch |
@@ -710,6 +710,13 @@ effects are timing loops and would play about 8x too high, so classic mode needs
 rendered to samples at build time (or the CPU dropped to 3.5 MHz around each); the OPL
 timers at 4 MHz are 72/288 us per step, not the datasheet's 80/320; SkoolKit's
 `accept_interrupt` does not test IFF and its HALT release is tied to the Spectrum frame.
+
+**The arcade set is in (2026-09-17):** David put `athena.zip` in the Steam Deck's
+Downloads; it is now `data/arcade/athena.zip` (ignored by git). All 14 files match MAME's
+parent `athena` set by CRC and SHA1 (not the `athenab` or `sathena` clones), under an older
+MAME naming (`up01_`/`up02_` board locations; the sound program is `up02_g6.rom` and
+`up02_k6.rom`, MAME's `p5.6g` and `p6.6k`). The complete set, so both the capture and the
+MAME play-through are possible.
 
 **Written from the answers (2026-09-17), waiting for David's approval:**
 **`docs/design.md`** (layers, motion and timing, the sprite image cache, classic sound

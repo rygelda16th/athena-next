@@ -18,7 +18,7 @@ sound; **classic mode** switches to the original graphics and the original sound
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Art style | **Faithful remaster**: Ivan Horn's poses and outlines, coloured and shaded. (Not answered, so the recommendation stands until David says otherwise: new title, panel, font and ending; the Combat School advert dropped from the new graphics, kept in classic mode.) |
+| 1 | Art style | **Faithful remaster** of the play area: Ivan Horn's poses and outlines, coloured and shaded. **Every screen stays intact**: the title, the panel and its font, the text screens, the ending (credits) picture and the Combat School advert are the original's own, in both presentations |
 | 2 | Motion | **Smooth scrolling, sprites glide** between the positions the logic computes |
 | 7 | Extra animation frames | **About double the original counts** (the art bible lists each) |
 | 3, 8, 9 | Sound | **Classic**: the original beeper sound, played cleanly. **Arcade**: the arcade game's music and effects, captured at build time from David's own copy of the arcade game (the Steam SNK 40th Anniversary Collection) and **converted onto the Next's three AY chips** |
@@ -33,17 +33,19 @@ sound; **classic mode** switches to the original graphics and the original sound
 
 | Layer | What | Why |
 |---|---|---|
-| **Layer 2**, 256x192, 256 colours | the play area's scenery, the title, the ending picture | any pixel any colour; hardware scroll |
+| **Layer 2**, 256x192, 256 colours | the play area's scenery | any pixel any colour; hardware scroll |
 | **Hardware sprites** | everything that moves: player, weapons, shots, enemies, guardians, explosions, hearts | no flicker; the original's copy wiped every sprite once a pass |
-| **Tilemap**, 40x32 cells of 8x8 tiles, 15 colours and transparent per tile | the side and bottom panels, the font and the large font, every text screen and message | does not scroll with Layer 2; its 512 tiles hold the panel, both fonts and the item icons |
-| ULA | classic mode | the original's own screen |
+| **ULA** | the side and bottom panels, every text screen and message, the title, the ending and the Combat School advert - the original's own drawing, in both presentations; in classic mode also the play area | every screen stays intact (decision 1); it does not scroll with Layer 2 |
 
 - **The play area** is the original's: 208x128 at the top of the screen (character
-  columns 3-28, rows 0-15). Layer 2 and the sprites are clipped to it; the tilemap
-  shows through everywhere else. Text screens and the play-area messages (LIFE
-  LOST, OUT OF TIME, the world intro card, the hi-score table) hide Layer 2 while
-  they show.
-- **Why not the Tilemap for the scenery:** 16 colours per 8x8 tile, where the
+  columns 3-28, rows 0-15). Layer 2 and the sprites are clipped to it; the ULA shows
+  the original panel everywhere else. Text screens and the play-area messages (LIFE
+  LOST, OUT OF TIME, the world intro card, the hi-score table) are the original's
+  drawing on the ULA, and Layer 2 is hidden while they show. The original's copy of
+  the play area to the ULA (`$EBFA`) is hidden under Layer 2 in the new presentation;
+  E2 decides whether to skip it (the oracle hashes `$5B00`-`$FFFF`, not the display
+  file, but the panel's attributes must still be written).
+- **Why Layer 2 and not the Tilemap for the scenery:** 16 colours per 8x8 tile, where the
   remaster wants any colour in any pixel. The tile limit is tight too: world 7's 131
   cells would be 524 tiles if every cell is kept and no quarter is shared.
 - **Scrolling:** the logic scrolls 2 pixels on a pass the player walks (a pass
@@ -58,9 +60,9 @@ sound; **classic mode** switches to the original graphics and the original sound
   blue). Layer 2 has a **256-colour palette per world**, loaded at the world change,
   so the two worlds that share a bank's cells can have different colours. The
   **sprite palette** has a shared part (player, armour, weapons, effects, hearts, the
-  flame and bomb) and a part per world (enemies, guardian). The tilemap has 16
-  sub-palettes of 16. Transparency costs one sprite index, one Layer 2 colour value
-  (NextReg `$14`) and one index in each tilemap sub-palette (NextReg `$4C`).
+  flame and bomb) and a part per world (enemies, guardian). The panel and screens
+  keep the Spectrum's colours. Transparency costs one sprite index and one Layer 2
+  colour value (NextReg `$14`).
 
 ## Motion and timing
 
@@ -84,8 +86,8 @@ sound; **classic mode** switches to the original graphics and the original sound
   pass, whatever draws the picture: the flail's length and ball position, the
   feathered blade's beam, the broad sword's shot moving a column a pass, the rising
   heart, the enemy position map, the guardian's path step, the map-blow row, **the
-  POW flash's read of the HIT bar's colour** (`$CB32`: the ULA attributes must still
-  be written, or the read answered) and **the AttackState reset in the weapon setup**
+  POW flash's read of the HIT bar's colour** (`$CB32`: the panel stays the original's
+  on the ULA, so the read works unchanged) and **the AttackState reset in the weapon setup**
   (`$CF73`). The oracle hashes all of them and catches any slip.
 - **Extra animation frames are pure presentation:** the only logic that reads an
   animation frame number is the walkers' step timing (slot byte 9 bit 1, `$CC36`, also
@@ -245,9 +247,9 @@ by changing it.
 The target is the Next's **2 MB profile** (1,792 KB usable; the KS3 and expanded
 Nexts). Rough budget: the original game 144 KB; Layer 2's picture 48 KB; new code
 about 64 KB; sprite art about 300-380 KB for every world at the extra frame counts;
-scenery cells about 125 KB; title and ending screens 96 KB; panel, fonts and item
-tiles about 16 KB; arcade AY music about 100 KB; classic sound 0-1 MB depending on
-E5's choice - about 1.0-1.9 MB. **If recorded edges come out large, E5 takes the
+scenery cells about 125 KB; arcade AY music about 100 KB; classic sound 0-1 MB
+depending on E5's choice - about 0.8-1.8 MB (the screens are the original's, so
+they cost nothing). **If recorded edges come out large, E5 takes the
 re-implemented tone generator.** A 1 MB Next (768 KB) would need each world loaded
 from the SD card at the world change; that is not planned.
 
@@ -257,7 +259,7 @@ from the SD card at the world change; that is not planned.
 |---|---|---|
 | Art track | briefs from `docs/art-bible.md`; David generates; `tools/artimport.py` fits, quantises and checks; hand-cleaning | David approves each world's sheet |
 | E1 | pacing at 28 MHz: the original's measured pace, the 50 Hz logic timer on 60 Hz displays, the line-interrupt start of each pass | oracle green; pass length within the measured range |
-| E2 | Layer 2 play area, tilemap panel and text, palettes, the draw-path logic kept | pixel-exact against a Python reference render (placeholder art: the originals recoloured); oracle green |
+| E2 | Layer 2 play area, palettes, the original panel and screens on the ULA, the draw-path logic kept | pixel-exact against a Python reference render (placeholder art: the originals recoloured); oracle green |
 | E3 | hardware sprites, the image cache, player compositing, gliding, extra frames | pixel-exact against the reference; no flicker |
 | E4 | hardware scrolling | pixel-exact against the reference |
 | E5 | classic sound; arcade capture harness, proof against MAME, command survey, play-through log, AY conversion, loops, placement | capture matches MAME; David signs off by ear |
@@ -272,10 +274,9 @@ and approve the art; play-test the presets.
 
 ## Still open
 
-- Whether generated art of SNK's and Imagine's characters and logos goes in the
-  public repository, and under what terms (at the first art delivery).
+- Whether generated art of SNK's and Imagine's characters goes in the public
+  repository, and under what terms (at the first art delivery).
 - A playable release: out of scope without the rights holders.
-- Decision 1's extra screens (the recommendation stands until David answers).
 - For the stages named: the arcade's command numbers, tempo source, loop behaviour
   and chip split (E5); the classic sound's storage form (E5); how the pace model
   handles passes with effects (E1); the KS3's sprite, DAC and copper timing (E8).
